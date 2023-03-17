@@ -7,6 +7,13 @@ plugins {
 group = "github.george"
 version = "1.0-SNAPSHOT"
 
+val kotlinxSerializationVersion = "1.5.0"
+val ktorVersion = "2.0.2"
+val logbackVersion = "1.2.11"
+val kotlinxHtmlJvmVersion = "0.7.2"
+val kotlinWrappersReactVersion = "18.2.0-pre.346"
+val kotlinWrappersEmotionVersion = "11.9.3-pre.346"
+
 repositories {
     jcenter()
     mavenCentral()
@@ -32,7 +39,12 @@ kotlin {
         }
     }
     sourceSets {
-        val commonMain by getting
+        val commonMain by getting {
+            dependencies {
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$kotlinxSerializationVersion")
+                implementation("io.ktor:ktor-client-core:$ktorVersion")
+            }
+        }
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
@@ -40,17 +52,22 @@ kotlin {
         }
         val jvmMain by getting {
             dependencies {
-                implementation("io.ktor:ktor-server-netty:2.0.2")
-                implementation("io.ktor:ktor-server-html-builder-jvm:2.0.2")
-                implementation("org.jetbrains.kotlinx:kotlinx-html-jvm:0.7.2")
+                implementation("io.ktor:ktor-server-netty:$ktorVersion")
+                implementation("io.ktor:ktor-server-html-builder-jvm:$ktorVersion")
+                implementation("org.jetbrains.kotlinx:kotlinx-html-jvm:$kotlinxHtmlJvmVersion")
+
+                implementation("io.ktor:ktor-serialization:$ktorVersion")
+                implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
+                implementation("io.ktor:ktor-server-core-jvm:$ktorVersion")
+                implementation("ch.qos.logback:logback-classic:$logbackVersion")
             }
         }
         val jvmTest by getting
         val jsMain by getting {
             dependencies {
-                implementation("org.jetbrains.kotlin-wrappers:kotlin-react:18.2.0-pre.346")
-                implementation("org.jetbrains.kotlin-wrappers:kotlin-react-dom:18.2.0-pre.346")
-                implementation("org.jetbrains.kotlin-wrappers:kotlin-emotion:11.9.3-pre.346")
+                implementation("org.jetbrains.kotlin-wrappers:kotlin-react:$kotlinWrappersReactVersion")
+                implementation("org.jetbrains.kotlin-wrappers:kotlin-react-dom:$kotlinWrappersReactVersion")
+                implementation("org.jetbrains.kotlin-wrappers:kotlin-emotion:$kotlinWrappersEmotionVersion")
             }
         }
         val jsTest by getting
