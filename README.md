@@ -1,3 +1,3 @@
 # Keb
 
-A web editor written in kotlin.
+A web text editor written in kotlin.

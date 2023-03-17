@@ -58,6 +58,7 @@ kotlin {
 
                 implementation("io.ktor:ktor-serialization:$ktorVersion")
                 implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
+                implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
                 implementation("io.ktor:ktor-server-core-jvm:$ktorVersion")
                 implementation("ch.qos.logback:logback-classic:$logbackVersion")
             }
