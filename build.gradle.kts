@@ -1,18 +1,27 @@
 plugins {
     kotlin("multiplatform") version "1.8.0"
-    application
     kotlin("plugin.serialization") version "1.8.10"
+
+    id("org.springframework.boot") version "3.0.4"
+    id("io.spring.dependency-management") version "1.1.0"
+    kotlin("plugin.spring") version "1.8.0"
 }
+
+java.sourceCompatibility = JavaVersion.VERSION_17
 
 group = "github.george"
 version = "1.0-SNAPSHOT"
 
-val kotlinxSerializationVersion = "1.5.0"
-val ktorVersion = "2.0.2"
-val logbackVersion = "1.2.11"
 val kotlinxHtmlJvmVersion = "0.7.2"
 val kotlinWrappersReactVersion = "18.2.0-pre.346"
 val kotlinWrappersEmotionVersion = "11.9.3-pre.346"
+val kotlinxCoroutinesVersion: String by project
+val kotlinxSerializationVersion: String by project
+val r2dbcMysqlDriver: String by project
+val turbineVersion: String by project
+val mockkVersion: String by project
+val junitJupiterVersion: String by project
+val junitPlatformVersion: String by project
 
 repositories {
     jcenter()
@@ -22,7 +31,6 @@ repositories {
 
 kotlin {
     jvm {
-        jvmToolchain(11)
         withJava()
         testRuns["test"].executionTask.configure {
             useJUnitPlatform()
@@ -42,7 +50,6 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$kotlinxSerializationVersion")
-                implementation("io.ktor:ktor-client-core:$ktorVersion")
             }
         }
         val commonTest by getting {
@@ -52,18 +59,41 @@ kotlin {
         }
         val jvmMain by getting {
             dependencies {
-                implementation("io.ktor:ktor-server-netty:$ktorVersion")
-                implementation("io.ktor:ktor-server-html-builder-jvm:$ktorVersion")
+                // spring
+                implementation("org.springframework.boot:spring-boot-starter-webflux")
+                implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
+                implementation("dev.miku:r2dbc-mysql:$r2dbcMysqlDriver")
+                // kotlin
+                implementation("org.jetbrains.kotlin:kotlin-reflect")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinxCoroutinesVersion")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactive:$kotlinxCoroutinesVersion")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor:$kotlinxCoroutinesVersion")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$kotlinxSerializationVersion")
                 implementation("org.jetbrains.kotlinx:kotlinx-html-jvm:$kotlinxHtmlJvmVersion")
-
-                implementation("io.ktor:ktor-serialization:$ktorVersion")
-                implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
-                implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
-                implementation("io.ktor:ktor-server-core-jvm:$ktorVersion")
-                implementation("ch.qos.logback:logback-classic:$logbackVersion")
+            }
+            tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+                kotlinOptions {
+                    freeCompilerArgs = listOf("-Xjsr305=strict")
+                    jvmTarget = "17"
+                }
+            }
+            tasks.withType<Test> {
+                useJUnitPlatform()
             }
         }
-        val jvmTest by getting
+        val jvmTest by getting {
+            dependencies {
+                implementation("org.springframework.boot:spring-boot-starter-test")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:$kotlinxCoroutinesVersion")
+                implementation("org.jetbrains.kotlin:kotlin-test-junit5")
+                implementation("org.junit.jupiter:junit-jupiter:$junitJupiterVersion")
+                implementation("org.junit.jupiter:junit-jupiter-engine:$junitJupiterVersion")
+                implementation("org.junit.platform:junit-platform-commons:$junitPlatformVersion")
+                implementation("io.mockk:mockk:$mockkVersion")
+                // utils to test `Flow`
+                implementation("app.cash.turbine:turbine:$turbineVersion")
+            }
+        }
         val jsMain by getting {
             dependencies {
                 implementation("org.jetbrains.kotlin-wrappers:kotlin-react:$kotlinWrappersReactVersion")
@@ -75,16 +105,7 @@ kotlin {
     }
 }
 
-application {
-    mainClass.set("github.george.application.ServerKt")
-}
-
 tasks.named<Copy>("jvmProcessResources") {
     val jsBrowserDistribution = tasks.named("jsBrowserDistribution")
     from(jsBrowserDistribution)
-}
-
-tasks.named<JavaExec>("run") {
-    dependsOn(tasks.named<Jar>("jvmJar"))
-    classpath(tasks.named<Jar>("jvmJar"))
 }
