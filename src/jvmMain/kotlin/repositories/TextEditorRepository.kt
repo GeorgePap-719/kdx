@@ -1,0 +1,3 @@
+package keb.repositories
+
+interface TextEditorRepository
