@@ -2,9 +2,9 @@ plugins {
     kotlin("multiplatform") version "1.8.0"
     kotlin("plugin.serialization") version "1.8.10"
 
-    id("org.springframework.boot") version "3.0.4"
-    id("io.spring.dependency-management") version "1.1.0"
-    kotlin("plugin.spring") version "1.8.0"
+    id("org.springframework.boot") version "3.0.4" apply false
+    id("io.spring.dependency-management") version "1.1.0" apply false
+    kotlin("plugin.spring") version "1.8.0" apply false
 }
 
 java.sourceCompatibility = JavaVersion.VERSION_17
@@ -31,6 +31,10 @@ repositories {
 
 kotlin {
     jvm {
+        apply(plugin = "org.springframework.boot")
+        apply(plugin = "io.spring.dependency-management")
+        apply(plugin = "org.jetbrains.kotlin.plugin.spring")
+
         withJava()
         testRuns["test"].executionTask.configure {
             useJUnitPlatform()
@@ -62,7 +66,9 @@ kotlin {
                 // spring
                 implementation("org.springframework.boot:spring-boot-starter-webflux")
                 implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
+                // database
                 implementation("dev.miku:r2dbc-mysql:$r2dbcMysqlDriver")
+                implementation("mysql:mysql-connector-java:8.0.28")
                 // kotlin
                 implementation("org.jetbrains.kotlin:kotlin-reflect")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinxCoroutinesVersion")
