@@ -1,4 +1,4 @@
-package keb.services
+package keb.server.services
 
 interface TextEditorService {
     fun write(input: String)

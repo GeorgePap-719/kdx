@@ -1,3 +1,3 @@
-package keb.routers
+package keb.server.routers
 
 class TextEditorController

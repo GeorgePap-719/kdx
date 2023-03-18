@@ -1,3 +1,3 @@
-package keb.repositories
+package keb.server.repositories
 
 interface TextEditorRepository

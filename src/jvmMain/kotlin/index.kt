@@ -1,4 +1,4 @@
-package keb
+package keb.server
 
 import kotlinx.html.*
 
