@@ -9,6 +9,9 @@ import org.springframework.data.relational.core.mapping.Table
 //@Table("editor")
 // class Editor
 
+/**
+ * Core entity to represent application's UI.
+ */
 @Table("workspaces")
 data class Workspace(
     val content: String, // TODO: convert it to `Text`

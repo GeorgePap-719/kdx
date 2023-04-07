@@ -9,7 +9,7 @@ plugins {
 
 java.sourceCompatibility = JavaVersion.VERSION_17
 
-group = "github.george"
+group = "github.io"
 version = "1.0-SNAPSHOT"
 
 val kotlinxHtmlJvmVersion = "0.7.2"
