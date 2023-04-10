@@ -30,7 +30,7 @@ class R2dbcConfiguration(
         .withUrl(url)
         .username(username)
         .password(password)
-//        .database(database)
+        .database(database)
         .build()
 
     override fun getCustomConverters(): MutableList<Any> = converters.toMutableList()
