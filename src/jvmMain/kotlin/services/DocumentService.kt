@@ -7,6 +7,7 @@ import keb.server.entities.toEntity
 import keb.server.repositories.DocumentRepository
 import org.springframework.stereotype.Service
 
+//TODO: break this service into 2
 interface DocumentService {
     suspend fun read(target: String): Document?
     suspend fun create(input: Document): Document
