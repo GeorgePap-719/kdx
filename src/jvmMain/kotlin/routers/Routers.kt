@@ -3,6 +3,7 @@ package keb.server.routers
 import keb.server.services.DocumentService
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.server.*
 
@@ -12,7 +13,10 @@ class Routers(private val documentHandler: DocumentHandler) {
 
     @Bean
     fun documentRouter() = coRouter {
-        GET(documentApiPrefix + DocumentNamePathVariable, documentHandler::read)
+        accept(MediaType.APPLICATION_JSON).nest {
+            GET(documentApiPrefix + DocumentNamePathVariable, documentHandler::read)
+        }
+
     }
 }
 

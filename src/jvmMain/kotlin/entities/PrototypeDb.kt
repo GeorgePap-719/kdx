@@ -36,7 +36,7 @@ import org.springframework.stereotype.Component
 //    val name: String
 //)
 
-@Table("files")
+@Table("documents")
 data class DocumentEntity(
     @Id
     @Column("name")

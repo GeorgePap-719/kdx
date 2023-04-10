@@ -14,6 +14,7 @@ interface DocumentRepository {
     suspend fun removeText(target: DocumentEntity, input: Text): Int
     suspend fun findByName(target: String): DocumentEntity?
     suspend fun remove(target: String): Int
+    suspend fun deleteAll(): Int
 }
 
 @Component
@@ -42,6 +43,10 @@ class DocumentRepositoryImpl(private val template: R2dbcEntityTemplate) : Docume
 
     override suspend fun remove(target: String): Int {
         return template.delete<DocumentEntity>().matching(documentQueryMatch(target)).allAndAwait().toInt()
+    }
+
+    override suspend fun deleteAll(): Int {
+        return template.delete<DocumentEntity>().allAndAwait().toInt()
     }
 
     private fun documentQueryMatch(target: String): Query {
