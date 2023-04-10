@@ -11,7 +11,9 @@ import org.springframework.stereotype.Component
 interface DocumentRepository {
     suspend fun save(input: DocumentEntity): DocumentEntity
     suspend fun append(target: DocumentEntity, input: Text): Int
+    suspend fun removeText(target: DocumentEntity, input: Text): Int
     suspend fun findByName(target: String): DocumentEntity?
+    suspend fun remove(target: String): Int
 }
 
 @Component
@@ -28,8 +30,18 @@ class DocumentRepositoryImpl(private val template: R2dbcEntityTemplate) : Docume
             .applyAndAwait(Update.update("text", target.text + input)).toInt()
     }
 
+    override suspend fun removeText(target: DocumentEntity, input: Text): Int {
+        return template.update<DocumentEntity>()
+            .matching(documentQueryMatch(target.name))
+            .applyAndAwait(Update.update("text", target.text - input)).toInt()
+    }
+
     override suspend fun findByName(target: String): DocumentEntity? {
         return template.select<DocumentEntity>().matching(documentQueryMatch(target)).awaitFirstOrNull()
+    }
+
+    override suspend fun remove(target: String): Int {
+        return template.delete<DocumentEntity>().matching(documentQueryMatch(target)).allAndAwait().toInt()
     }
 
     private fun documentQueryMatch(target: String): Query {

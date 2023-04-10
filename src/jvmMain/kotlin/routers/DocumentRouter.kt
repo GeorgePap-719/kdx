@@ -1,3 +1,3 @@
 package keb.server.routers
 
-class TextEditorController
+class DocumentRouter

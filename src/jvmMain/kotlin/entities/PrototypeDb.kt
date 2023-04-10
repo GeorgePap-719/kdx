@@ -1,6 +1,7 @@
 package keb.server.entities
 
 import io.r2dbc.spi.Row
+import keb.Document
 import keb.Text
 import keb.server.utils.append
 import keb.server.utils.getColumn
@@ -45,6 +46,13 @@ data class DocumentEntity(
     val text: Text
 )
 
+fun DocumentEntity.toDocument(): Document {
+    return Document(name, text)
+}
+
+fun Document.toEntity(): DocumentEntity {
+    return DocumentEntity(name, text)
+}
 
 @Component
 @WritingConverter

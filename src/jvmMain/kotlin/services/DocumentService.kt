@@ -1,29 +1,41 @@
 package keb.server.services
 
 import keb.Document
+import keb.Text
+import keb.server.entities.toDocument
+import keb.server.entities.toEntity
+import keb.server.repositories.DocumentRepository
+import org.springframework.stereotype.Service
 
 interface DocumentService {
-    fun read(): Document
-    fun create(input: Document)
-    fun append(target: String, input: String)
-    fun remove(target: String, input: String)
+    suspend fun read(target: String): Document?
+    suspend fun create(input: Document): Document
+    suspend fun append(target: String, input: String): Int
+    suspend fun removeText(target: String, input: String): Int
+    suspend fun remove(target: String): Int
 }
 
-class DocumentServiceImpl : DocumentService {
-    override fun read(): Document {
-        TODO("Not yet implemented")
+@Service
+class DocumentServiceImpl(private val documentRepository: DocumentRepository) : DocumentService {
+    override suspend fun read(target: String): Document? {
+        return documentRepository.findByName(target)?.toDocument()
     }
 
-    override fun create(input: Document) {
-        TODO("Not yet implemented")
+    override suspend fun create(input: Document): Document {
+        return documentRepository.save(input.toEntity()).toDocument()
     }
 
-    override fun append(target: String, input: String) {
-        TODO("Not yet implemented")
+    override suspend fun append(target: String, input: String): Int {
+        val document = documentRepository.findByName(target) ?: return 0
+        return documentRepository.append(document, Text(input))
     }
 
-    override fun remove(target: String, input: String) {
-        TODO("Not yet implemented")
+    override suspend fun removeText(target: String, input: String): Int {
+        val document = documentRepository.findByName(target) ?: return 0
+        return documentRepository.removeText(document, Text(input))
     }
 
+    override suspend fun remove(target: String): Int {
+        return documentRepository.remove(target)
+    }
 }
