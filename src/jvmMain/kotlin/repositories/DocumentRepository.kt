@@ -29,17 +29,19 @@ class DocumentRepositoryImpl(private val template: R2dbcEntityTemplate) : Docume
     // naive impl for now
     // required to check beforehand if document exists
     override suspend fun append(target: DocumentEntity, input: Text): Int {
-        val appendedText = target.text + input
-        logger.info("preparing to append with $appendedText")
+        val updatedText = target.text + input
+        logger.info("preparing to update document with $updatedText")
         return template.update<DocumentEntity>()
             .matching(documentQueryMatch(target.name))
-            .applyAndAwait(Update.update("text", appendedText.value)).toInt()
+            .applyAndAwait(Update.update("text", updatedText.value)).toInt()
     }
 
     override suspend fun removeText(target: DocumentEntity, input: Text): Int {
+        val updatedText = target.text - input
+        logger.info("preparing to update document with:$updatedText")
         return template.update<DocumentEntity>()
             .matching(documentQueryMatch(target.name))
-            .applyAndAwait(Update.update("text", target.text - input)).toInt()
+            .applyAndAwait(Update.update("text", updatedText.value)).toInt()
     }
 
     override suspend fun findByName(target: String): DocumentEntity? {

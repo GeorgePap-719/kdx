@@ -18,7 +18,8 @@ class Routers(private val documentHandler: DocumentHandler) {
     fun documentRouter() = coRouter {
         accept(MediaType.APPLICATION_JSON).nest {
             GET("$documentApiPrefix/{$DocumentNamePathVariable}", documentHandler::read)
-            POST("$documentApiPrefix/{$DocumentNamePathVariable}", documentHandler::append)
+            POST("$documentApiPrefix/{$DocumentNamePathVariable}/append", documentHandler::append)
+            POST("$documentApiPrefix/{$DocumentNamePathVariable}/remove", documentHandler::remove)
         }
 
     }
@@ -44,8 +45,20 @@ class DocumentHandler(private val documentService: DocumentService) {
     suspend fun append(request: ServerRequest): ServerResponse {
         val documentName = request.pathVariable(DocumentNamePathVariable)
         val body = request.awaitAndRequireBody<Text>()
-        logger.info("preparing to append document: $documentName")
+        logger.info("preparing to update document: $documentName")
         val result = documentService.append(documentName, body)
+        return if (result > 0) {
+            ServerResponse.ok().buildAndAwait()
+        } else {
+            ServerResponse.notFound().buildAndAwait()
+        }
+    }
+
+    suspend fun remove(request: ServerRequest): ServerResponse {
+        val documentName = request.pathVariable(DocumentNamePathVariable)
+        val body = request.awaitAndRequireBody<Text>()
+        logger.info("preparing to update document: $documentName")
+        val result = documentService.removeText(documentName, body)
         return if (result > 0) {
             ServerResponse.ok().buildAndAwait()
         } else {
@@ -63,14 +76,14 @@ suspend inline fun <reified T : Any> ServerRequest.awaitAndRequireBody(): T {
 const val DocumentNamePathVariable = "name"
 
 /**
- * A helper class to represent messages in Json format for error responses.
+ * A helper class to represent message in Json format for error responses.
  */
 @Serializable
 data class ErrorInfo(val error: String)
 
 
 /**
- * A helper class to represent messages in Json format for success responses.
+ * A helper class to represent message in Json format for success responses.
  */
 @Serializable
 data class SuccessInfo(val message: String)

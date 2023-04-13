@@ -60,11 +60,11 @@ class DocumentRouterTest(
     }
 
     @Test
-    fun shouldUpdateExistingDocument(): Unit = runBlocking {
+    fun shouldAppendDocument(): Unit = runBlocking {
         val text = Text(", i am an editor")
         webClient
             .post()
-            .uri("$documentUrl/${testDocument.name}")
+            .uri("$documentUrl/${testDocument.name}/append")
             .accept(MediaType.APPLICATION_JSON)
             .bodyValue(text)
             .awaitExchange {
@@ -77,7 +77,28 @@ class DocumentRouterTest(
         val result = documentRepository.findByName(testDocument.name)
         val appendedText = testDocument.text + text
         println(appendedText)
-        assert(result?.text == testDocument.text + text)
+        assert(result?.text == appendedText)
+    }
+
+    @Test
+    fun shouldRemoveTextFromDocument(): Unit = runBlocking {
+        val text = Text("world")
+        webClient
+            .post()
+            .uri("$documentUrl/${testDocument.name}/remove")
+            .accept(MediaType.APPLICATION_JSON)
+            .bodyValue(text)
+            .awaitExchange {
+                val statusCode = it.statusCode().value()
+                if (statusCode != 200) {
+                    val error = it.awaitBody<ErrorInfo>()
+                    throw AssertionError("failed with status code:$statusCode and message:$error")
+                }
+            }
+        val result = documentRepository.findByName(testDocument.name)
+        val updatedText = testDocument.text - text
+        println(updatedText)
+        assert(result?.text == updatedText)
     }
 }
 
