@@ -74,3 +74,19 @@ class RowToDocumentConverter : Converter<Row, DocumentEntity> {
         )
     }
 }
+
+@Component
+@WritingConverter
+class TextToRowConverter : Converter<Text, String> {
+    override fun convert(source: Text): String {
+        return source.value
+    }
+}
+
+@Component
+@ReadingConverter
+class RowToTextConverter : Converter<String, Text> {
+    override fun convert(source: String): Text {
+        return Text(source)
+    }
+}

@@ -3,9 +3,11 @@ package keb.server
 import keb.Document
 import keb.Text
 import keb.server.entities.DocumentEntity
+import keb.server.entities.toDocument
 import keb.server.repositories.DocumentRepository
 import keb.server.routers.ErrorInfo
 import kotlinx.coroutines.runBlocking
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -13,9 +15,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.http.MediaType
-import org.springframework.web.reactive.function.client.WebClient
-import org.springframework.web.reactive.function.client.awaitBody
-import org.springframework.web.reactive.function.client.awaitExchange
+import org.springframework.web.reactive.function.client.*
+import kotlin.test.assertEquals
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -32,13 +33,16 @@ class DocumentRouterTest(
 
     @BeforeEach
     fun setUp(): Unit = runBlocking {
-        documentRepository.deleteAll() // run fresh
+        documentRepository.save(testDocument)
+    }
+
+    @AfterEach
+    fun afterEach(): Unit = runBlocking {
+        documentRepository.deleteAll()
     }
 
     @Test
     fun shouldReadExistingDocument(): Unit = runBlocking {
-        documentRepository.save(testDocument)
-
         val response = webClient
             .get()
             .uri("$documentUrl/${testDocument.name}")
@@ -46,13 +50,34 @@ class DocumentRouterTest(
             .awaitExchange {
                 val statusCode = it.statusCode().value()
                 if (statusCode != 200) {
-                    println(statusCode)
-                    println(it.awaitBody<ErrorInfo>())
-                    throw AssertionError("failed with status code:$statusCode")
+                    val error = it.awaitBody<ErrorInfo>()
+                    throw AssertionError("failed with status code:$statusCode and message:$error")
                 }
                 it.awaitBody<Document>()
             }
         println(response)
+        assertEquals(testDocument.toDocument(), response)
+    }
+
+    @Test
+    fun shouldUpdateExistingDocument(): Unit = runBlocking {
+        val text = Text(", i am an editor")
+        webClient
+            .post()
+            .uri("$documentUrl/${testDocument.name}")
+            .accept(MediaType.APPLICATION_JSON)
+            .bodyValue(text)
+            .awaitExchange {
+                val statusCode = it.statusCode().value()
+                if (statusCode != 200) {
+                    val error = it.awaitBody<ErrorInfo>()
+                    throw AssertionError("failed with status code:$statusCode and message:$error")
+                }
+            }
+        val result = documentRepository.findByName(testDocument.name)
+        val appendedText = testDocument.text + text
+        println(appendedText)
+        assert(result?.text == testDocument.text + text)
     }
 }
 

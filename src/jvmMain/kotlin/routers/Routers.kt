@@ -1,5 +1,6 @@
 package keb.server.routers
 
+import keb.Text
 import keb.server.services.DocumentService
 import keb.server.utils.logger
 import kotlinx.serialization.Serializable
@@ -17,6 +18,7 @@ class Routers(private val documentHandler: DocumentHandler) {
     fun documentRouter() = coRouter {
         accept(MediaType.APPLICATION_JSON).nest {
             GET("$documentApiPrefix/{$DocumentNamePathVariable}", documentHandler::read)
+            POST("$documentApiPrefix/{$DocumentNamePathVariable}", documentHandler::append)
         }
 
     }
@@ -38,12 +40,37 @@ class DocumentHandler(private val documentService: DocumentService) {
             ServerResponse.ok().bodyValueAndAwait(document)
         }
     }
+
+    suspend fun append(request: ServerRequest): ServerResponse {
+        val documentName = request.pathVariable(DocumentNamePathVariable)
+        val body = request.awaitAndRequireBody<Text>()
+        logger.info("preparing to append document: $documentName")
+        val result = documentService.append(documentName, body)
+        return if (result > 0) {
+            ServerResponse.ok().buildAndAwait()
+        } else {
+            ServerResponse.notFound().buildAndAwait()
+        }
+    }
+}
+
+suspend inline fun <reified T : Any> ServerRequest.awaitAndRequireBody(): T {
+    val body = awaitBodyOrNull<T>()
+    requireNotNull(body) { "body is expected to by type of ${T::class.simpleName}" }
+    return body
 }
 
 const val DocumentNamePathVariable = "name"
 
 /**
- * A helper class to represent error responses in Json format.
+ * A helper class to represent messages in Json format for error responses.
  */
 @Serializable
 data class ErrorInfo(val error: String)
+
+
+/**
+ * A helper class to represent messages in Json format for success responses.
+ */
+@Serializable
+data class SuccessInfo(val message: String)

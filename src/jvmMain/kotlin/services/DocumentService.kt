@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service
 interface DocumentService {
     suspend fun read(target: String): Document?
     suspend fun create(input: Document): Document
-    suspend fun append(target: String, input: String): Int
+    suspend fun append(target: String, input: Text): Int
     suspend fun removeText(target: String, input: String): Int
     suspend fun remove(target: String): Int
 }
@@ -26,9 +26,9 @@ class DocumentServiceImpl(private val documentRepository: DocumentRepository) : 
         return documentRepository.save(input.toEntity()).toDocument()
     }
 
-    override suspend fun append(target: String, input: String): Int {
+    override suspend fun append(target: String, input: Text): Int {
         val document = documentRepository.findByName(target) ?: return 0
-        return documentRepository.append(document, Text(input))
+        return documentRepository.append(document, input)
     }
 
     override suspend fun removeText(target: String, input: String): Int {

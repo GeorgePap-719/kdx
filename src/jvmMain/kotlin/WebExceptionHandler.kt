@@ -33,7 +33,7 @@ class WebAppExceptionHandler : WebExceptionHandler {
                     } else {
                         Mono.empty()
                     }
-                }
+                }.also { logger.warn(ex.stackTraceToString()) }
             }
 
             is IllegalStateException -> {

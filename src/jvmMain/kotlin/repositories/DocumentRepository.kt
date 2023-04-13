@@ -2,6 +2,7 @@ package keb.server.repositories
 
 import keb.Text
 import keb.server.entities.DocumentEntity
+import keb.server.utils.logger
 import org.springframework.data.r2dbc.core.*
 import org.springframework.data.relational.core.query.Criteria
 import org.springframework.data.relational.core.query.Query
@@ -19,6 +20,8 @@ interface DocumentRepository {
 
 @Component
 class DocumentRepositoryImpl(private val template: R2dbcEntityTemplate) : DocumentRepository {
+    private val logger = logger()
+
     override suspend fun save(input: DocumentEntity): DocumentEntity {
         return template.insert<DocumentEntity>().usingAndAwait(input)
     }
@@ -26,9 +29,11 @@ class DocumentRepositoryImpl(private val template: R2dbcEntityTemplate) : Docume
     // naive impl for now
     // required to check beforehand if document exists
     override suspend fun append(target: DocumentEntity, input: Text): Int {
+        val appendedText = target.text + input
+        logger.info("preparing to append with $appendedText")
         return template.update<DocumentEntity>()
             .matching(documentQueryMatch(target.name))
-            .applyAndAwait(Update.update("text", target.text + input)).toInt()
+            .applyAndAwait(Update.update("text", appendedText.value)).toInt()
     }
 
     override suspend fun removeText(target: DocumentEntity, input: Text): Int {
