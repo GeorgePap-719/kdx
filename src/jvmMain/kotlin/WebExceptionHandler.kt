@@ -1,5 +1,6 @@
 package keb.server
 
+import keb.server.utils.logger
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import kotlinx.coroutines.reactor.mono
 import org.springframework.core.annotation.Order
@@ -18,21 +19,34 @@ import reactor.core.publisher.Mono
 @Component
 @Order(-2)
 class WebAppExceptionHandler : WebExceptionHandler {
-    override fun handle(exchange: ServerWebExchange, ex: Throwable): Mono<Void> {
-        return mono {
-            val response = when (ex) {
-                is IllegalArgumentException -> {
-                    exchange.response.let {
-                        it.statusCode = HttpStatus.BAD_REQUEST
-                        it.headers.contentType = MediaType.APPLICATION_JSON
+    private val logger = logger()
+
+    override fun handle(exchange: ServerWebExchange, ex: Throwable): Mono<Void> = mono {
+        val response = when (ex) {
+            is IllegalArgumentException -> {
+                exchange.response.let {
+                    it.statusCode = HttpStatus.BAD_REQUEST
+                    it.headers.contentType = MediaType.APPLICATION_JSON
+                    if (ex.message != null) {
                         val response = it.bufferFactory().wrap("""{"error":"${ex.message}"}""".encodeToByteArray())
                         it.writeWith(Mono.just(response))
+                    } else {
+                        Mono.empty()
                     }
                 }
-
-                else -> Mono.error(ex) // default spring error response
             }
-            response.awaitSingleOrNull()
+
+            is IllegalStateException -> {
+                exchange.response.let {
+                    it.statusCode = HttpStatus.INTERNAL_SERVER_ERROR
+                    it.headers.contentType = MediaType.APPLICATION_JSON
+                    logger.error(ex.stackTraceToString())
+                    Mono.empty() // return plain 500 status. We cannot reveal error info at this stage.
+                }
+            }
+
+            else -> Mono.error(ex) // default spring error response
         }
+        response.awaitSingleOrNull()
     }
 }

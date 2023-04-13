@@ -70,7 +70,7 @@ class RowToDocumentConverter : Converter<Row, DocumentEntity> {
     override fun convert(source: Row): DocumentEntity {
         return DocumentEntity(
             source.getColumn("name"),
-            source.getColumn("text")
+            Text(source.getColumn("text"))
         )
     }
 }

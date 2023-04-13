@@ -4,6 +4,7 @@ import keb.Document
 import keb.Text
 import keb.server.entities.DocumentEntity
 import keb.server.repositories.DocumentRepository
+import keb.server.routers.ErrorInfo
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -11,6 +12,7 @@ import org.junit.jupiter.api.TestInstance
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.server.LocalServerPort
+import org.springframework.http.MediaType
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
 import org.springframework.web.reactive.function.client.awaitExchange
@@ -40,15 +42,18 @@ class DocumentRouterTest(
         val response = webClient
             .get()
             .uri("$documentUrl/${testDocument.name}")
+            .accept(MediaType.APPLICATION_JSON)
             .awaitExchange {
-                println(it.statusCode())
-                println(it.awaitBody<Any>())
-                assert(it.statusCode().value() == 200)
+                val statusCode = it.statusCode().value()
+                if (statusCode != 200) {
+                    println(statusCode)
+                    println(it.awaitBody<ErrorInfo>())
+                    throw AssertionError("failed with status code:$statusCode")
+                }
                 it.awaitBody<Document>()
             }
         println(response)
     }
 }
-
 
 fun defaultUrl(port: Int): String = "http://localhost:$port/api/"
