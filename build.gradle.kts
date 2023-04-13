@@ -40,15 +40,13 @@ kotlin {
             useJUnitPlatform()
         }
     }
-    js(IR) {
+    js {
         binaries.executable()
         browser {
             commonWebpackConfig {
                 cssSupport {
                     enabled.set(true)
                 }
-                outputFileName = "main.js"
-                outputPath = File(buildDir, "processedResources/spring/main/static")
             }
         }
     }
@@ -114,7 +112,7 @@ kotlin {
     }
 }
 
-tasks.named<Copy>("jvmProcessResources") {
-    val jsBrowserDistribution = tasks.named("jsBrowserDistribution")
-    from(jsBrowserDistribution)
-}
+//tasks.named<Copy>("jvmProcessResources") {
+//    val jsBrowserDistribution = tasks.named("jsBrowserDistribution")
+//    from(jsBrowserDistribution)
+//}
