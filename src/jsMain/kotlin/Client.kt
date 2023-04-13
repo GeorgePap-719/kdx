@@ -1,13 +1,5 @@
-import kotlinx.browser.document
-import react.create
-import react.dom.client.createRoot
+package keb.frontend
 
-fun main() {
-    val container = document.createElement("div")
-    document.body!!.appendChild(container)
+//fun main() {
 
-    val welcome = Welcome.create {
-        name = "Kotlin/JS"
-    }
-    createRoot(container).render(welcome)
-}
+//}

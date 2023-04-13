@@ -47,6 +47,8 @@ kotlin {
                 cssSupport {
                     enabled.set(true)
                 }
+                outputFileName = "main.js"
+                outputPath = File(buildDir, "processedResources/spring/main/static")
             }
         }
     }
