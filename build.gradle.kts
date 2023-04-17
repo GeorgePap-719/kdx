@@ -1,3 +1,13 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath("org.jetbrains.kotlinx:atomicfu-gradle-plugin:0.20.2")
+    }
+}
+
 plugins {
     kotlin("multiplatform") version "1.8.0"
     kotlin("plugin.serialization") version "1.8.10"
@@ -30,6 +40,8 @@ repositories {
 }
 
 kotlin {
+    apply(plugin = "kotlinx-atomicfu")
+
     jvm {
         apply(plugin = "org.springframework.boot")
         apply(plugin = "io.spring.dependency-management")

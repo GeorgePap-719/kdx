@@ -2,10 +2,6 @@ package keb.server
 
 import keb.Document
 import keb.Text
-import keb.server.entities.DocumentEntity
-import keb.server.entities.toDocument
-import keb.server.repositories.DocumentRepository
-import keb.server.routers.ErrorInfo
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -16,6 +12,10 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.http.MediaType
 import org.springframework.web.reactive.function.client.*
+import server.entities.DocumentEntity
+import server.entities.toDocument
+import server.repositories.DocumentRepository
+import server.routers.ErrorInfo
 import kotlin.test.assertEquals
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
