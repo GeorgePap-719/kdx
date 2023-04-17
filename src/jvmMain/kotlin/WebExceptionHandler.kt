@@ -12,12 +12,12 @@ import org.springframework.web.server.WebExceptionHandler
 import reactor.core.publisher.Mono
 
 /*
- The DefaultErrorWebExceptionHandler provided by Spring Boot for error handling is ordered at -1.
- The ResponseStatusExceptionHandler provided by Spring Framework is ordered at 0.
- So we add @Order(-2) on this exception handling component, to order it before the existing ones.
+ * The DefaultErrorWebExceptionHandler provided by Spring Boot for error handling is ordered at -1.
+ * The ResponseStatusExceptionHandler provided by Spring Framework is ordered at 0.
+ * So we add @Order(-2) on this exception handling component, to order it before the existing ones.
  */
-@Component
 @Order(-2)
+@Component
 class WebAppExceptionHandler : WebExceptionHandler {
     private val logger = logger()
 
@@ -45,7 +45,7 @@ class WebAppExceptionHandler : WebExceptionHandler {
                 }
             }
 
-            else -> Mono.error(ex) // default spring error response
+            else -> Mono.error<Void>(ex).also { logger.warn(ex.stackTraceToString()) } // default spring error response
         }
         response.awaitSingleOrNull()
     }
