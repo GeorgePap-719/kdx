@@ -33,34 +33,38 @@ open class BTreeNode(
 /**
  * Reads up to 32 chunks of characters and creates a node from them. The process is repeated until the end of [input].
  */
-private fun readChunks(input: String): List<BTreeNode> {
-    val len = input.length
-    var charCount = 0
-    val stringBuilder = StringBuilder()
-    for ((index, char) in input.withIndex()) {
-        if (charCount == CHUNK_SIZE) {
-            val string = stringBuilder.toString()
-            return listOf(BTreeNode(string.length, string)) + readChunks(
-                input.subSequence(index, input.length - 1).toString()
-            )
+private fun read32Chunks(input: String): List<BTreeNode> {
+    val chunks = readChunksOf64Chars(input)
+    return buildList {
+        chunks.chunked(CHUNK_NUMBER).forEach { chunks ->
+            val valueNode = chunks.joinToString(separator = "") { it }
+            add(BTreeNode(valueNode.length, valueNode))
         }
-        charCount++
     }
-    error("should not reach here")
 }
 
-// naive impl, we might stackOverFlow for big inputs
-private fun read32Chunks(input: String): List<BTreeNode> {
-    var charCount = 0
-    val stringBuilder = StringBuilder()
-    while (charCount != CHUNK_SIZE && charCount < input.length) {
-        stringBuilder.insert(charCount, input[charCount])
-        charCount++
+private fun readChunksOf64Chars(input: String): List<String> {
+    val chunks = mutableListOf<String>()
+    val len = input.length
+    var chunkCount = 0
+    val chunkBuilder = StringBuilder()
+    for (i in 0 until len) {
+        if (chunkCount == CHUNK_SIZE) {
+            val chunk = chunkBuilder.toString()
+            chunks.add(chunk)
+            chunkBuilder.clear()
+            chunkCount = 0
+        }
+        if (i == len - 2) {
+            chunkBuilder.append(input[i])
+            val chunk = chunkBuilder.toString()
+            chunks.add(chunk)
+            break
+        }
+        chunkBuilder.append(input[i])
+        chunkCount++
     }
-    val string = stringBuilder.toString()
-    val node = listOf(BTreeNode(string.length, string))
-    if (charCount + 1 >= input.length) return node
-    return node + read32Chunks(input.substring(charCount))
+    return chunks
 }
 
 const val CHUNK_NUMBER = 32

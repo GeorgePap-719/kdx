@@ -1,5 +1,6 @@
 package keb.server
 
+import keb.server.utils.logger
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import kotlinx.coroutines.reactor.mono
 import org.springframework.core.annotation.Order
@@ -9,7 +10,6 @@ import org.springframework.stereotype.Component
 import org.springframework.web.server.ServerWebExchange
 import org.springframework.web.server.WebExceptionHandler
 import reactor.core.publisher.Mono
-import server.utils.logger
 
 /*
  * The DefaultErrorWebExceptionHandler provided by Spring Boot for error handling is ordered at -1.
