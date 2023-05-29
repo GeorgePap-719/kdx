@@ -1,5 +1,8 @@
 package keb.ropes
 
+import keb.classSimpleName
+import keb.hexAddress
+
 open class Rope(value: String)
 
 // btree impl
@@ -27,15 +30,46 @@ open class BTreeNode(
 
     fun insert(value: String) {
         // To insert a new element, search the tree to find the leaf node where the new element should be added
+        read32Chunks(value)
     }
 
-    override fun toString(): String = "${this::class.simpleName}@${this}"
+    // ###################
+    // # Debug Functions #
+    // ###################
+
+    override fun toString(): String {
+        val sb = StringBuilder()
+        sb.append("$classSimpleName(")
+        sb.append("weight=$weight,")
+        if (isInternalNode) {
+            sb.append("children=$children,")
+            sb.append("isInternalNode=true")
+        } else {
+            sb.append("value=$value,")
+            sb.append("isLeafNode=true")
+        }
+        sb.append(")")
+        return sb.toString()
+    }
+
+    internal fun toStringDebug(): String {
+        val sb = StringBuilder()
+        sb.append("$classSimpleName@$hexAddress(")
+        sb.append("weight=$weight,")
+        if (isInternalNode) {
+            sb.append("isInternalNode=true")
+        } else {
+            sb.append("isLeafNode=true")
+        }
+        sb.append(")")
+        return sb.toString()
+    }
 }
 
 /**
  * Reads up to 32 chunks of characters and creates a node from them. The process is repeated until the end of [input].
  */
-fun read32Chunks(input: String): List<BTreeNode> {
+fun read32Chunks(input: String): List<BTreeNode> { //TODO: make it private?
     val chunks = readChunksOf64Chars(input)
     return buildList {
         chunks.chunked(CHUNK_NUMBER).forEach { chunks ->

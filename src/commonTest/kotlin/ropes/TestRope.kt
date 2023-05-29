@@ -10,11 +10,6 @@ class TestRope {
     }
 
     @Test
-    fun testChunked() {
-
-    }
-
-    @Test
     fun testReadChunks() {
         val string = buildString {
             for (i in 0 until 64 * 32) {
@@ -22,6 +17,11 @@ class TestRope {
             }
         }
         val nodes = read32Chunks(string)
-
+        println(nodes.isEmpty())
+        println(nodes.size)
+        nodes.forEach {
+            println(it.toStringDebug())
+        }
     }
+
 }
