@@ -1,21 +1,27 @@
 package ropes
 
+import keb.ropes.read32Chunks
 import kotlin.test.Test
 
 class TestRope {
 
     @Test
     fun testCreationOfRope() {
-
     }
 
     @Test
     fun testChunked() {
-        val stringList = buildList {
-            for (i in 0 until 65) {
-                add("$i")
+
+    }
+
+    @Test
+    fun testReadChunks() {
+        val string = buildString {
+            for (i in 0 until 64 * 32) {
+                append("$i")
             }
         }
-        println(stringList.chunked(32))
+        val nodes = read32Chunks(string)
+
     }
 }

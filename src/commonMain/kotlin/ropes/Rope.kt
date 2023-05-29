@@ -28,12 +28,14 @@ open class BTreeNode(
     fun insert(value: String) {
         // To insert a new element, search the tree to find the leaf node where the new element should be added
     }
+
+    override fun toString(): String = "${this::class.simpleName}@${this}"
 }
 
 /**
  * Reads up to 32 chunks of characters and creates a node from them. The process is repeated until the end of [input].
  */
-private fun read32Chunks(input: String): List<BTreeNode> {
+fun read32Chunks(input: String): List<BTreeNode> {
     val chunks = readChunksOf64Chars(input)
     return buildList {
         chunks.chunked(CHUNK_NUMBER).forEach { chunks ->
