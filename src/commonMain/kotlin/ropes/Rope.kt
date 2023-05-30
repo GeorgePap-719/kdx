@@ -20,8 +20,6 @@ open class BTreeNode(
      */
     val weight: Int,
     val value: String? = null,
-//    left: BTreeNode? = null,
-//    right: BTreeNode? = null,
     val children: MutableList<BTreeNode> = mutableListOf(), // maybe this should be read-only?
     private val isRoot: Boolean = false
 ) {
