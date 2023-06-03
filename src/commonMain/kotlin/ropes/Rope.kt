@@ -2,11 +2,48 @@ package keb.ropes
 
 import keb.classSimpleName
 import keb.hexAddress
+import kotlin.math.min
 
 open class Rope(value: String)
 
 // btree impl
 
+open class NodeInfo //TODO: impl later, but it seems it is not needed for btree impl
+
+private class BTreeNodeIterator(private val root: BTreeNode) : Iterator<String> {
+    private var index = 0
+    private var currentNode = root
+    private var size = 0
+
+    private val path: ResizeableArray<LeafNode> = ResizeableArray(1)
+
+    init {
+        fillPath()
+    }
+
+    private fun fillPath() {
+
+    }
+
+    override fun hasNext(): Boolean = index < size
+
+    override fun next(): String {
+        TODO("Not yet implemented")
+    }
+}
+
+private class SingleBTreeNodeIterator(root: BTreeNode) : Iterator<String> {
+    private val root = root as LeafNode
+    private var index = 0
+
+    override fun hasNext(): Boolean {
+        TODO("Not yet implemented")
+    }
+
+    override fun next(): String {
+        TODO("Not yet implemented")
+    }
+}
 
 /**
  * Represents a self-balancing tree node.
@@ -20,14 +57,39 @@ sealed class BTreeNode(
      * all the leaves in its left subtree.
      */
     val weight: Int,
-) {
+    /**
+     * The `height` is measured as the number of edges in the longest path from the root node to a leaf node. If this
+     * node is the `root`, then it represents the `height` of the entire tree. By extension, if this is a leaf node
+     * then, it should be `0`.
+     */
+    val height: Int, // will be used for re-balancing.
+) : Iterable<String> {
     abstract val isInternalNode: Boolean
     abstract val isLeafNode: Boolean
+
+    val isEmpty: Boolean = weight == 0
+//    val isRoot: Boolean = height == 0
 
     fun insert(value: String) {
         // To insert a new element, search the tree to find the leaf node where the new element should be added
         read32Chunks(value)
         //TODO
+    }
+
+    open operator fun get(index: Int): String {
+        // find leaf-node
+        when (this) {
+            is InternalNode -> TODO()
+            is LeafNode -> {
+//                if (isRoot) return this.value[index]
+
+            }
+        }
+        TODO()
+    }
+
+    override fun iterator(): Iterator<String> {
+        return BTreeNodeIterator(this)
     }
 
     // ###################
@@ -61,6 +123,78 @@ sealed class BTreeNode(
         sb.append(")")
         return sb.toString()
     }
+}
+
+//fun bTreeOf(value: String): BTreeNode {
+//    require(value.isNotBlank()) { "input string cannot be blank" }
+//    require(value.isNotEmpty()) { "input string cannot be empty" }
+//    return BTreeNode(value.length, value)
+//}
+
+// some questions
+// 1. how we define how much of a string each node should hold?
+// 2. should we ever edit a node? --> probably not, better to create a new one.
+
+/**
+ * Represents a leaf-node in a [B-tree][https://en.wikipedia.org/wiki/B-tree#Notes].
+ */
+class LeafNode(val value: String) : BTreeNode(value.length, 0) {
+    override val isInternalNode: Boolean = false
+    override val isLeafNode: Boolean = true
+
+    val length: Int = value.length
+
+
+    // Returns BTreeNode
+    fun pushAndMaybeSplit(other: String, index: Int): BTreeNode {
+//        if (stringFits(other)) { // no-splitting
+//            return LeafNode(value + other, height)
+//        } else { // splits
+//
+//        }
+        TODO()
+    }
+
+//    override operator fun get(index: Int): Char = value[index]
+
+    //TODO: Future improvement (prob) Try to split at newline boundary (leaning left), if not, then split at codepoint.
+    private fun split(other: String) {
+        if (isRoot) {
+            // find leaf to split
+            val splitPoint = min(MAX_SIZE_LEAF, length)
+            val stringToBeSplit = value + other
+            val leftString = stringToBeSplit.substring(0 until splitPoint)
+            val rightString = stringToBeSplit.substring(splitPoint)
+//            val leftNode = LeafNode()
+//            val newRoot = InternalNode(leftString.length, listOf(LeafNode(leftString, newRoot)))
+            //TODO: builder
+//            buildList<> { }
+        } else { // slow-path
+
+        }
+    }
+
+    //TODO: better name?
+    private fun stringFits(value: String): Boolean = length + value.length < MAX_SIZE_LEAF
+}
+
+private const val MIN_CHILDREN = 4
+private const val MAX_CHILDREN = 8
+
+private const val MAX_SIZE_LEAF = 2048
+
+/**
+ * Represents an internal-node in a [B-tree][https://en.wikipedia.org/wiki/B-tree#Notes].
+ */
+// Notes:
+// Internal node does not have insert operation().
+open class InternalNode(
+    weight: Int,
+    height: Int,
+    val children: List<BTreeNode> = listOf(),
+) : BTreeNode(weight, height) {
+    override val isInternalNode: Boolean = true
+    override val isLeafNode: Boolean = false
 }
 
 /**
@@ -103,58 +237,3 @@ private fun readChunksOf64Chars(input: String): List<String> {
 
 const val CHUNK_NUMBER = 32
 const val CHUNK_SIZE = 64
-
-//fun bTreeOf(value: String): BTreeNode {
-//    require(value.isNotBlank()) { "input string cannot be blank" }
-//    require(value.isNotEmpty()) { "input string cannot be empty" }
-//    return BTreeNode(value.length, value)
-//}
-
-// some questions
-// 1. how we define how much of a string each node should hold?
-// 2. should we ever edit a node? --> probably not, better to create a new one.
-
-/**
- * Represents a leaf-node in a [B-tree][https://en.wikipedia.org/wiki/B-tree#Notes].
- */
-class LeafNode(weight: Int, private val value: String) : BTreeNode(weight) {
-    override val isInternalNode: Boolean = false
-    override val isLeafNode: Boolean = true
-
-    val length: Int = value.length
-
-    // Returns BTreeNode, in case splitting happened, else null (node has enough capacity).
-    fun tryPushAndMaybeSplit(other: LeafNode): BTreeNode? {
-        TODO("Not yet impl")
-    }
-
-    operator fun plus(other: LeafNode): LeafNode {
-        TODO("Not yet impl")
-    }
-
-    operator fun minus(other: LeafNode): LeafNode {
-        TODO("Not yet impl")
-    }
-}
-
-private const val MIN_CHILDREN = 4
-private const val MAX_CHILDREN = 8
-
-
-/**
- * Represents an internal-node in a [B-tree][https://en.wikipedia.org/wiki/B-tree#Notes].
- */
-// Notes:
-// Internal node does not have insert operation().
-class InternalNode(
-    weight: Int,
-    val children: List<BTreeNode> = listOf()
-) : BTreeNode(weight) {
-    override val isInternalNode: Boolean = true
-    override val isLeafNode: Boolean = false
-}
-
-
-
-
-

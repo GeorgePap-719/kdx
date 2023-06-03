@@ -1,5 +1,6 @@
 package ropes
 
+import keb.ropes.InternalNode
 import keb.ropes.read32Chunks
 import kotlin.test.Test
 
@@ -7,6 +8,10 @@ class TestRope {
 
     @Test
     fun testCreationOfRope() {
+        val root = InternalNode(0, 0)
+        for (node in root) {
+
+        }
     }
 
     @Test
