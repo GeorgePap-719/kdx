@@ -48,19 +48,9 @@ sealed class BTreeNode(
         val newLeaf = LeafNode(targetNode.value + value)
         // find parent node for targetNode
         // case: no-split
-        if (this === targetNode) return newLeaf // this node is-root
-
-        val parent = findParentNode(targetNode)
+        val parent = getParentOrNull(targetNode) ?: return newLeaf // this node is-root
         // change with copy-on-write:
-        val newChildren = buildList { // replaces newLeaf in the same position
-            for (node in parent.children) {
-                if (node === targetNode) {
-                    add(newLeaf)
-                } else {
-                    add(node)
-                }
-            }
-        }
+        val newChildren = parent.children.copyOnWrite(targetNode, newLeaf)
         val newParent = InternalNode(parent.weight, parent.height, newChildren)
         // copy-on-write newParent
         return copyOnWriteNewTreeNoSplit(parent, newParent)
@@ -69,33 +59,7 @@ sealed class BTreeNode(
     private fun copyOnWriteNewTreeNoSplit(oldParent: InternalNode, newParent: InternalNode): InternalNode {
         val root = this as InternalNode // we take for granted that this node is not a leaf,
         // since we check it in previous steps.
-        val children = copyOnWriteChildren(oldParent, newParent, root)
-        return InternalNode(this.weight, this.height, children)
-    }
-
-    private fun copyOnWriteChildren(
-        oldParent: InternalNode,
-        newParent: InternalNode,
-        curRoot: InternalNode,
-        newNode: InternalNode
-    ): InternalNode {
-        // steps:
-        // 1 -> begin search from root
-        // 2 -> find old ref of oldParent
-        // 3 -> start replacing
-        // 4 -> until root.
-        var cur: InternalNode? = null
-        var prev = curRoot
-
-        for (node in curRoot.children) {
-            if (node === oldParent) {
-                cur = node
-                break
-            }
-        }
-        // oldParent is not in direct children
-        if (cur == null) return copyOnWriteChildren(oldParent, newParent, curRoot, newNode)
-        val newPrev = InternalNode(prev.weight, prev.height)
+        return copyOnWriteNewTreeNoSplitImpl(root, oldParent, newParent)
     }
 
     // steps:
@@ -103,15 +67,7 @@ sealed class BTreeNode(
     // 2 -> find old ref of oldParent
     // 3 -> start replacing
     // 4 -> until root.
-    private fun newCp(
-        oldParent: InternalNode,
-        newParent: InternalNode
-    ): InternalNode {
-        val root = this as InternalNode
-        return newCpChRec(root, oldParent, newParent)
-    }
-
-    private fun newCpChRec(
+    private fun copyOnWriteNewTreeNoSplitImpl(
         curParent: InternalNode,
         oldParent: InternalNode,
         newParent: InternalNode
@@ -124,14 +80,15 @@ sealed class BTreeNode(
                         //a bit bad naming
                         val newCurParent = InternalNode(curParent.weight, curParent.height, newChildren)
                         val parent = getParentOrNull(newCurParent) ?: return newCurParent // current node is-root
-                        return newCpChRec(parent, curParent, newCurParent)
+                        return copyOnWriteNewTreeNoSplitImpl(parent, curParent, newCurParent)
                     }
-                    return newCpChRec(node, oldParent, newParent)
+                    return copyOnWriteNewTreeNoSplitImpl(node, oldParent, newParent)
                 }
 
                 is LeafNode -> continue
             }
         }
+        error("cannot reach here..") //TODO: refactor this, so it won't be needed
     }
 
     /**
@@ -155,10 +112,6 @@ sealed class BTreeNode(
             }
         }
         return null
-    }
-
-    private fun findParentNode(child: BTreeNode): InternalNode {
-        return getParentOrNull(child)!! //TODO: inline it
     }
 
     /**
