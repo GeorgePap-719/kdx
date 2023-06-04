@@ -108,32 +108,23 @@ sealed class BTreeNode(
         newParent: InternalNode
     ): InternalNode {
         val root = this as InternalNode
-
         return newCpChRec(root, oldParent, newParent)
     }
 
     private fun newCpChRec(
         curParent: InternalNode,
         oldParent: InternalNode,
-        newParent: InternalNode,
-        result: InternalNode? = null
+        newParent: InternalNode
     ): InternalNode {
         for (node in curParent.children) {
             when (node) {
                 is InternalNode -> {
                     if (node === oldParent) {
-                        val newChildren = buildList {
-                            for (btnode in curParent.children) {
-                                if (btnode === node) {
-                                    add(newParent)
-                                } else {
-                                    add(btnode)
-                                }
-                            }
-                        }
+                        val newChildren = curParent.children.copyOnWrite(node, newParent)
                         //a bit bad naming
                         val newCurParent = InternalNode(curParent.weight, curParent.height, newChildren)
-                        return newCpChRec()
+                        val parent = getParentOrNull(newCurParent) ?: return newCurParent // current node is-root
+                        return newCpChRec(parent, curParent, newCurParent)
                     }
                     return newCpChRec(node, oldParent, newParent)
                 }
@@ -149,15 +140,15 @@ sealed class BTreeNode(
     private fun getParentOrNull(child: BTreeNode): InternalNode? {
         if (child === this) return null
         val root = this as InternalNode
-        return getParentOrNullImpl(child, root)
+        return tailrecGetParentOrNull(child, root)
     }
 
-    private fun getParentOrNullImpl(child: BTreeNode, curParent: InternalNode): InternalNode? {
+    private tailrec fun tailrecGetParentOrNull(child: BTreeNode, curParent: InternalNode): InternalNode? {
         for (node in curParent.children) {
             when (node) {
                 is InternalNode -> {
                     if (node === child) return curParent
-                    getParentOrNullImpl(child, node)
+                    return tailrecGetParentOrNull(child, node)
                 }
 
                 is LeafNode -> if (node === child) return curParent
@@ -167,7 +158,7 @@ sealed class BTreeNode(
     }
 
     private fun findParentNode(child: BTreeNode): InternalNode {
-        TODO()
+        return getParentOrNull(child)!! //TODO: inline it
     }
 
     /**
@@ -336,6 +327,18 @@ open class InternalNode(
 ) : BTreeNode(weight, height) {
     override val isInternalNode: Boolean = true
     override val isLeafNode: Boolean = false
+}
+
+fun List<BTreeNode>.copyOnWrite(oldNode: BTreeNode, newNode: BTreeNode): List<BTreeNode> {
+    return buildList {
+        for (node in this) {
+            if (node === oldNode) {
+                add(newNode)
+            } else {
+                add(node)
+            }
+        }
+    }
 }
 
 /**
