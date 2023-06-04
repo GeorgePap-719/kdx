@@ -40,10 +40,36 @@ sealed class BTreeNode(
         read32Chunks(value) //TODO: this is only for bulk reading
     }
 
+    open operator fun get(index: Int): LeafNode? {
+        if (index < 0) return null
+        return LazyPathFinder(this, index).getOrNull()
+    }
+
+    private class LazyPathFinder(var curNode: BTreeNode, val index: Int) {
+        var curIndex = 0
+
+        fun getOrNull(): LeafNode? {
+            if (curIndex > index) return null
+            when (curNode) {
+                is InternalNode -> {
+                    for (node in (curNode as InternalNode).children) {
+                        curNode = node
+                        return getOrNull() ?: continue
+                    }
+                }
+
+                is LeafNode -> {
+                    if (curIndex == index) return curNode as LeafNode
+                    curIndex++
+                }
+            }
+            return null
+        }
+    }
+
     fun find(value: String): LeafNode? {
         val len = value.length
         if (len > weight) return null
-
         return when (this) {
             is InternalNode -> children.find(value, len)
             is LeafNode -> {
@@ -219,61 +245,3 @@ private fun readChunksOf64Chars(input: String): List<String> {
 
 const val CHUNK_NUMBER = 32
 const val CHUNK_SIZE = 64
-
-private class BTreeNodeIterator(root: BTreeNode) : Iterator<LeafNode> {
-    private var index = 0
-    private var currentNode = root
-    private val size: Int
-
-    private val path: ResizeableArray<LeafNode> = ResizeableArray(1)
-
-    init {
-        fillPath()
-        size = index + 1
-        index = 0
-    }
-
-    private fun fillPath() {
-        when (currentNode) {
-            is InternalNode -> {
-                val cur = currentNode as InternalNode
-                traverseInOrder(cur.children)
-            }
-
-            is LeafNode -> path[index++] = currentNode as LeafNode
-        }
-    }
-
-    private fun traverseInOrder(nodes: List<BTreeNode>) {
-        for (node in nodes) {
-            when (node) {
-                is InternalNode -> {
-                    val cur = currentNode as InternalNode
-                    traverseInOrder(cur.children)
-                }
-
-                is LeafNode -> path[index++] = currentNode as LeafNode
-            }
-        }
-    }
-
-    override fun hasNext(): Boolean = index < size
-
-    override fun next(): LeafNode {
-        if (!hasNext()) throw NoSuchElementException()
-        return path[index++]!!
-    }
-}
-
-private class SingleBTreeNodeIterator(private val root: LeafNode) : Iterator<LeafNode> {
-    private var index = 0
-    private val size = 1
-
-    override fun hasNext(): Boolean = index < size
-
-    override fun next(): LeafNode {
-        if (!hasNext()) throw NoSuchElementException()
-        index++
-        return root
-    }
-}
