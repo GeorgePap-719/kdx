@@ -35,11 +35,144 @@ sealed class BTreeNode(
     val isEmpty: Boolean = weight == 0
 //    val isRoot: Boolean = height == 0
 
-    fun insert(value: String) {
+    fun insert(value: String, index: Int): BTreeNode {
         // To insert a new element, search the tree to find the leaf node where the new element should be added
-        read32Chunks(value) //TODO: this is only for bulk reading
+        // TODO: handle case when insertion is in root separately? Note: wont be a regular case tho.
+        val targetNode = this[index]
+        if (targetNode == null) {
+            TODO() // append
+        }
+        val shouldSplit = targetNode.value.length + value.length > MAX_SIZE_LEAF
+        if (shouldSplit) TODO("call split()")
+
+        val newLeaf = LeafNode(targetNode.value + value)
+        // find parent node for targetNode
+        // case: no-split
+        if (this === targetNode) return newLeaf // this node is-root
+
+        val parent = findParentNode(targetNode)
+        // change with copy-on-write:
+        val newChildren = buildList { // replaces newLeaf in the same position
+            for (node in parent.children) {
+                if (node === targetNode) {
+                    add(newLeaf)
+                } else {
+                    add(node)
+                }
+            }
+        }
+        val newParent = InternalNode(parent.weight, parent.height, newChildren)
+        // copy-on-write newParent
+        return copyOnWriteNewTreeNoSplit(parent, newParent)
     }
 
+    private fun copyOnWriteNewTreeNoSplit(oldParent: InternalNode, newParent: InternalNode): InternalNode {
+        val root = this as InternalNode // we take for granted that this node is not a leaf,
+        // since we check it in previous steps.
+        val children = copyOnWriteChildren(oldParent, newParent, root)
+        return InternalNode(this.weight, this.height, children)
+    }
+
+    private fun copyOnWriteChildren(
+        oldParent: InternalNode,
+        newParent: InternalNode,
+        curRoot: InternalNode,
+        newNode: InternalNode
+    ): InternalNode {
+        // steps:
+        // 1 -> begin search from root
+        // 2 -> find old ref of oldParent
+        // 3 -> start replacing
+        // 4 -> until root.
+        var cur: InternalNode? = null
+        var prev = curRoot
+
+        for (node in curRoot.children) {
+            if (node === oldParent) {
+                cur = node
+                break
+            }
+        }
+        // oldParent is not in direct children
+        if (cur == null) return copyOnWriteChildren(oldParent, newParent, curRoot, newNode)
+        val newPrev = InternalNode(prev.weight, prev.height)
+    }
+
+    // steps:
+    // 1 -> begin search from root
+    // 2 -> find old ref of oldParent
+    // 3 -> start replacing
+    // 4 -> until root.
+    private fun newCp(
+        oldParent: InternalNode,
+        newParent: InternalNode
+    ): InternalNode {
+        val root = this as InternalNode
+
+        return newCpChRec(root, oldParent, newParent)
+    }
+
+    private fun newCpChRec(
+        curParent: InternalNode,
+        oldParent: InternalNode,
+        newParent: InternalNode,
+        result: InternalNode? = null
+    ): InternalNode {
+        for (node in curParent.children) {
+            when (node) {
+                is InternalNode -> {
+                    if (node === oldParent) {
+                        val newChildren = buildList {
+                            for (btnode in curParent.children) {
+                                if (btnode === node) {
+                                    add(newParent)
+                                } else {
+                                    add(btnode)
+                                }
+                            }
+                        }
+                        //a bit bad naming
+                        val newCurParent = InternalNode(curParent.weight, curParent.height, newChildren)
+                        return newCpChRec()
+                    }
+                    return newCpChRec(node, oldParent, newParent)
+                }
+
+                is LeafNode -> continue
+            }
+        }
+    }
+
+    /**
+     * Returns the parent node of [child], or `null` in case this [child] is the root node.
+     */
+    private fun getParentOrNull(child: BTreeNode): InternalNode? {
+        if (child === this) return null
+        val root = this as InternalNode
+        return getParentOrNullImpl(child, root)
+    }
+
+    private fun getParentOrNullImpl(child: BTreeNode, curParent: InternalNode): InternalNode? {
+        for (node in curParent.children) {
+            when (node) {
+                is InternalNode -> {
+                    if (node === child) return curParent
+                    getParentOrNullImpl(child, node)
+                }
+
+                is LeafNode -> if (node === child) return curParent
+            }
+        }
+        return null
+    }
+
+    private fun findParentNode(child: BTreeNode): InternalNode {
+        TODO()
+    }
+
+    /**
+     * Returns the [LeafNode] at the given [index] or `null` if the [index] is out of bounds of this tree.
+     */
     open operator fun get(index: Int): LeafNode? {
         if (index < 0) return null
         return LazyPathFinder(this, index).getOrNull()
@@ -63,7 +196,7 @@ sealed class BTreeNode(
                     curIndex++
                 }
             }
-            return null
+            return null // out of bounds
         }
     }
 
@@ -208,6 +341,7 @@ open class InternalNode(
 /**
  * Reads up to 32 chunks of characters and creates a node from them. The process is repeated until the end of [input].
  */
+//TODO: this is only for bulk reading
 fun read32Chunks(input: String): List<BTreeNode> { //TODO: make it private?
     val chunks = readChunksOf64Chars(input)
     return buildList {
