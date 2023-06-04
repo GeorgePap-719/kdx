@@ -10,38 +10,61 @@ open class Rope(value: String)
 
 open class NodeInfo //TODO: impl later, but it seems it is not needed for btree impl
 
-private class BTreeNodeIterator(private val root: BTreeNode) : Iterator<String> {
+private class BTreeNodeIterator(root: BTreeNode) : Iterator<String> {
     private var index = 0
     private var currentNode = root
-    private var size = 0
+    private val size: Int
 
     private val path: ResizeableArray<LeafNode> = ResizeableArray(1)
 
     init {
         fillPath()
+        size = index + 1
+        index = 0
     }
 
     private fun fillPath() {
+        when (currentNode) {
+            is InternalNode -> {
+                val cur = currentNode as InternalNode
+                traverseInOrder(cur.children)
+            }
 
+            is LeafNode -> path[index++] = currentNode as LeafNode
+        }
+    }
+
+    private fun traverseInOrder(nodes: List<BTreeNode>) {
+        for (node in nodes) {
+            when (node) {
+                is InternalNode -> {
+                    val cur = currentNode as InternalNode
+                    traverseInOrder(cur.children)
+                }
+
+                is LeafNode -> path[index++] = currentNode as LeafNode
+            }
+        }
     }
 
     override fun hasNext(): Boolean = index < size
 
     override fun next(): String {
-        TODO("Not yet implemented")
+        if (!hasNext()) throw NoSuchElementException()
+        return path[index++]!!.value
     }
 }
 
-private class SingleBTreeNodeIterator(root: BTreeNode) : Iterator<String> {
-    private val root = root as LeafNode
+private class SingleBTreeNodeIterator(private val root: LeafNode) : Iterator<String> {
     private var index = 0
+    private val size = 1
 
-    override fun hasNext(): Boolean {
-        TODO("Not yet implemented")
-    }
+    override fun hasNext(): Boolean = index < size
 
     override fun next(): String {
-        TODO("Not yet implemented")
+        if (!hasNext()) throw NoSuchElementException()
+        index++
+        return root.value
     }
 }
 
@@ -136,7 +159,7 @@ sealed class BTreeNode(
 // 2. should we ever edit a node? --> probably not, better to create a new one.
 
 /**
- * Represents a leaf-node in a [B-tree][https://en.wikipedia.org/wiki/B-tree#Notes].
+ * Represents a leaf-node in a [B-tree](https://en.wikipedia.org/wiki/B-tree#Notes).
  */
 class LeafNode(val value: String) : BTreeNode(value.length, 0) {
     override val isInternalNode: Boolean = false
@@ -159,7 +182,7 @@ class LeafNode(val value: String) : BTreeNode(value.length, 0) {
 
     //TODO: Future improvement (prob) Try to split at newline boundary (leaning left), if not, then split at codepoint.
     private fun split(other: String) {
-        if (isRoot) {
+        if (true) { // isRoot
             // find leaf to split
             val splitPoint = min(MAX_SIZE_LEAF, length)
             val stringToBeSplit = value + other
@@ -184,7 +207,7 @@ private const val MAX_CHILDREN = 8
 private const val MAX_SIZE_LEAF = 2048
 
 /**
- * Represents an internal-node in a [B-tree][https://en.wikipedia.org/wiki/B-tree#Notes].
+ * Represents an internal-node in a [B-tree](https://en.wikipedia.org/wiki/B-tree#Notes).
  */
 // Notes:
 // Internal node does not have insert operation().
