@@ -10,64 +10,6 @@ open class Rope(value: String)
 
 open class NodeInfo //TODO: impl later, but it seems it is not needed for btree impl
 
-private class BTreeNodeIterator(root: BTreeNode) : Iterator<String> {
-    private var index = 0
-    private var currentNode = root
-    private val size: Int
-
-    private val path: ResizeableArray<LeafNode> = ResizeableArray(1)
-
-    init {
-        fillPath()
-        size = index + 1
-        index = 0
-    }
-
-    private fun fillPath() {
-        when (currentNode) {
-            is InternalNode -> {
-                val cur = currentNode as InternalNode
-                traverseInOrder(cur.children)
-            }
-
-            is LeafNode -> path[index++] = currentNode as LeafNode
-        }
-    }
-
-    private fun traverseInOrder(nodes: List<BTreeNode>) {
-        for (node in nodes) {
-            when (node) {
-                is InternalNode -> {
-                    val cur = currentNode as InternalNode
-                    traverseInOrder(cur.children)
-                }
-
-                is LeafNode -> path[index++] = currentNode as LeafNode
-            }
-        }
-    }
-
-    override fun hasNext(): Boolean = index < size
-
-    override fun next(): String {
-        if (!hasNext()) throw NoSuchElementException()
-        return path[index++]!!.value
-    }
-}
-
-private class SingleBTreeNodeIterator(private val root: LeafNode) : Iterator<String> {
-    private var index = 0
-    private val size = 1
-
-    override fun hasNext(): Boolean = index < size
-
-    override fun next(): String {
-        if (!hasNext()) throw NoSuchElementException()
-        index++
-        return root.value
-    }
-}
-
 /**
  * Represents a self-balancing tree node.
  */
@@ -86,7 +28,7 @@ sealed class BTreeNode(
      * then, it should be `0`.
      */
     val height: Int, // will be used for re-balancing.
-) : Iterable<String> {
+) : Iterable<LeafNode> {
     abstract val isInternalNode: Boolean
     abstract val isLeafNode: Boolean
 
@@ -95,24 +37,41 @@ sealed class BTreeNode(
 
     fun insert(value: String) {
         // To insert a new element, search the tree to find the leaf node where the new element should be added
-        read32Chunks(value)
-        //TODO
+        read32Chunks(value) //TODO: this is only for bulk reading
     }
 
-    open operator fun get(index: Int): String {
-        // find leaf-node
-        when (this) {
-            is InternalNode -> TODO()
-            is LeafNode -> {
-//                if (isRoot) return this.value[index]
+    fun find(value: String): LeafNode? {
+        val len = value.length
+        if (len > weight) return null
 
+        return when (this) {
+            is InternalNode -> children.find(value, len)
+            is LeafNode -> {
+                if (this.value.contains(value)) {
+                    this
+                } else {
+                    null
+                }
             }
         }
-        TODO()
     }
 
-    override fun iterator(): Iterator<String> {
-        return BTreeNodeIterator(this)
+    private fun List<BTreeNode>.find(value: String, len: Int): LeafNode? {
+        for (node in this) {
+            if (len > weight) continue
+            when (node) {
+                is InternalNode -> node.children.find(value, len)
+                is LeafNode -> if (node.value.contains(value)) return node
+            }
+        }
+        return null
+    }
+
+    override fun iterator(): Iterator<LeafNode> {
+        return when (this) {
+            is InternalNode -> BTreeNodeIterator(this)
+            is LeafNode -> SingleBTreeNodeIterator(this)
+        }
     }
 
     // ###################
@@ -260,3 +219,61 @@ private fun readChunksOf64Chars(input: String): List<String> {
 
 const val CHUNK_NUMBER = 32
 const val CHUNK_SIZE = 64
+
+private class BTreeNodeIterator(root: BTreeNode) : Iterator<LeafNode> {
+    private var index = 0
+    private var currentNode = root
+    private val size: Int
+
+    private val path: ResizeableArray<LeafNode> = ResizeableArray(1)
+
+    init {
+        fillPath()
+        size = index + 1
+        index = 0
+    }
+
+    private fun fillPath() {
+        when (currentNode) {
+            is InternalNode -> {
+                val cur = currentNode as InternalNode
+                traverseInOrder(cur.children)
+            }
+
+            is LeafNode -> path[index++] = currentNode as LeafNode
+        }
+    }
+
+    private fun traverseInOrder(nodes: List<BTreeNode>) {
+        for (node in nodes) {
+            when (node) {
+                is InternalNode -> {
+                    val cur = currentNode as InternalNode
+                    traverseInOrder(cur.children)
+                }
+
+                is LeafNode -> path[index++] = currentNode as LeafNode
+            }
+        }
+    }
+
+    override fun hasNext(): Boolean = index < size
+
+    override fun next(): LeafNode {
+        if (!hasNext()) throw NoSuchElementException()
+        return path[index++]!!
+    }
+}
+
+private class SingleBTreeNodeIterator(private val root: LeafNode) : Iterator<LeafNode> {
+    private var index = 0
+    private val size = 1
+
+    override fun hasNext(): Boolean = index < size
+
+    override fun next(): LeafNode {
+        if (!hasNext()) throw NoSuchElementException()
+        index++
+        return root
+    }
+}
