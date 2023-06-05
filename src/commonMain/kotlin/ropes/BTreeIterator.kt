@@ -9,30 +9,22 @@ class BTreeNodeIterator(root: BTreeNode) : Iterator<LeafNode> {
 
     init {
         fillPath()
-        size = index + 1
+        size = index // do not + 1 index, since in last insertion we always inc the index ([index++])
         index = 0
     }
 
     private fun fillPath() {
-        when (currentNode) {
-            is InternalNode -> {
-                val cur = currentNode as InternalNode
-                traverseInOrder(cur.children)
-            }
-
-            is LeafNode -> path[index++] = currentNode as LeafNode
+        when (val curNode = currentNode) {
+            is InternalNode -> traverseInOrder(curNode.children)
+            is LeafNode -> path[index++] = curNode
         }
     }
 
     private fun traverseInOrder(nodes: List<BTreeNode>) {
         for (node in nodes) {
             when (node) {
-                is InternalNode -> {
-                    val cur = currentNode as InternalNode
-                    traverseInOrder(cur.children)
-                }
-
-                is LeafNode -> path[index++] = currentNode as LeafNode
+                is InternalNode -> traverseInOrder(node.children)
+                is LeafNode -> path[index++] = node
             }
         }
     }

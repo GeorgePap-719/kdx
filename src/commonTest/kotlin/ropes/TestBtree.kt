@@ -42,14 +42,21 @@ class TestBtree {
 
     @Test
     fun testBalancing() {
-        val string = buildList {
+        val nodes = buildList {
             for (i in 0 until 64 * 32) {
                 add(LeafNode("$i"))
             }
         }
-        val root = merge(string)
-        println(root.toStringDebug())
-        println(root.isBalanced())
+        val root = createInvalidParent(nodes)
+
+        val balancedRoot = root.rebalance()
+        println(balancedRoot.isBalanced())
+        println(balancedRoot.toStringDebug())
     }
 
+    private fun createInvalidParent(nodes: List<BTreeNode>): InternalNode {
+        val weight = nodes.first().height
+        val height = nodes.maxOf { it.height } + 1
+        return InternalNode(weight, height, nodes)
+    }
 }
