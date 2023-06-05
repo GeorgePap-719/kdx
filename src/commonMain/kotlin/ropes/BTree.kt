@@ -312,26 +312,26 @@ fun merge(nodes: List<BTreeNode>): BTreeNode {
  * where we trust the validity of nodes.
  */
 private fun unsafeMerge(nodes: List<BTreeNode>): BTreeNode {
-    if (nodes.size < MAX_CHILDREN) return unbalancedMerge(nodes)
+    if (nodes.size < MAX_CHILDREN) return createParent(nodes)
     val leftList = nodes.subList(0, MAX_CHILDREN)
     val rightList = nodes.subList(MAX_CHILDREN, nodes.size)
-    val leftParent = unbalancedMerge(leftList)
+    val leftParent = createParent(leftList)
     if (rightList.size < MAX_CHILDREN) {
-        val rightParent = unbalancedMerge(rightList)
-        return unbalancedMerge(leftParent, rightParent)
+        val rightParent = createParent(rightList)
+        return createParent(leftParent, rightParent)
     }
     val rightParent = unsafeMerge(rightList)
-    return unbalancedMerge(leftParent, rightParent)
+    return createParent(leftParent, rightParent)
 }
 
-private fun unbalancedMerge(left: BTreeNode, right: BTreeNode): InternalNode {
-    return unbalancedMerge(listOf(left, right))
+private fun createParent(left: BTreeNode, right: BTreeNode): InternalNode {
+    return createParent(listOf(left, right))
 }
 
 /**
  * Creates a parent for [nodes], without checking if satisfies the requirements for a legal btree.
  */
-private fun unbalancedMerge(nodes: List<BTreeNode>): InternalNode {
+private fun createParent(nodes: List<BTreeNode>): InternalNode {
     val weight = nodes.first().computeWeightInLeftSubtree()
     val height = nodes.maxOf { it.height } + 1
     return InternalNode(weight, height, nodes)
