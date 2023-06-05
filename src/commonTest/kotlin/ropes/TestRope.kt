@@ -1,6 +1,8 @@
 package ropes
 
+import keb.ropes.BTreeNode
 import keb.ropes.InternalNode
+import keb.ropes.LeafNode
 import keb.ropes.read32Chunks
 import kotlin.test.Test
 
@@ -31,7 +33,8 @@ class TestRope {
 
     @Test
     fun testSplit() {
-
+        val childs: List<BTreeNode> = listOf(LeafNode("1"), LeafNode("1"), LeafNode("1"))
+        println(childs.sumOf { it.weight })
     }
 
 }

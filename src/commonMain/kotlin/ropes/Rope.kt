@@ -65,9 +65,10 @@ private fun InternalNode.splitAndAdd(child: BTreeNode, index: Int? = null): Inte
         leftmostChildrenInLeftNodeChildren.height + 1,
         rightNodeChildren
     )
-    val root = InternalNode(leftParent.children.computeWeight(), leftParent.height + 1, leftParent + rightParent)
-    if (rightParent.children.size > MAX_CHILDREN) return root.splitAndAdd()
-    return root
+//    val root = InternalNode(leftParent.children.computeWeight(), leftParent.height + 1, leftParent + rightParent)
+//    if (rightParent.children.size > MAX_CHILDREN) return root.splitAndAdd() //TODO
+//    return root
+    TODO()
 }
 
 private fun InternalNode.ifNeedSplitAndMerge(): InternalNode {
@@ -82,33 +83,45 @@ private fun InternalNode.ifNeedSplitAndMerge(): InternalNode {
             is LeafNode -> continue
         }
     }
+    TODO()
 }
 
-// does not check for any balancing requirements.
-//TODO: not right impl
-private fun unsafeMergeNodes(nodes: List<BTreeNode>): InternalNode {
-    if (nodes.size > MAX_CHILDREN) {
-        val leftList = nodes.subList(0, MAX_CHILDREN)
-        val rightList = nodes.subList(MAX_CHILDREN, nodes.size)
-        val rightParent = unsafeMergeNodes(rightList)
-        val leftParent = InternalNode(leftList.computeWeight(), leftList.first().height, leftList)
-        val newRoot = InternalNode(leftParent.children.computeWeight(), leftParent.height + 1, leftParent + rightParent)
-        return newRoot
+//TODO: document it
+private fun legalAndUnbalancedMerge(nodes: List<BTreeNode>): InternalNode {
+    if (nodes.size < MAX_CHILDREN) return unbalancedMerge(nodes)
+
+    val leftList = nodes.subList(0, MAX_CHILDREN)
+    val rightList = nodes.subList(MAX_CHILDREN, nodes.size)
+
+    val leftParent = unbalancedMerge(leftList)
+
+    if (rightList.size < MAX_CHILDREN) {
+        val rightParent = unbalancedMerge(rightList)
+        return unbalancedMerge(leftParent + rightParent)
     }
 
-    return InternalNode(nodes.computeWeight(), nodes.first().height + 1, nodes)
+    val legalrec = legalAndUnbalancedMerge(rightList)
+
+    return unbalancedMerge(leftParent + legalrec)
 }
 
-private fun InternalNode.isLegalChild(): Boolean {
-    return children.size <= MAX_CHILDREN
+// May return an unbalanced tree
+private fun unbalancedMerge(nodes: List<BTreeNode>): InternalNode {
+    val weight = nodes.first().computeWeightInLeftSubtree()
+    val height = nodes.maxOf { it.height } + 1
+    return InternalNode(weight, height, nodes)
 }
 
+//TODO: this can probably be improved, by not searching all leaves
+private fun BTreeNode.computeWeightInLeftSubtree(): Int {
+    return when (this) {
+        is InternalNode -> {
+            val leftmost = this.children.first()
+            return leftmost.sumOf { it.weight } // sumOf weight in leaves
+        }
 
-//TODO: compute proper weight here, so we wont come back here again.
-private fun List<BTreeNode>.computeWeight(): Int {
-    var weight = 0
-    for (node in this) weight += node.weight
-    return weight
+        is LeafNode -> this.weight
+    }
 }
 
 /**
