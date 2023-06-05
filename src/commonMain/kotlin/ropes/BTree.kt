@@ -197,30 +197,38 @@ sealed class BTreeNode(
     // # Debug Functions #
     // ###################
 
-//    override fun toString(): String {
-//        val sb = StringBuilder()
-//        sb.append("$classSimpleName(")
-//        sb.append("weight=$weight,")
-//        if (isInternalNode) {
-//            sb.append("children=$children,")
-//            sb.append("isInternalNode=true")
-//        } else {
-//            sb.append("value=$value,")
-//            sb.append("isLeafNode=true")
-//        }
-//        sb.append(")")
-//        return sb.toString()
-//    }
+    override fun toString(): String {
+        val sb = StringBuilder()
+        sb.append("$classSimpleName(")
+        sb.append("weight=$weight,")
+        if (isInternalNode) {
+            val children = (this as InternalNode).children
+            sb.append("children=$children,")
+            sb.append("isInternalNode=true")
+        } else {
+            val value = (this as LeafNode).value
+            sb.append("value=$value,")
+            sb.append("isLeafNode=true")
+        }
+        sb.append(")")
+        return sb.toString()
+    }
 
     internal fun toStringDebug(): String {
         val sb = StringBuilder()
         sb.append("$classSimpleName@$hexAddress(")
         sb.append("weight=$weight,")
-        if (isInternalNode) {
-            sb.append("isInternalNode=true")
-        } else {
-            sb.append("isLeafNode=true")
+        when (this) {
+            is InternalNode -> {
+                sb.append("isInternalNode=true,")
+            }
+
+            is LeafNode -> {
+                sb.append("isLeafNode=true,")
+            }
         }
+        sb.append("height=$height,")
+        sb.append("isLegal=$isLegalNode")
         sb.append(")")
         return sb.toString()
     }
@@ -237,7 +245,7 @@ class LeafNode(val value: String) : BTreeNode(value.length, 0) {
 
     val length: Int = value.length
 
-    override val isLegalNode: Boolean = length < MAX_SIZE_LEAF
+    override val isLegalNode: Boolean = length <= MAX_SIZE_LEAF
 
     // Returns BTreeNode
     fun pushAndMaybeSplit(other: String, index: Int): BTreeNode {

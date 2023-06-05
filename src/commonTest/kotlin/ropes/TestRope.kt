@@ -1,8 +1,7 @@
 package ropes
 
-import keb.ropes.BTreeNode
 import keb.ropes.InternalNode
-import keb.ropes.LeafNode
+import keb.ropes.btreeOf
 import keb.ropes.read32Chunks
 import kotlin.test.Test
 
@@ -33,8 +32,15 @@ class TestRope {
 
     @Test
     fun testSplit() {
-        val childs: List<BTreeNode> = listOf(LeafNode("1"), LeafNode("1"), LeafNode("1"))
-        println(childs.sumOf { it.weight })
+        val string = buildString {
+            for (i in 0 until 64 * 32) {
+                append("$i")
+            }
+        }
+        val root = btreeOf(string)
+        (root as InternalNode).children.forEach {
+            println(it.toStringDebug())
+        }
     }
 
 }

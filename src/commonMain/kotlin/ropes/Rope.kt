@@ -9,11 +9,22 @@ import kotlin.math.min
 class Rope(value: String)
 
 fun btreeOf(input: String): BTreeNode {
-    return if (input.length < MAX_SIZE_LEAF) {
-        LeafNode(input)
-    } else {
-        splitIntoNodes(input)
+    return splitIntoNodesF(input)
+}
+
+// saner btreeOf
+
+fun splitIntoNodesF(input: String): BTreeNode {
+    if (input.length < MAX_SIZE_LEAF) return LeafNode(input)
+    val leaves = buildList {
+        var index = 0
+        while (index < input.length) {
+            val leafValue = input.substring(index, minOf(index + MAX_SIZE_LEAF, input.length))
+            add(LeafNode(leafValue))
+            index += MAX_SIZE_LEAF
+        }
     }
+    return unbalancedMerge(leaves) //TODO test it
 }
 
 // btree utils
