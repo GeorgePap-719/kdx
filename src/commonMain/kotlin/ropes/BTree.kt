@@ -178,7 +178,7 @@ sealed class BTreeNode(
         for (node in this) {
             if (len > weight) continue
             when (node) {
-                is InternalNode -> node.children.find(value, len)
+                is InternalNode -> return node.children.find(value, len)
                 is LeafNode -> if (node.value.contains(value)) return node
             }
         }
