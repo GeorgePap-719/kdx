@@ -28,8 +28,22 @@ sealed class BTreeNode(
 
     val isEmpty: Boolean = weight == 0
 
+    /**
+     * Checks if tree needs rebalancing and rebuilds it from the bottom-up. In case it is balanced, then it returns
+     * the same tree.
+     */
     fun rebalance(): BTreeNode {
-        TODO("critical fun")
+        if (isBalanced()) return this
+        //TODO: we do not check for invariant leaves here, since we do not have yet a proper impl yet.
+        val leaves = buildList { for (node in this@BTreeNode) add(node) }
+        return unsafeMerge(leaves)
+    }
+
+    //TODO: check if this should be public API
+    fun isBalanced(): Boolean {
+        if (!this.isLegalNode) return false
+        if (this is InternalNode) for (node in this.children) if (!node.isBalanced()) return false
+        return true
     }
 
     /**
@@ -201,14 +215,14 @@ open class InternalNode(
 
     //TODO: check if we need here `MIN_CHILDREN`
     private fun isLegalNodeImpl(): Boolean {
-        if (children.size > MAX_CHILDREN) return false
+        if (children.size > MAX_CHILDREN || children.size < MIN_CHILDREN) return false
         val anchor = height - 1
         for (node in children) if (node.height != anchor) return false
         return true
     }
 
     private fun areChildrenLegalImpl(): Boolean {
-        var isLegal: Boolean = false
+        var isLegal = false
         for (node in children) {
             isLegal = when (node) {
                 is InternalNode -> node.isLegalNode && node.areChildrenLegalImpl()
@@ -279,31 +293,30 @@ fun InternalNode.tryAddChild(child: BTreeNode, index: Int? = null): InternalNode
     return InternalNode(this.weight, this.height, newChildren)
 }
 
-// --- Builders ---
-
-fun btreeOf(nodes: List<BTreeNode>): BTreeNode {
-    //TODO: add check for invariants
-    return unsafeBtreeOf(nodes)
+/**
+ * Merges [nodes] into one balanced btree.
+ *
+ * @throws IllegalArgumentException if a node [is-not-legal][BTreeNode.isLegalNode].
+ */
+fun merge(nodes: List<BTreeNode>): BTreeNode {
+    nodes.forEach {
+        require(it.isLegalNode) { "node:$it does not meet the requirements" }
+    }
+    return unsafeMerge(nodes)
 }
 
-//TODO: we assume there are no invariants in list
 //TODO: document it
-//TODO: needs re-balancing
-private fun unsafeBtreeOf(nodes: List<BTreeNode>): BTreeNode {
+private fun unsafeMerge(nodes: List<BTreeNode>): BTreeNode {
     if (nodes.size < MAX_CHILDREN) return unbalancedMerge(nodes)
     val leftList = nodes.subList(0, MAX_CHILDREN)
     val rightList = nodes.subList(MAX_CHILDREN, nodes.size)
-
     val leftParent = unbalancedMerge(leftList)
-
     if (rightList.size < MAX_CHILDREN) {
         val rightParent = unbalancedMerge(rightList)
         return unbalancedMerge(leftParent, rightParent)
     }
-
-    val rightParent = unsafeBtreeOf(rightList)
+    val rightParent = unsafeMerge(rightList)
     return unbalancedMerge(leftParent, rightParent)
-    //TODO: needs rebalancing
 }
 
 private fun unbalancedMerge(left: BTreeNode, right: BTreeNode): InternalNode {

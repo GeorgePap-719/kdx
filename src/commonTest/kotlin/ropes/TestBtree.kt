@@ -1,11 +1,9 @@
 package ropes
 
-import keb.ropes.InternalNode
-import keb.ropes.btreeOf
-import keb.ropes.read32Chunks
+import keb.ropes.*
 import kotlin.test.Test
 
-class TestRope {
+class TestBtree {
 
     @Test
     fun testCreationOfRope() {
@@ -39,6 +37,19 @@ class TestRope {
         }
         val root = btreeOf(string)
         println(root.toStringDebug())
+        println(root.isBalanced())
+    }
+
+    @Test
+    fun testBalancing() {
+        val string = buildList {
+            for (i in 0 until 64 * 32) {
+                add(LeafNode("$i"))
+            }
+        }
+        val root = merge(string)
+        println(root.toStringDebug())
+        println(root.isBalanced())
     }
 
 }

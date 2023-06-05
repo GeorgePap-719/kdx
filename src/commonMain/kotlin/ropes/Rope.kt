@@ -22,5 +22,5 @@ private fun splitIntoNodes(input: String): BTreeNode {
             index += MAX_SIZE_LEAF
         }
     }
-    return btreeOf(leaves)
+    return merge(leaves)
 }
