@@ -293,6 +293,8 @@ fun InternalNode.tryAddChild(child: BTreeNode, index: Int? = null): InternalNode
     return InternalNode(this.weight, this.height, newChildren)
 }
 
+// --- builders ---
+
 /**
  * Merges [nodes] into one balanced btree.
  *
@@ -305,7 +307,10 @@ fun merge(nodes: List<BTreeNode>): BTreeNode {
     return unsafeMerge(nodes)
 }
 
-//TODO: document it
+/**
+ * An analogue of the [merge] builder that does not check for invariants. Used internally in operators
+ * where we trust the validity of nodes.
+ */
 private fun unsafeMerge(nodes: List<BTreeNode>): BTreeNode {
     if (nodes.size < MAX_CHILDREN) return unbalancedMerge(nodes)
     val leftList = nodes.subList(0, MAX_CHILDREN)
