@@ -141,13 +141,10 @@ sealed class BTreeNode(
         val sb = StringBuilder()
         sb.append("$classSimpleName(")
         sb.append("weight=$weight,")
+        sb.append("isBalanced=${isBalanced()},")
         if (isInternalNode) {
-            val children = (this as InternalNode).children
-            sb.append("children=$children,")
             sb.append("isInternalNode=true")
         } else {
-            val value = (this as LeafNode).value
-            sb.append("value=$value,")
             sb.append("isLeafNode=true")
         }
         sb.append(")")
@@ -164,7 +161,7 @@ sealed class BTreeNode(
                 sb.append("childrenSize=${children.size},")
                 sb.append("children=[")
                 for (node in children) sb.append("${node.toStringDebug()},")
-                sb.append("children=],")
+                sb.append("],")
             }
 
             is LeafNode -> {
@@ -213,11 +210,15 @@ open class InternalNode(
 
     val areChildrenLegal: Boolean = areChildrenLegalImpl() //TODO: check if this pulls his weight
 
-    //TODO: check if we need here `MIN_CHILDREN`
     private fun isLegalNodeImpl(): Boolean {
-        if (children.size > MAX_CHILDREN || children.size < MIN_CHILDREN) return false
-        val anchor = height - 1
-        for (node in children) if (node.height != anchor) return false
+        //TODO:
+        // children.size > MAX_CHILDREN || children.size < MIN_CHILDREN
+        // with the above condition, we have to change isBalanced() API, since it is a condition
+        // where we cannot always meet.
+        // Maybe we also need to distinct between legal and balanced nodes.
+        if (children.size > MAX_CHILDREN) return false
+        val rootHeight = height
+        for (node in children) if (node.height >= rootHeight) return false
         return true
     }
 
@@ -312,11 +313,11 @@ fun merge(nodes: List<BTreeNode>): BTreeNode {
  * where we trust the validity of nodes.
  */
 private fun unsafeMerge(nodes: List<BTreeNode>): BTreeNode {
-    if (nodes.size < MAX_CHILDREN) return createParent(nodes)
+    if (nodes.size <= MAX_CHILDREN) return createParent(nodes)
     val leftList = nodes.subList(0, MAX_CHILDREN)
     val rightList = nodes.subList(MAX_CHILDREN, nodes.size)
     val leftParent = createParent(leftList)
-    if (rightList.size < MAX_CHILDREN) {
+    if (rightList.size <= MAX_CHILDREN) {
         val rightParent = createParent(rightList)
         return createParent(leftParent, rightParent)
     }

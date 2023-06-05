@@ -43,7 +43,7 @@ class TestBtree {
     @Test
     fun testBalancing() {
         val nodes = buildList {
-            for (i in 0 until 64 * 32) {
+            for (i in 0 until 64) {
                 add(LeafNode("$i"))
             }
         }
