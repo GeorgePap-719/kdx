@@ -281,21 +281,9 @@ fun InternalNode.tryAddChild(child: BTreeNode, index: Int? = null): InternalNode
 
 // --- Builders ---
 
-fun btreeOf(input: String): BTreeNode {
-    return splitIntoNodes(input)
-}
-
-private fun splitIntoNodes(input: String): BTreeNode {
-    if (input.length < MAX_SIZE_LEAF) return LeafNode(input)
-    val leaves = buildList {
-        var index = 0
-        while (index < input.length) {
-            val leafValue = input.substring(index, minOf(index + MAX_SIZE_LEAF, input.length))
-            add(LeafNode(leafValue))
-            index += MAX_SIZE_LEAF
-        }
-    }
-    return unsafeBtreeOf(leaves)
+fun btreeOf(nodes: List<BTreeNode>): BTreeNode {
+    //TODO: add check for invariants
+    return unsafeBtreeOf(nodes)
 }
 
 //TODO: we assume there are no invariants in list
