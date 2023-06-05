@@ -28,6 +28,10 @@ sealed class BTreeNode(
 
     val isEmpty: Boolean = weight == 0
 
+    fun rebalance(): BTreeNode {
+        TODO("critical fun")
+    }
+
     /**
      * Returns the parent node of [child], or `null` if [child] is the root node.
      * Root is considered as "this" node.
@@ -311,6 +315,7 @@ private fun unsafeBtreeOf(nodes: List<BTreeNode>): BTreeNode {
 
     val rightParent = unsafeBtreeOf(rightList)
     return unbalancedMerge(leftParent, rightParent)
+    //TODO: needs rebalancing
 }
 
 private fun unbalancedMerge(left: BTreeNode, right: BTreeNode): InternalNode {
