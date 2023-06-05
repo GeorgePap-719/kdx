@@ -3,12 +3,11 @@ package keb.ropes
 class ResizeableArray<T>(initialLength: Int) {
     private var array = arrayOfNulls<Any?>(initialLength)
 
-    val size: Int get() = array.size
+    val size: Int get() = array.size // for debug output
 
     operator fun get(index: Int): T? {
-        if (index > size) return null
         @Suppress("UNCHECKED_CAST")
-        return array[index] as T?
+        return if (index < size) array[index] as T? else null
     }
 
     operator fun set(index: Int, value: T) {
