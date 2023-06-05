@@ -6,7 +6,8 @@ import keb.hexAddress
 open class NodeInfo //TODO: impl later, but it seems it is not needed for btree impl
 
 /**
- * Represents a self-balancing tree node.
+ * Persistent [btree](https://en.wikipedia.org/wiki/B-tree) node. Modification operations return new
+ * instances of the tree with the modifications applied.
  */
 sealed class BTreeNode(
     /**
@@ -19,7 +20,7 @@ sealed class BTreeNode(
      * node is the `root`, then it represents the `height` of the entire tree. By extension, if this is a leaf node
      * then, it should be `0`.
      */
-    val height: Int, // will be used for re-balancing.
+    val height: Int,
 ) : Iterable<LeafNode> {
     abstract val isInternalNode: Boolean
     abstract val isLeafNode: Boolean
@@ -179,7 +180,7 @@ sealed class BTreeNode(
 operator fun BTreeNode.plus(other: BTreeNode): List<BTreeNode> = listOf(this, other)
 
 /**
- * Represents a leaf-node in a [B-tree](https://en.wikipedia.org/wiki/B-tree#Notes).
+ * Represents a leaf-node in Btree.
  */
 class LeafNode(val value: String) : BTreeNode(value.length, 0) {
     override val isInternalNode: Boolean = false
@@ -195,10 +196,8 @@ const val MAX_CHILDREN = 8
 const val MAX_SIZE_LEAF = 2048
 
 /**
- * Represents an internal-node in a [B-tree](https://en.wikipedia.org/wiki/B-tree#Notes).
+ * Represents an internal-node in Btree.
  */
-// Notes:
-// Internal node does not have insert operation().
 open class InternalNode(
     weight: Int,
     height: Int,

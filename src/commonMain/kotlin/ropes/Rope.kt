@@ -8,7 +8,7 @@ class Rope(value: String) {
     val root = btreeOf(value)
 }
 
-// btree utils
+// string-btree utils
 
 fun btreeOf(input: String): BTreeNode {
     return splitIntoNodes(input)
