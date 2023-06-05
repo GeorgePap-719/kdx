@@ -75,9 +75,12 @@ private fun InternalNode.ifNeedSplitAndMerge(): InternalNode {
     for (node in this.children) {
         when (node) {
             is InternalNode -> {
-                //for (_node in node.children) if (_node is InternalNode) return _node.ifNeedSplitAndMerge()
-                if (node.children.size < MAX_CHILDREN) continue
 
+                for (_node in node.children) if (_node is InternalNode) {
+                    _node.ifNeedSplitAndMerge()
+                }
+                if (node.children.size < MAX_CHILDREN) continue
+                return legalAndUnbalancedMerge(node.children)
             }
 
             is LeafNode -> continue
@@ -87,22 +90,18 @@ private fun InternalNode.ifNeedSplitAndMerge(): InternalNode {
 }
 
 //TODO: document it
+// not suitable for big number of nodes
 private fun legalAndUnbalancedMerge(nodes: List<BTreeNode>): InternalNode {
     if (nodes.size < MAX_CHILDREN) return unbalancedMerge(nodes)
-
     val leftList = nodes.subList(0, MAX_CHILDREN)
     val rightList = nodes.subList(MAX_CHILDREN, nodes.size)
-
     val leftParent = unbalancedMerge(leftList)
-
     if (rightList.size < MAX_CHILDREN) {
         val rightParent = unbalancedMerge(rightList)
         return unbalancedMerge(leftParent + rightParent)
     }
-
-    val legalrec = legalAndUnbalancedMerge(rightList)
-
-    return unbalancedMerge(leftParent + legalrec)
+    val rightParent = legalAndUnbalancedMerge(rightList)
+    return unbalancedMerge(leftParent + rightParent)
 }
 
 // May return an unbalanced tree
