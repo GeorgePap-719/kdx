@@ -28,6 +28,8 @@ sealed class BTreeNode(
     abstract val isInternalNode: Boolean
     abstract val isLeafNode: Boolean
 
+    abstract val isLegalNode: Boolean
+
     val isEmpty: Boolean = weight == 0
 //    val isRoot: Boolean = height == 0
 
@@ -235,6 +237,7 @@ class LeafNode(val value: String) : BTreeNode(value.length, 0) {
 
     val length: Int = value.length
 
+    override val isLegalNode: Boolean = length < MAX_SIZE_LEAF
 
     // Returns BTreeNode
     fun pushAndMaybeSplit(other: String, index: Int): BTreeNode {
@@ -285,6 +288,28 @@ open class InternalNode(
 ) : BTreeNode(weight, height) {
     override val isInternalNode: Boolean = true
     override val isLeafNode: Boolean = false
+    override val isLegalNode: Boolean = isLegalNodeImpl()
+
+    val areChildrenLegal: Boolean = areChildrenLegalImpl() //TODO: check if this pulls his weight
+
+    //TODO: check if we need here `MIN_CHILDREN`
+    private fun isLegalNodeImpl(): Boolean {
+        if (children.size > MAX_CHILDREN) return false
+        val anchor = height - 1
+        for (node in children) if (node.height != anchor) return false
+        return true
+    }
+
+    private fun areChildrenLegalImpl(): Boolean {
+        var isLegal: Boolean = false
+        for (node in children) {
+            isLegal = when (node) {
+                is InternalNode -> node.isLegalNode && node.areChildrenLegalImpl()
+                is LeafNode -> node.isLegalNode
+            }
+        }
+        return isLegal
+    }
 }
 
 fun List<BTreeNode>.replaceWithCopyOnWrite(oldNode: BTreeNode, newNode: BTreeNode): List<BTreeNode> {
