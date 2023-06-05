@@ -274,7 +274,7 @@ fun List<BTreeNode>.addWithCopyOnWrite(newNode: List<BTreeNode>, index: Int): Li
 }
 
 /**
- * Tries to add a list of [children] on this node with copy-on-write semantics, in the specified [index].
+ * Tries to add a list of [children] on this node, with copy-on-write semantics, in the specified [index].
  * In case [index] is `null` the nodes are appended to the end of list. If receiver node cannot hold more children, it returns `null`.
  */
 fun InternalNode.tryAddChildren(children: List<BTreeNode>, index: Int? = null): InternalNode? {
@@ -284,7 +284,7 @@ fun InternalNode.tryAddChildren(children: List<BTreeNode>, index: Int? = null): 
 }
 
 /**
- * Tries to add a child on this node with copy-on-write semantics, in the specified [index]. In case [index]
+ * Tries to add a child on this node, with copy-on-write semantics, in the specified [index]. In case [index]
  * is `null` the nodes are appended to the end of list. If receiver node cannot hold more children, it returns `null`.
  */
 fun InternalNode.tryAddChild(child: BTreeNode, index: Int? = null): InternalNode? {
