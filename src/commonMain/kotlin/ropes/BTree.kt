@@ -221,6 +221,10 @@ sealed class BTreeNode(
         when (this) {
             is InternalNode -> {
                 sb.append("isInternalNode=true,")
+                sb.append("childrenSize=${children.size},")
+                sb.append("children=[")
+                for (node in children) sb.append("${node.toStringDebug()},")
+                sb.append("children=],")
             }
 
             is LeafNode -> {
@@ -234,6 +238,7 @@ sealed class BTreeNode(
     }
 }
 
+@Deprecated("bad api", ReplaceWith("listOf(this, other)"))
 operator fun BTreeNode.plus(other: BTreeNode): List<BTreeNode> = listOf(this, other)
 
 /**

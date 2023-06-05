@@ -38,9 +38,7 @@ class TestRope {
             }
         }
         val root = btreeOf(string)
-        (root as InternalNode).children.forEach {
-            println(it.toStringDebug())
-        }
+        println(root.toStringDebug())
     }
 
 }
