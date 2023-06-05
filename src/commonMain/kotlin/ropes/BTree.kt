@@ -105,8 +105,10 @@ sealed class BTreeNode(
     }
 
     /**
-     * Returns the parent node of [child], or `null` in case this [child] is the root node.
+     * Returns the parent node of [child], or `null` if [child] is the root node.
+     * Root is considered as "this" node.
      */
+    I
     private fun getParentOrNull(child: BTreeNode): InternalNode? {
         if (child === this) return null
         val root = this as InternalNode
@@ -268,7 +270,7 @@ class LeafNode(val value: String) : BTreeNode(value.length, 0) {
 
 private const val MIN_CHILDREN = 4
 private const val MAX_CHILDREN = 8
-private const val MAX_SIZE_LEAF = 2048
+const val MAX_SIZE_LEAF = 2048
 
 /**
  * Represents an internal-node in a [B-tree](https://en.wikipedia.org/wiki/B-tree#Notes).
@@ -286,7 +288,7 @@ open class InternalNode(
 
 fun List<BTreeNode>.copyOnWrite(oldNode: BTreeNode, newNode: BTreeNode): List<BTreeNode> {
     return buildList {
-        for (node in this) {
+        for (node in this@copyOnWrite) {
             if (node === oldNode) {
                 add(newNode)
             } else {
