@@ -275,10 +275,29 @@ fun InternalNode.tryAddChild(child: BTreeNode, index: Int? = null): InternalNode
     return InternalNode(this.weight, this.height, newChildren)
 }
 
-//TODO: how should we check invariants?
+// --- Builders ---
+
+fun btreeOf(input: String): BTreeNode {
+    return splitIntoNodes(input)
+}
+
+private fun splitIntoNodes(input: String): BTreeNode {
+    if (input.length < MAX_SIZE_LEAF) return LeafNode(input)
+    val leaves = buildList {
+        var index = 0
+        while (index < input.length) {
+            val leafValue = input.substring(index, minOf(index + MAX_SIZE_LEAF, input.length))
+            add(LeafNode(leafValue))
+            index += MAX_SIZE_LEAF
+        }
+    }
+    return unsafeBtreeOf(leaves)
+}
+
+//TODO: we assume there are no invariants in list
 //TODO: document it
 //TODO: needs re-balancing
-fun merge(nodes: List<BTreeNode>): BTreeNode {
+private fun unsafeBtreeOf(nodes: List<BTreeNode>): BTreeNode {
     if (nodes.size < MAX_CHILDREN) return unbalancedMerge(nodes)
     val leftList = nodes.subList(0, MAX_CHILDREN)
     val rightList = nodes.subList(MAX_CHILDREN, nodes.size)
@@ -290,7 +309,7 @@ fun merge(nodes: List<BTreeNode>): BTreeNode {
         return unbalancedMerge(leftParent, rightParent)
     }
 
-    val rightParent = merge(rightList)
+    val rightParent = unsafeBtreeOf(rightList)
     return unbalancedMerge(leftParent, rightParent)
 }
 
