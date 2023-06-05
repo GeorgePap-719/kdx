@@ -53,7 +53,7 @@ sealed class BTreeNode(
         val newLeaf = LeafNode(targetNode.value + value)
         val parent = getParentOrNull(targetNode) ?: return newLeaf // this node is-root
         // change with copy-on-write:
-        val newChildren = parent.children.copyOnWrite(targetNode, newLeaf)
+        val newChildren = parent.children.replaceWithCopyOnWrite(targetNode, newLeaf)
         val newParent = InternalNode(parent.weight, parent.height, newChildren)
         // copy-on-write newParent
         return copyOnWriteNewTreeNoSplit(parent, newParent)
@@ -89,7 +89,7 @@ sealed class BTreeNode(
             when (node) {
                 is InternalNode -> {
                     if (node === oldParent) {
-                        val newChildren = curParent.children.copyOnWrite(node, newParent)
+                        val newChildren = curParent.children.replaceWithCopyOnWrite(node, newParent)
                         //a bit bad naming
                         val newCurParent = InternalNode(curParent.weight, curParent.height, newChildren)
                         val parent = getParentOrNull(newCurParent) ?: return newCurParent // current node is-root
@@ -108,7 +108,6 @@ sealed class BTreeNode(
      * Returns the parent node of [child], or `null` if [child] is the root node.
      * Root is considered as "this" node.
      */
-    I
     private fun getParentOrNull(child: BTreeNode): InternalNode? {
         if (child === this) return null
         val root = this as InternalNode
@@ -225,6 +224,8 @@ sealed class BTreeNode(
     }
 }
 
+operator fun BTreeNode.plus(other: BTreeNode): List<BTreeNode> = listOf(this, other)
+
 /**
  * Represents a leaf-node in a [B-tree](https://en.wikipedia.org/wiki/B-tree#Notes).
  */
@@ -268,8 +269,8 @@ class LeafNode(val value: String) : BTreeNode(value.length, 0) {
     private fun stringFits(value: String): Boolean = length + value.length < MAX_SIZE_LEAF
 }
 
-private const val MIN_CHILDREN = 4
-private const val MAX_CHILDREN = 8
+const val MIN_CHILDREN = 4
+const val MAX_CHILDREN = 8
 const val MAX_SIZE_LEAF = 2048
 
 /**
@@ -286,9 +287,9 @@ open class InternalNode(
     override val isLeafNode: Boolean = false
 }
 
-fun List<BTreeNode>.copyOnWrite(oldNode: BTreeNode, newNode: BTreeNode): List<BTreeNode> {
+fun List<BTreeNode>.replaceWithCopyOnWrite(oldNode: BTreeNode, newNode: BTreeNode): List<BTreeNode> {
     return buildList {
-        for (node in this@copyOnWrite) {
+        for (node in this@replaceWithCopyOnWrite) {
             if (node === oldNode) {
                 add(newNode)
             } else {
@@ -297,6 +298,35 @@ fun List<BTreeNode>.copyOnWrite(oldNode: BTreeNode, newNode: BTreeNode): List<BT
         }
     }
 }
+
+fun List<BTreeNode>.addWithCopyOnWrite(newNode: BTreeNode, index: Int): List<BTreeNode> {
+    return buildList {
+        var added = false // flag to check if the new element is in the bounds of the current list.
+        for ((_index, node) in this@addWithCopyOnWrite.withIndex()) {
+            if (_index == index) {
+                add(newNode)
+                added = true
+            }
+            add(node)
+        }
+        if (!added) add(newNode)
+    }
+}
+
+fun List<BTreeNode>.addWithCopyOnWrite(newNode: List<BTreeNode>, index: Int): List<BTreeNode> {
+    return buildList {
+        var added = false // flag to check if the new element is in the bounds of the current list.
+        for ((_index, node) in this@addWithCopyOnWrite.withIndex()) {
+            if (_index == index) {
+                addAll(newNode)
+                added = true
+            }
+            add(node)
+        }
+        if (!added) addAll(newNode)
+    }
+}
+
 
 /**
  * Reads up to 32 chunks of characters and creates a node from them. The process is repeated until the end of [input].

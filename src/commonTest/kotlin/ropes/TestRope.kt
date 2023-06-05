@@ -29,4 +29,9 @@ class TestRope {
         }
     }
 
+    @Test
+    fun testSplit() {
+
+    }
+
 }
