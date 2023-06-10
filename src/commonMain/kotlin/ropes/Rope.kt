@@ -48,17 +48,22 @@ class Rope(value: String) {
                     // since we cannot be sure if its out of bounds or just not the right leaf
                     // We cannot avoid checking for out-of-bounds index,
                     // since it is not known until we reach the targeted leaf.
-                    if (curNode !== parent) {
-                        return if (curIndex < curNode.value.length) {
-                            curNode.value[curIndex]
-                        } else { // fallback strat
-                            getImpl(
-                                curIndex - curNode.weight,
-                                parent
-                            )
-                        }
-                    }
-                    return if (curIndex < curNode.value.length) curNode.value[curIndex] else null
+                    //
+
+//                    if (curNode !== parent) {
+//                        return if (curIndex < curNode.value.length) {
+//                            curNode.value[curIndex]
+//                        } else { // fallback strat
+//                            getImpl(
+//                                curIndex - curNode.weight,
+//                                parent
+//                            )
+//                        }
+//                    }
+//                    return if (curIndex < curNode.value.length) curNode.value[curIndex] else null
+
+                    // is LeafNode
+
                 }
 
                 is InternalNode -> {
@@ -93,6 +98,30 @@ class Rope(value: String) {
                     }
                 }
             }
+        }
+    }
+
+    private class BTreeNodeWithParent(val node: BTreeNode, val parent: BTreeNode) {
+        // ref to child index
+        private var index: Int = when (node) {
+            is InternalNode -> 0
+            is LeafNode -> -1
+        }
+
+        fun tryIncIndex(): Boolean {
+            if (index == -1) return false
+            index++
+            return true
+        }
+
+        fun getNextChildOrParent(): BTreeNode {
+            if (index == -1) return parent
+            return (node as InternalNode).children[index]
+        }
+
+        fun getChildren(): List<BTreeNode> {
+            if (index == -1) return emptyList()
+            return (node as InternalNode).children
         }
     }
 
