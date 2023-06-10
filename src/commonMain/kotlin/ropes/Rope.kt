@@ -1,7 +1,5 @@
 package keb.ropes
 
-import keb.Symbol
-
 
 /**
  * Represents a [Rope data structure](https://en.wikipedia.org/wiki/Rope_(data_structure)#Index).
@@ -85,7 +83,21 @@ class Rope(value: String) {
                             curNode = node // index is in this subtree
                             continue@outerLp
                         }
-                        // prob this operations will be rethinked
+                        // ---- Time to check next child ----
+                        // cases: we need to add fallback, so we can check the next child
+                        // - where should we check of curIndex is negative
+                        // handle first case, since will be leftmost child
+                        if (index == 0) {
+                            curIndex -= node.weight
+                            // No need to check leaves on leftmost child, since we can be sure `index`
+                            // is not here.
+                            continue
+                        }
+                        // need to visit child here
+
+
+                        //
+                        //
                         curIndex -= node.weight //TODO: add doc
                         if (curIndex < 0) return null //TODO: check this op
 
@@ -94,34 +106,9 @@ class Rope(value: String) {
                         // cases to check:
                         // - we need to add fallback, so we can check next child
                         // - handle last/rightmost child in loop (done!)
-                        // - where should we check of curIndex is negative
                     }
                 }
             }
-        }
-    }
-
-    private class BTreeNodeWithParent(val node: BTreeNode, val parent: BTreeNode) {
-        // ref to child index
-        private var index: Int = when (node) {
-            is InternalNode -> 0
-            is LeafNode -> -1
-        }
-
-        fun tryIncIndex(): Boolean {
-            if (index == -1) return false
-            index++
-            return true
-        }
-
-        fun getNextChildOrParent(): BTreeNode {
-            if (index == -1) return parent
-            return (node as InternalNode).children[index]
-        }
-
-        fun getChildren(): List<BTreeNode> {
-            if (index == -1) return emptyList()
-            return (node as InternalNode).children
         }
     }
 
@@ -182,7 +169,35 @@ class Rope(value: String) {
 
 }
 
-private val OUT_OF_BOUNDS = Symbol("OUT_OF_BOUNDS")
+// btree utils
+
+private fun BTreeNode.link(parent: BTreeNode): BTreeNodeWithParent {
+    return BTreeNodeWithParent(this, parent)
+}
+
+private class BTreeNodeWithParent(val node: BTreeNode, val parent: BTreeNode) {
+    // ref to child index
+    private var index: Int = when (node) {
+        is InternalNode -> 0
+        is LeafNode -> -1
+    }
+
+    fun tryIncIndex(): Boolean {
+        if (index == -1) return false
+        index++
+        return true
+    }
+
+    fun getNextChildOrParent(): BTreeNode {
+        if (index == -1) return parent
+        return (node as InternalNode).children[index]
+    }
+
+    fun getChildren(): List<BTreeNode> {
+        if (index == -1) return emptyList()
+        return (node as InternalNode).children
+    }
+}
 
 
 // string-btree utils
