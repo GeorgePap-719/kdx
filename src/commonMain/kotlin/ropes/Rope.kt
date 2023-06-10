@@ -65,40 +65,64 @@ class Rope(value: String) {
                     val _curNode = curNode // otherwise smartcast is impossible
                     for ((i, node) in _curNode.children.withIndex()) {
                         // separate first child vs others
-                        if (i == 1 && _curNode.children.size == 1 && curIndex >= _curNode.weight) {
+                        if (i == 0 && _curNode.children.size == 1 && curIndex >= _curNode.weight) {
                             return null // out of bounds
                         }
-                        if (i == _curNode.children.size && node is LeafNode) { // rightmost child
+                        if (i == _curNode.children.lastIndex && node is LeafNode) { // rightmost child
                             // Only at the rightmost leafNode we can check
                             // if target `index` is out of bounds or not.
                             return if (curIndex < node.value.length) node.value[curIndex] else null
                         }
+                        ///
+                        ///
                         // traverse each child 1-by-1
                         if (curIndex < node.weight) {
                             curNode = node // index is in this subtree
                             continue@outerLp
                         }
+                        // prob this operations will be rethinked
                         curIndex -= node.weight //TODO: add doc
-                        if (curIndex < 0) return null
+                        if (curIndex < 0) return null //TODO: check this op
+
+                        // curNode =
+
                         // cases to check:
                         // - we need to add fallback, so we can check next child
                         // - handle last/rightmost child in loop (done!)
                         // - where should we check of curIndex is negative
-                        when (val charOrTraversedWeight = traverseChild(curIndex, node)) {
-                            is Char -> return charOrTraversedWeight
-                            is Int -> curIndex -= charOrTraversedWeight
-                            else -> error("unexpected result")
-                        }
                     }
                 }
             }
         }
     }
 
-    // Returns
-    private fun traverseChild(index: Int, node: BTreeNode): Any { // Char || Int
-        TODO()
+    private fun traverseChild(index: Int, child: BTreeNode): TraverseChildOp {
+        var curIndex = index
+        when (child) {
+            is LeafNode -> {
+                return if (curIndex < child.weight) {
+                    FoundChar(child.value[curIndex])
+                } else {
+                    TraversedWeight(child.weight)
+                }
+            }
+
+            is InternalNode -> {
+                for ((i, node) in child.children.withIndex()) {
+                    if (i == 0 && curIndex >= node.weight) {
+                        curIndex -= node.weight
+                        continue
+                    }
+                    //traverseChild()
+                    TODO()
+                }
+            }
+        }
     }
+
+    private sealed class TraverseChildOp
+    private class FoundChar(val value: Char) : TraverseChildOp()
+    private class TraversedWeight(val value: Int) : TraverseChildOp()
 
     fun length(): Int {
         while (true) {

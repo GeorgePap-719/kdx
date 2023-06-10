@@ -343,6 +343,7 @@ private fun createParent(nodes: List<BTreeNode>): InternalNode {
 private fun BTreeNode.computeWeightInLeftSubtree(): Int {
     return when (this) {
         is InternalNode -> {
+            //TODO: is this redundant action since the weight is already computed?
             val leftmost = this.children.first()
             return leftmost.sumOf { it.weight } // sumOf weight in leaves
         }
