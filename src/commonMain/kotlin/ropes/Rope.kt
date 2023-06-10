@@ -38,7 +38,7 @@ class Rope(value: String) {
         var curIndex = index
         var curNode = root
         var indexedRoot = if (root is InternalNode) root.indexed() else null
-        val stack = BTreeStack(root.height)
+        val stack = ArrayStack<IndexedInternalNode>(root.height)
         var nodePtr = 0 // TODO
 
         outerLp@ while (true) {
@@ -60,22 +60,19 @@ class Rope(value: String) {
                         //TODO: this scenario prob does not cover up all subcases.
                         val parent = stack.popOrNull() ?: return null
                         // 2.
-                        // no more children to check, try again.
-                        curNode = parent.getNextChildOrNull() ?: continue
-                        // 2.1 subcase: parent isRoot. In that case, we do not want to leave it out of stack.
-                        if (parent === indexedRoot) stack.push(parent)
+                        curNode = parent.getNextChildAndIncIndexOrNull()
+                            ?: continue // no more children to check, try again.
+                        stack.push(parent)
                         continue@outerLp // is this enough?
                     }
                 }
 
                 is InternalNode -> {
                     val _curNode = curNode // otherwise smartcast is impossible
+                    //TODO: add info about this action
+                    val curIndexedNode = _curNode.indexed()
+                    stack.push(curIndexedNode)
 
-                    for (i in nodePtr until _curNode.children.size) {
-                        // let's say we have done part 1
-                        // -- visit child here
-
-                    }
                     for ((i, node) in _curNode.children.withIndex()) {
                         // separate first child vs others
                         if (i == 0 && _curNode.children.size == 1 && curIndex >= _curNode.weight) {
@@ -104,18 +101,9 @@ class Rope(value: String) {
                             continue
                         }
                         // need to visit child here
-
-
-                        //
-                        //
-                        curIndex -= node.weight //TODO: add doc
-                        if (curIndex < 0) return null //TODO: check this op
-
-                        // curNode =
-
                         // cases to check:
                         // - we need to add fallback, so we can check next child
-                        // - handle last/rightmost child in loop (done!)
+                        curNode = node // something like this here
                     }
                 }
             }
@@ -181,25 +169,14 @@ class Rope(value: String) {
 
 // btree utils
 
-private class BTreeStack(initialLength: Int = 1) {
-    val stack = ArrayStack<IndexedInternalNode>(initialLength)
-
-    fun push(node: IndexedInternalNode) {
-        stack.push(node)
-    }
-
-    fun popOrNull(): IndexedInternalNode? {
-        return stack.popOrNull()
-    }
-}
-
-
-//private fun BTreeNode.link(parent: IndexedInternalNode): BTreeNodeWithParent {
-//    return BTreeNodeWithParent(this, parent)
-//}
-
 private fun InternalNode.indexed(): IndexedInternalNode {
     return IndexedInternalNode(weight, height, children)
+}
+
+private fun IndexedInternalNode.getNextChildAndIncIndexOrNull(): BTreeNode? {
+    val child = getNextChildOrNull() ?: return null
+    tryIncIndex()
+    return child
 }
 
 private class IndexedInternalNode(
@@ -219,9 +196,6 @@ private class IndexedInternalNode(
         return if (index < children.size) null else children[index]
     }
 }
-
-//private class BTreeNodeWithParent(val node: BTreeNode, val parent: IndexedInternalNode)
-
 
 // string-btree utils
 
