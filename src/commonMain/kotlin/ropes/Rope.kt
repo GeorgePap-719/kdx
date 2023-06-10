@@ -37,35 +37,45 @@ class Rope(value: String) {
     private fun getImpl(index: Int, root: BTreeNode): Char? {
         var curIndex = index
         var curNode = root
-        var parent = curNode
+        var indexedRoot = if (root is InternalNode) root.indexed() else null
+        val stack = BTreeStack(root.height)
+        var nodePtr = 0 // TODO
 
         outerLp@ while (true) {
             when (curNode) {
                 is LeafNode -> {
-                    //TODO: here is not semantically right to return `null`,
-                    // since we cannot be sure if its out of bounds or just not the right leaf
-                    // We cannot avoid checking for out-of-bounds index,
-                    // since it is not known until we reach the targeted leaf.
-                    //
-
-//                    if (curNode !== parent) {
-//                        return if (curIndex < curNode.value.length) {
-//                            curNode.value[curIndex]
-//                        } else { // fallback strat
-//                            getImpl(
-//                                curIndex - curNode.weight,
-//                                parent
-//                            )
-//                        }
-//                    }
-//                    return if (curIndex < curNode.value.length) curNode.value[curIndex] else null
-
-                    // is LeafNode
-
+                    // store this only for ref
+                    // return if (curIndex < curNode.value.length) curNode.value[curIndex] else null
+                    if (curIndex < curNode.length) curNode.value[curIndex] // fast-path
+                    // Two major cases:
+                    // 1. Is out of bounds for sure because we are in rightmost child
+                    // 2. out-of-bounds for this leaf, but we still have the next child to check.
+                    // 3. subtract weight properly
+                    curIndex -= curNode.weight
+                    //TODO: not sure if this is ok scenario or some sort of IllegalState
+                    // Though, for simple scenario where root is leaf, it is needed.
+                    if (curIndex < 0) return null
+                    while (true) {
+                        // 1.
+                        //TODO: this scenario prob does not cover up all subcases.
+                        val parent = stack.popOrNull() ?: return null
+                        // 2.
+                        // no more children to check, try again.
+                        curNode = parent.getNextChildOrNull() ?: continue
+                        // 2.1 subcase: parent isRoot. In that case, we do not want to leave it out of stack.
+                        if (parent === indexedRoot) stack.push(parent)
+                        continue@outerLp // is this enough?
+                    }
                 }
 
                 is InternalNode -> {
                     val _curNode = curNode // otherwise smartcast is impossible
+
+                    for (i in nodePtr until _curNode.children.size) {
+                        // let's say we have done part 1
+                        // -- visit child here
+
+                    }
                     for ((i, node) in _curNode.children.withIndex()) {
                         // separate first child vs others
                         if (i == 0 && _curNode.children.size == 1 && curIndex >= _curNode.weight) {
@@ -171,33 +181,46 @@ class Rope(value: String) {
 
 // btree utils
 
-private fun BTreeNode.link(parent: BTreeNode): BTreeNodeWithParent {
-    return BTreeNodeWithParent(this, parent)
-}
+private class BTreeStack(initialLength: Int = 1) {
+    val stack = ArrayStack<IndexedInternalNode>(initialLength)
 
-private class BTreeNodeWithParent(val node: BTreeNode, val parent: BTreeNode) {
-    // ref to child index
-    private var index: Int = when (node) {
-        is InternalNode -> 0
-        is LeafNode -> -1
+    fun push(node: IndexedInternalNode) {
+        stack.push(node)
     }
 
+    fun popOrNull(): IndexedInternalNode? {
+        return stack.popOrNull()
+    }
+}
+
+
+//private fun BTreeNode.link(parent: IndexedInternalNode): BTreeNodeWithParent {
+//    return BTreeNodeWithParent(this, parent)
+//}
+
+private fun InternalNode.indexed(): IndexedInternalNode {
+    return IndexedInternalNode(weight, height, children)
+}
+
+private class IndexedInternalNode(
+    weight: Int,
+    height: Int,
+    children: List<BTreeNode> = listOf(),
+) : InternalNode(weight, height, children) {
+    private var index = 0
+
     fun tryIncIndex(): Boolean {
-        if (index == -1) return false
+        if (index == children.size) return false
         index++
         return true
     }
 
-    fun getNextChildOrParent(): BTreeNode {
-        if (index == -1) return parent
-        return (node as InternalNode).children[index]
-    }
-
-    fun getChildren(): List<BTreeNode> {
-        if (index == -1) return emptyList()
-        return (node as InternalNode).children
+    fun getNextChildOrNull(): BTreeNode? {
+        return if (index < children.size) null else children[index]
     }
 }
+
+//private class BTreeNodeWithParent(val node: BTreeNode, val parent: IndexedInternalNode)
 
 
 // string-btree utils
