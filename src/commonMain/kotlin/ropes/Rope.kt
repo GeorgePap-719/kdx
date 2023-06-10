@@ -118,6 +118,7 @@ class Rope(value: String) {
                 }
             }
         }
+        TODO()
     }
 
     private sealed class TraverseChildOp
