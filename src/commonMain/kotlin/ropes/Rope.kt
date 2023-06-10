@@ -1,5 +1,7 @@
 package keb.ropes
 
+import keb.Symbol
+
 
 /**
  * Represents a [Rope data structure](https://en.wikipedia.org/wiki/Rope_(data_structure)#Index).
@@ -34,26 +36,39 @@ class Rope(value: String) {
         return null // out of bounds
     }
 
-    private fun getImpl(index: Int, parent: BTreeNode): Char? {
+    private fun getImpl(index: Int, root: BTreeNode): Char? {
         var curIndex = index
-        var curNode = parent
+        var curNode = root
+        var parent = curNode
+
         outerLp@ while (true) {
             when (curNode) {
                 is LeafNode -> {
-                    val value = curNode.value
+                    //TODO: here is not semantically right to return `null`,
+                    // since we cannot be sure if its out of bounds or just not the right leaf
                     // We cannot avoid checking for out-of-bounds index,
                     // since it is not known until we reach the targeted leaf.
-                    return if (curIndex < value.length) value[curIndex] else null
+                    if (curNode !== parent) {
+                        return if (curIndex < curNode.value.length) {
+                            curNode.value[curIndex]
+                        } else { // fallback strat
+                            getImpl(
+                                curIndex - curNode.weight,
+                                parent
+                            )
+                        }
+                    }
+                    return if (curIndex < curNode.value.length) curNode.value[curIndex] else null
                 }
 
                 is InternalNode -> {
-                    val parentNode = curNode // otherwise smartcast is impossible
-                    for ((i, node) in parentNode.children.withIndex()) {
+                    val _curNode = curNode // otherwise smartcast is impossible
+                    for ((i, node) in _curNode.children.withIndex()) {
                         // separate first child vs others
-                        if (i == 1 && parentNode.children.size == 1 && curIndex >= parentNode.weight) {
+                        if (i == 1 && _curNode.children.size == 1 && curIndex >= _curNode.weight) {
                             return null // out of bounds
                         }
-                        if (i == parentNode.children.size && node is LeafNode) { // rightmost child
+                        if (i == _curNode.children.size && node is LeafNode) { // rightmost child
                             // Only at the rightmost leafNode we can check
                             // if target `index` is out of bounds or not.
                             return if (curIndex < node.value.length) node.value[curIndex] else null
@@ -63,17 +78,17 @@ class Rope(value: String) {
                             curNode = node // index is in this subtree
                             continue@outerLp
                         }
-
-                        // improve above dup
-                        //
-                        curIndex -= node.weight
+                        curIndex -= node.weight //TODO: add doc
+                        if (curIndex < 0) return null
                         // cases to check:
                         // - we need to add fallback, so we can check next child
                         // - handle last/rightmost child in loop (done!)
-                        //
-
-                        // val charOrNull = getImpl(curIndex, node)
-
+                        // - where should we check of curIndex is negative
+                        when (val charOrTraversedWeight = traverseChild(curIndex, node)) {
+                            is Char -> return charOrTraversedWeight
+                            is Int -> curIndex -= charOrTraversedWeight
+                            else -> error("unexpected result")
+                        }
                     }
                 }
             }
@@ -81,7 +96,7 @@ class Rope(value: String) {
     }
 
     // Returns
-    private fun traverseChild(index: Int, parent: BTreeNode): Any? { // Char || Int || null
+    private fun traverseChild(index: Int, node: BTreeNode): Any { // Char || Int
         TODO()
     }
 
@@ -112,6 +127,9 @@ class Rope(value: String) {
     override fun toString(): String = root.toStringDebug()
 
 }
+
+private val OUT_OF_BOUNDS = Symbol("OUT_OF_BOUNDS")
+
 
 // string-btree utils
 
