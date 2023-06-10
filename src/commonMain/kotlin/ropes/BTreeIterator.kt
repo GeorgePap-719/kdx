@@ -9,7 +9,7 @@ class BTreeNodeIterator(root: BTreeNode) : Iterator<LeafNode> {
 
     init {
         fillPath()
-        size = index // do not + 1 index, since in last insertion we always inc the index ([index++])
+        size = index // cannot + 1 index, since in last insertion we always inc the index ([index++])
         index = 0
     }
 

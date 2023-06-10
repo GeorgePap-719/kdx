@@ -74,6 +74,7 @@ sealed class BTreeNode(
     /**
      * Returns the [LeafNode] at the given [index] or `null` if the [index] is out of bounds of this tree.
      */
+    //TODO: impl should be revisited
     open operator fun get(index: Int): LeafNode? {
         if (index < 0) return null
         return LazyPathFinder(this, index).getOrNull()
@@ -167,6 +168,7 @@ sealed class BTreeNode(
 
             is LeafNode -> {
                 sb.append("isLeafNode=true,")
+                sb.append("value=$value,")
             }
         }
         sb.append("height=$height,")
