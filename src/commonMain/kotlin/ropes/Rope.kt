@@ -18,27 +18,22 @@ class Rope(value: String) {
         var curNode = root
         val stack = ArrayStack<IndexedInternalNode>(root.height)
 
-        loop@ while (true) {
+        while (true) {
             when (curNode) {
                 is LeafNode -> {
                     if (curIndex < curNode.length) curNode.value[curIndex] // fast-path
+                    if (curNode === root) return null // single-node btree.
                     // Two major cases:
                     // 1. out-of-bounds for this leaf, but we still have the next child to check.
                     // 2. subtract weight properly
                     curIndex -= curNode.weight
-                    if (curIndex < 0) return null
-                    while (true) {
-                        //TODO: state here all procedure
-                        //TODO: this scenario prob does not cover up all subcases.
-                        val parent = stack.popOrNull()
-                        if (parent == null && curNode === root) {
-                            if (curNode !is IndexedInternalNode) return null
-                            curNode = curNode.nextChildOrElse { return null } // no more nodes to traverse
-                            continue
-                        }
-                        if (parent == null) error("leaf:$curNode does not have a parent in stack")
-                        curNode = parent.nextChildOrMoveForward(stack) ?: return null
-                    }
+                    //TODO: state here all procedure
+                    //TODO: this scenario prob does not cover up all subcases.
+                    val parent = stack.popOrNull()
+                        ?: error("leaf:$curNode does not have a parent in stack")
+                    // If neither parent nor stack has a node to give back, then there are no more
+                    // nodes to traverse. Technically, returning `null` here means we are in right subtree.
+                    curNode = parent.nextChildOrMoveForward(stack) ?: return null
                 }
 
                 is InternalNode -> {
