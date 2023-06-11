@@ -26,15 +26,11 @@ class Rope(value: String) {
                     // 1. out-of-bounds for this leaf, but we still have the next child to check.
                     // 2. subtract weight properly
                     curIndex -= curNode.weight
-                    //TODO: not sure if this is ok scenario or some sort of IllegalState
-                    // Though, for simple scenario where root is leaf, it is needed.
                     if (curIndex < 0) return null
                     while (true) {
                         //TODO: state here all procedure
-                        // 1.
                         //TODO: this scenario prob does not cover up all subcases.
                         val parent = stack.popOrNull() ?: return null
-                        // 2.
                         curNode = parent.getNextChildAndIncIndexOrNull()
                             ?: continue // no more children to check, try again.
                         stack.push(parent)
@@ -43,39 +39,48 @@ class Rope(value: String) {
                 }
 
                 is InternalNode -> {
-                    // get node-iterator
                     val node = if (curNode is IndexedInternalNode) curNode else curNode.indexed()
+                    // push the current node, so we can always return as a fallback
                     stack.push(node)
                     val i = node.index
                     // Start by checking conditions on the first child
-                    // out of bounds
-                    if (i == 0 && node.children.size == 1 && curIndex >= node.weight) return null
                     // traverse each child 1-by-1
                     if (curIndex < node.weight) {
-                        curNode = node.getNextChildAndIncIndexOrNull() // index is in this subtree
-                            ?: error("unexpected result for node:$node")
+                        // index is in this subtree
+                        curNode = node.nextChildOrElse {
+                            // Current state:
+                            // - "curIndex < node.weight" is true.
+                            // - we are an internal node.
+                            // Since meet all preconditions, then at this point, there is a node to traverse.
+                            error("unexpected result for node:$node")
+                        }
                         continue
                     }
-                    // ---- Time to check next child ----
-                    // handle first case, since will be leftmost child
-                    if (i == 0) {
+                    if (i == 0) { // leftmost child
                         curIndex -= node.weight
                         // No need to check leaves on leftmost child,
                         // since we are sure `index` is not here.
-                        if (!node.tryIncIndex()) {
+                        if (!node.tryIncIndex()) { // skip first-child
                             curNode = stack.popOrNull() ?: return null
                             continue
                         }
+                    }
+                    curNode = node.nextChildOrElse {
                         // If stack returns `null`, there are no more nodes to traverse.
                         // In that case, we can safely assume we are out of bounds.
-                        curNode = node.getNextChildAndIncIndexOrNull() ?: stack.popOrNull() ?: return null
-                        continue
+                        node.findParentInStack(stack) ?: return null
                     }
-                    // try to visit the next child
-                    curNode = node.getNextChildAndIncIndexOrNull() ?: stack.popOrNull() ?: return null
                 }
             }
         }
+    }
+
+    private fun BTreeNode.findParentInStack(stack: ArrayStack<IndexedInternalNode>): IndexedInternalNode? {
+        var stackNode = stack.popOrNull() ?: return null
+        while (stackNode === this) {
+            stackNode = stack.popOrNull() ?: return null
+        }
+        return stackNode
     }
 
     fun length(): Int {
@@ -115,6 +120,10 @@ private fun IndexedInternalNode.getNextChildAndIncIndexOrNull(): BTreeNode? {
     val child = getNextChildOrNull() ?: return null
     tryIncIndex()
     return child
+}
+
+private inline fun IndexedInternalNode.nextChildOrElse(action: () -> BTreeNode): BTreeNode {
+    return getNextChildAndIncIndexOrNull() ?: action()
 }
 
 /**
