@@ -2,38 +2,48 @@ package ropes
 
 import keb.assert
 import keb.ropes.Rope
+import kotlin.random.Random
 import kotlin.test.Test
 
 class TestRope {
 
     @Test
-    fun testSearch() {
+    fun testIndex() {
         val rope = Rope("Test something")
         assert { rope[0] == 'T' }
+        assert { rope[1] == 'e' }
+        assert { rope[2] == 's' }
+        assert { rope[3] == 't' }
+        assert { rope[4] == ' ' }
+        assert { rope[5] == 's' }
+        assert { rope[6] == 'o' }
+        assert { rope[7] == 'm' }
+        assert { rope[7] == 'm' }
+        assert { rope[14] == null }
+    }
+
+    @Test
+    fun testBigIndexes() {
+        val random = Random
         val bigString = buildString {
-            for (i in 0 until 64 * 32) {
-                append("1")
+            for (i in 0 until 64 * 32 * 10) {
+                append(random.nextInt(0, 9))
             }
         }
-        val rope2 = Rope(bigString)
-        println(rope2[2044])
+        val rope = Rope(bigString)
+        println(rope)
+        println(rope.length())
 
-        println(rope2.toString())
-
-//        assert { rope2[0] == '0' }
-//        assert { rope2[1] == '1' }
-//        assert { rope2[2] == '2' }
-//        assert { rope2[3] == '3' }
-//        assert { rope2[4] == '4' }
-//        assert { rope2[5] == '5' }
-//        assert { rope2[6] == '6' }
-//        assert { rope2[7] == '7' }
-//        assert { rope2[8] == '8' }
-//        assert { rope2[2044] == '2' } // last number of 2047
-//        assert { rope2[2045] == '0' } // last number of 2047
-//        assert { rope2[2046] == '4' } // last number of 2047
-//        assert { rope2[2047] == '7' } // last number of 2047
-        assert { rope2[2048] == '7' } // last number of 2047
+//        assert { rope[0] == '0' }
+//        assert { rope[1] == '1' }
+//        assert { rope[2] == '2' }
+//        assert { rope[3] == '3' }
+//        assert { rope[4] == '4' }
+//        assert { rope[5] == '5' }
+//        assert { rope[6] == '6' }
+//        assert { rope[7] == '7' }
+//        println("indexOf:2986:${rope[2987]}")
+//        assert { rope[rope.length()] == null }
     }
 
     @Test
@@ -46,11 +56,13 @@ class TestRope {
     @Test
     fun testBigLengths() {
         val bigString = buildString {
-            for (i in 0 until 64 * 32) {
+            for (i in 0 until 64 * 32 * 10) {
                 append("1")
             }
         }
         val rope = Rope(bigString)
+        println(bigString.length)
+        println(rope.length())
         assert { rope.length() == bigString.length }
     }
 }

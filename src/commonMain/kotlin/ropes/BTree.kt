@@ -188,9 +188,7 @@ class LeafNode(val value: String) : BTreeNode(value.length, 0) {
     override val isInternalNode: Boolean = false
     override val isLeafNode: Boolean = true
 
-    val length: Int = value.length
-
-    override val isLegalNode: Boolean = length <= MAX_SIZE_LEAF
+    override val isLegalNode: Boolean = value.length <= MAX_SIZE_LEAF
 }
 
 const val MIN_CHILDREN = 4

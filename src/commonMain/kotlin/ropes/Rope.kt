@@ -7,6 +7,9 @@ package keb.ropes
 class Rope(value: String) {
     val root = btreeOf(value)
 
+    /**
+     * Returns the [Char] at the given [index] or `null` if the [index] is out of bounds of this rope.
+     */
     operator fun get(index: Int): Char? {
         if (index < 0) return null
         return getImpl(index, root)
@@ -21,7 +24,7 @@ class Rope(value: String) {
         while (true) {
             when (curNode) {
                 is LeafNode -> {
-                    if (curIndex < curNode.length) curNode.value[curIndex] // fast-path
+                    if (curIndex < curNode.weight) return curNode.value[curIndex] // fast-path
                     if (curNode === root) return null // single-node btree.
                     // Two major cases:
                     // 1. out-of-bounds for this leaf, but we still have the next child to check.
@@ -33,7 +36,7 @@ class Rope(value: String) {
                         ?: error("leaf:$curNode does not have a parent in stack")
                     // If neither parent nor stack has a node to give back, then there are no more
                     // nodes to traverse. Technically, returning `null` here means we are in right subtree.
-                    curNode = parent.nextChildOrMoveForward(stack) ?: return null
+                    curNode = parent.nextChildOrMoveStack(stack) ?: return null
                 }
 
                 is InternalNode -> {
@@ -81,16 +84,16 @@ class Rope(value: String) {
     }
 
     /**
-     * Returns next-child in [this] indexed-node or moves up in stack. In case stack is empty, it returns null.
+     * Returns next-child in [this] indexed-node or next element in stack. In case stack is empty, it returns null.
      */
-    private fun IndexedInternalNode.nextChildOrMoveForward(stack: ArrayStack<IndexedInternalNode>): BTreeNode? {
+    private fun IndexedInternalNode.nextChildOrMoveStack(stack: ArrayStack<IndexedInternalNode>): BTreeNode? {
         return nextChildOrElse { stack.popOrNull() ?: return null }
     }
 
     fun length(): Int {
         var curNode = root
+        var length = 0
         while (true) {
-            var length = 0
             when (curNode) {
                 is LeafNode -> return length + curNode.weight
                 is InternalNode -> {
@@ -135,7 +138,7 @@ private class IndexedInternalNode(
     var index = 0
         private set
 
-    val nextChildOrNull: BTreeNode? get() = if (hasNextChild()) null else nextChild()
+    val nextChildOrNull: BTreeNode? get() = if (hasNextChild()) nextChild() else null
 
     fun nextChild(): BTreeNode {
         if (index >= children.size) throw NoSuchElementException()
