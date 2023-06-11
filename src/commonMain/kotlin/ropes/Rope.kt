@@ -40,9 +40,8 @@ class Rope(value: String) {
 
                 is InternalNode -> {
                     val node = if (curNode is IndexedInternalNode) curNode else curNode.indexed()
-                    // push the current node, so we can always return as a fallback
+                    // push the current node, so we can always return as a fallback.
                     stack.push(node)
-                    val i = node.index
                     // Start by checking conditions on the first child
                     // traverse each child 1-by-1
                     if (curIndex < node.weight) {
@@ -56,12 +55,12 @@ class Rope(value: String) {
                         }
                         continue
                     }
-                    if (i == 0) { // leftmost child
+                    if (node.index == 0) { // leftmost child
                         curIndex -= node.weight
                         // No need to check leaves on leftmost child,
                         // since we are sure `index` is not here.
                         if (!node.tryIncIndex()) { // skip first-child
-                            curNode = stack.popOrNull() ?: return null
+                            curNode = node.findParentInStack(stack) ?: return null
                             continue
                         }
                     }
@@ -132,7 +131,7 @@ private inline fun IndexedInternalNode.nextChildOrElse(action: () -> BTreeNode):
 private class IndexedInternalNode(
     weight: Int,
     height: Int,
-    children: List<BTreeNode> = listOf(),
+    children: List<BTreeNode>,
 ) : InternalNode(weight, height, children) {
     var index = 0
         private set
