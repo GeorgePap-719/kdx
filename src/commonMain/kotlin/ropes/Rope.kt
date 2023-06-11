@@ -120,14 +120,8 @@ private fun InternalNode.indexed(): IndexedInternalNode {
     return IndexedInternalNode(weight, height, children)
 }
 
-private fun IndexedInternalNode.getNextChildAndIncIndexOrNull(): BTreeNode? {
-    val child = getNextChildOrNull() ?: return null
-    tryIncIndex()
-    return child
-}
-
 private inline fun IndexedInternalNode.nextChildOrElse(action: () -> BTreeNode): BTreeNode {
-    return getNextChildAndIncIndexOrNull() ?: action()
+    return nextChildOrNull ?: action()
 }
 
 /**
@@ -141,14 +135,21 @@ private class IndexedInternalNode(
     var index = 0
         private set
 
+    val nextChildOrNull: BTreeNode? get() = if (hasNextChild()) null else nextChild()
+
+    fun nextChild(): BTreeNode {
+        if (index >= children.size) throw NoSuchElementException()
+        return children[index++]
+    }
+
+    fun hasNextChild(): Boolean {
+        return index < children.size
+    }
+
     fun tryIncIndex(): Boolean {
         if (index == children.lastIndex) return false
         index++
         return true
-    }
-
-    fun getNextChildOrNull(): BTreeNode? {
-        return if (index < children.size) null else children[index]
     }
 }
 
