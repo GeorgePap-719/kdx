@@ -30,11 +30,14 @@ class Rope(value: String) {
                     while (true) {
                         //TODO: state here all procedure
                         //TODO: this scenario prob does not cover up all subcases.
-                        val parent = stack.popOrNull() ?: return null
-                        curNode = parent.getNextChildAndIncIndexOrNull()
-                            ?: continue // no more children to check, try again.
-                        stack.push(parent)
-                        continue@loop // is this enough?
+                        val parent = stack.popOrNull()
+                        if (parent == null && curNode === root) {
+                            if (curNode !is IndexedInternalNode) return null
+                            curNode = curNode.nextChildOrElse { return null } // no more nodes to traverse
+                            continue
+                        }
+                        if (parent == null) error("leaf:$curNode does not have a parent in stack")
+                        curNode = parent.nextChildOrMoveForward(stack) ?: return null
                     }
                 }
 
@@ -80,6 +83,13 @@ class Rope(value: String) {
             stackNode = stack.popOrNull() ?: return null
         }
         return stackNode
+    }
+
+    /**
+     * Returns next-child in [this] indexed node or moves up in stack. In case stack is empty, it returns null.
+     */
+    private fun IndexedInternalNode.nextChildOrMoveForward(stack: ArrayStack<IndexedInternalNode>): BTreeNode? {
+        return nextChildOrElse { stack.popOrNull() ?: return null }
     }
 
     fun length(): Int {
