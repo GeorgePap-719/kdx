@@ -81,7 +81,7 @@ class Rope(value: String) {
     }
 
     /**
-     * Returns next-child in [this] indexed node or moves up in stack. In case stack is empty, it returns null.
+     * Returns next-child in [this] indexed-node or moves up in stack. In case stack is empty, it returns null.
      */
     private fun IndexedInternalNode.nextChildOrMoveForward(stack: ArrayStack<IndexedInternalNode>): BTreeNode? {
         return nextChildOrElse { stack.popOrNull() ?: return null }
