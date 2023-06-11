@@ -37,15 +37,11 @@ class Rope(value: String) {
     private fun getImpl(index: Int, root: BTreeNode): Char? {
         var curIndex = index
         var curNode = root
-        var indexedRoot = if (root is InternalNode) root.indexed() else null
         val stack = ArrayStack<IndexedInternalNode>(root.height)
-        var nodePtr = 0 // TODO
 
-        outerLp@ while (true) {
+        loop@ while (true) {
             when (curNode) {
                 is LeafNode -> {
-                    // store this only for ref
-                    // return if (curIndex < curNode.value.length) curNode.value[curIndex] else null
                     if (curIndex < curNode.length) curNode.value[curIndex] // fast-path
                     // Two major cases:
                     // 1. Is out of bounds for sure because we are in rightmost child
@@ -56,93 +52,62 @@ class Rope(value: String) {
                     // Though, for simple scenario where root is leaf, it is needed.
                     if (curIndex < 0) return null
                     while (true) {
+                        //TODO: state here all procedure
                         // 1.
                         //TODO: this scenario prob does not cover up all subcases.
                         val parent = stack.popOrNull() ?: return null
+                        // If child is rightmost, then index is out of bounds.
+                        // hmm i think this cond does not stand.. let me think a bit about it.
+                        if (parent.index == parent.children.lastIndex) return null
                         // 2.
                         curNode = parent.getNextChildAndIncIndexOrNull()
                             ?: continue // no more children to check, try again.
                         stack.push(parent)
-                        continue@outerLp // is this enough?
+                        continue@loop // is this enough?
                     }
                 }
 
                 is InternalNode -> {
-                    val _curNode = curNode // otherwise smartcast is impossible
                     //TODO: add info about this action
-                    val curIndexedNode = _curNode.indexed()
-                    stack.push(curIndexedNode)
-
-                    for ((i, node) in _curNode.children.withIndex()) {
-                        // separate first child vs others
-                        if (i == 0 && _curNode.children.size == 1 && curIndex >= _curNode.weight) {
-                            return null // out of bounds
-                        }
-                        if (i == _curNode.children.lastIndex && node is LeafNode) { // rightmost child
-                            // Only at the rightmost leafNode we can check
-                            // if target `index` is out of bounds or not.
-                            return if (curIndex < node.value.length) node.value[curIndex] else null
-                        }
-                        ///
-                        ///
-                        // traverse each child 1-by-1
-                        if (curIndex < node.weight) {
-                            curNode = node // index is in this subtree
-                            continue@outerLp
-                        }
-                        // ---- Time to check next child ----
-                        // cases: we need to add fallback, so we can check the next child
-                        // - where should we check of curIndex is negative
-                        // handle first case, since will be leftmost child
-                        if (index == 0) {
-                            curIndex -= node.weight
-                            // No need to check leaves on leftmost child, since we can be sure `index`
-                            // is not here.
-                            continue
-                        }
-                        // need to visit child here
-                        // cases to check:
-                        // - we need to add fallback, so we can check next child
-                        curNode = node // something like this here
-                    }
-                }
-            }
-        }
-    }
-
-    private fun traverseChild(index: Int, child: BTreeNode): TraverseChildOp {
-        var curIndex = index
-        when (child) {
-            is LeafNode -> {
-                return if (curIndex < child.weight) {
-                    FoundChar(child.value[curIndex])
-                } else {
-                    TraversedWeight(child.weight)
-                }
-            }
-
-            is InternalNode -> {
-                for ((i, node) in child.children.withIndex()) {
-                    if (i == 0 && curIndex >= node.weight) {
-                        curIndex -= node.weight
+                    val node = if (curNode is IndexedInternalNode) curNode else curNode.indexed()
+                    stack.push(node)
+                    val i = node.index
+                    // Start by checking conditions on the first child
+                    // out of bounds
+                    if (i == 0 && node.children.size == 1 && curIndex >= node.weight) return null
+                    // traverse each child 1-by-1
+                    if (curIndex < node.weight) {
+                        curNode = node.getNextChildAndIncIndexOrNull() // index is in this subtree
+                            ?: error("unexpected result for node:$node")
                         continue
                     }
-                    //traverseChild()
-                    TODO()
+                    // ---- Time to check next child ----
+                    // - where should we check of curIndex is negative
+                    // handle first case, since will be leftmost child
+                    if (i == 0) {
+                        curIndex -= node.weight
+                        // No need to check leaves on leftmost child, since we can be sure `index`
+                        // is not here.
+                        if (!node.tryIncIndex()) {
+                            curNode = stack.popOrNull() ?: return null
+                            continue
+                        }
+                        // If stack returns `null`, there are no more nodes to traverse.
+                        // In that case, we can safely assume we are out of bounds.
+                        curNode = node.getNextChildAndIncIndexOrNull() ?: stack.popOrNull() ?: return null
+                        continue
+                    }
+                    // need to visit child here
+                    curNode = node.getNextChildAndIncIndexOrNull() ?: stack.popOrNull() ?: return null
                 }
             }
         }
-        TODO()
     }
 
-    private sealed class TraverseChildOp
-    private class FoundChar(val value: Char) : TraverseChildOp()
-    private class TraversedWeight(val value: Int) : TraverseChildOp()
-
     fun length(): Int {
+        var curNode = root
         while (true) {
             var length = 0
-            var curNode = root
             when (curNode) {
                 is LeafNode -> return length + curNode.weight
                 is InternalNode -> {
@@ -150,7 +115,6 @@ class Rope(value: String) {
                     val rightMostNode = curNode.children.last()
                     // accumulate lef-subtree weight and move on
                     length += curNode.weight
-                    @Suppress("UNUSED_VALUE")
                     curNode = rightMostNode
                     continue
                 }
@@ -179,15 +143,17 @@ private fun IndexedInternalNode.getNextChildAndIncIndexOrNull(): BTreeNode? {
     return child
 }
 
+
 private class IndexedInternalNode(
     weight: Int,
     height: Int,
     children: List<BTreeNode> = listOf(),
 ) : InternalNode(weight, height, children) {
-    private var index = 0
+    var index = 0
+        private set
 
     fun tryIncIndex(): Boolean {
-        if (index == children.size) return false
+        if (index == children.lastIndex) return false
         index++
         return true
     }
