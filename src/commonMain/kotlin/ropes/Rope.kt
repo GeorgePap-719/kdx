@@ -9,31 +9,10 @@ class Rope(value: String) {
 
     operator fun get(index: Int): Char? {
         if (index < 0) return null
-        return tailrecget(index, root)
+        return getImpl(index, root)
     }
 
     // variant of binary search
-    // notes: maybe we should subtract an index for every right child, otherwise probably we will always get out of
-    // bounds.
-    // note: wrong impl
-    private tailrec fun tailrecget(index: Int, curNode: BTreeNode): Char? {
-        if (curNode is LeafNode) {
-            val value = curNode.value
-            // We cannot avoid checking for out-of-bounds index,
-            // since it is not known until we reach the targeted leaf.
-            return if (index < value.length) curNode.value[index] else null
-        }
-        var curIndex = index
-        for (node in (curNode as InternalNode).children) {
-            if (curIndex < node.weight) return tailrecget(curIndex, node)
-            // for every right step we subtract the node's weight,
-            // this is needed to "compute" the leaf's proper index.
-            // TODO: check if this section needs documenting.
-            curIndex -= node.weight
-        }
-        return null // out of bounds
-    }
-
     private fun getImpl(index: Int, root: BTreeNode): Char? {
         var curIndex = index
         var curNode = root
@@ -44,9 +23,8 @@ class Rope(value: String) {
                 is LeafNode -> {
                     if (curIndex < curNode.length) curNode.value[curIndex] // fast-path
                     // Two major cases:
-                    // 1. Is out of bounds for sure because we are in rightmost child
-                    // 2. out-of-bounds for this leaf, but we still have the next child to check.
-                    // 3. subtract weight properly
+                    // 1. out-of-bounds for this leaf, but we still have the next child to check.
+                    // 2. subtract weight properly
                     curIndex -= curNode.weight
                     //TODO: not sure if this is ok scenario or some sort of IllegalState
                     // Though, for simple scenario where root is leaf, it is needed.
@@ -56,9 +34,6 @@ class Rope(value: String) {
                         // 1.
                         //TODO: this scenario prob does not cover up all subcases.
                         val parent = stack.popOrNull() ?: return null
-                        // If child is rightmost, then index is out of bounds.
-                        // hmm i think this cond does not stand.. let me think a bit about it.
-                        if (parent.index == parent.children.lastIndex) return null
                         // 2.
                         curNode = parent.getNextChildAndIncIndexOrNull()
                             ?: continue // no more children to check, try again.
@@ -68,7 +43,7 @@ class Rope(value: String) {
                 }
 
                 is InternalNode -> {
-                    //TODO: add info about this action
+                    // get node-iterator
                     val node = if (curNode is IndexedInternalNode) curNode else curNode.indexed()
                     stack.push(node)
                     val i = node.index
@@ -82,12 +57,11 @@ class Rope(value: String) {
                         continue
                     }
                     // ---- Time to check next child ----
-                    // - where should we check of curIndex is negative
                     // handle first case, since will be leftmost child
                     if (i == 0) {
                         curIndex -= node.weight
-                        // No need to check leaves on leftmost child, since we can be sure `index`
-                        // is not here.
+                        // No need to check leaves on leftmost child,
+                        // since we are sure `index` is not here.
                         if (!node.tryIncIndex()) {
                             curNode = stack.popOrNull() ?: return null
                             continue
@@ -97,7 +71,7 @@ class Rope(value: String) {
                         curNode = node.getNextChildAndIncIndexOrNull() ?: stack.popOrNull() ?: return null
                         continue
                     }
-                    // need to visit child here
+                    // try to visit the next child
                     curNode = node.getNextChildAndIncIndexOrNull() ?: stack.popOrNull() ?: return null
                 }
             }
@@ -143,7 +117,9 @@ private fun IndexedInternalNode.getNextChildAndIncIndexOrNull(): BTreeNode? {
     return child
 }
 
-
+/**
+ * A helper class to iterate through an internal node, similarly to an iterator.
+ */
 private class IndexedInternalNode(
     weight: Int,
     height: Int,
