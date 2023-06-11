@@ -126,7 +126,7 @@ private inline fun IndexedInternalNode.nextChildOrElse(action: () -> BTreeNode):
 }
 
 /**
- * A helper class to iterate through an internal node, similarly to an iterator.
+ * A helper class to iterate through an internal node's children, similarly to an iterator.
  */
 private class IndexedInternalNode(
     weight: Int,

@@ -20,7 +20,7 @@ class ArrayStack<T>(initialLength: Int) {
     }
 
     fun popOrNull(): T? {
-        if (size <= 0) return null
+        if (size == 0) return null
         @Suppress("UNCHECKED_CAST")
         val value = array[size - 1] as T
         array[size - 1] = null
