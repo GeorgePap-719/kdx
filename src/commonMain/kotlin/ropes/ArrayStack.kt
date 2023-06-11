@@ -4,6 +4,7 @@ class ArrayStack<T>(initialLength: Int) {
     private var array = arrayOfNulls<Any?>(initialLength)
 
     var size = 0
+        private set
 
     fun push(value: T) {
         val curArray = array // defensive-copy. TODO: not sure if it's worth it
