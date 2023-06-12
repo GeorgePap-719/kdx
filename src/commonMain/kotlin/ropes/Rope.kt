@@ -35,9 +35,13 @@ class Rope(value: String) {
                     //TODO: this scenario prob does not cover up all subcases.
                     val parent = stack.popOrNull()
                         ?: error("leaf:$curNode does not have a parent in stack")
-                    // If neither parent nor stack has a node to give back, then there are no more
-                    // nodes to traverse. Technically, returning `null` here means we are in rightmost subtree.
-                    curNode = parent.nextChildAndKeepRefOrElse(stack) { stack.popOrNull() ?: return null }
+                    // Iterate the next child and keep `self` reference in stack, since we
+                    // need to allow a child to find its parent in stack in the case of "failure".
+                    curNode = parent.nextChildAndKeepRefOrElse(stack) {
+                        // If neither `parent` nor stack has a node to give back, then there are no more
+                        // nodes to traverse. Technically, returning `null` here means we are in rightmost subtree.
+                        stack.popOrNull() ?: return null
+                    }
                 }
 
                 is InternalNode -> {
@@ -57,6 +61,8 @@ class Rope(value: String) {
                         continue
                     }
                     if (node.index == 0) { // leftmost child
+                        //TODO: we do not calculate here proper subtraction
+                        // Bug is in computing of weight.
                         curIndex -= node.weight
                         // No need to check leaves on leftmost child,
                         // since we are sure `index` is not here.
