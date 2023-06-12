@@ -21,6 +21,7 @@ class Rope(value: String) {
         var curNode = root
         val stack = ArrayStack<IndexedInternalNode>(root.height)
 
+        //TODO: we give next child, but we lose ref to ourselves
         while (true) {
             when (curNode) {
                 is LeafNode -> {
@@ -35,8 +36,8 @@ class Rope(value: String) {
                     val parent = stack.popOrNull()
                         ?: error("leaf:$curNode does not have a parent in stack")
                     // If neither parent nor stack has a node to give back, then there are no more
-                    // nodes to traverse. Technically, returning `null` here means we are in right subtree.
-                    curNode = parent.nextChildOrMoveStack(stack) ?: return null
+                    // nodes to traverse. Technically, returning `null` here means we are in rightmost subtree.
+                    curNode = parent.nextChildAndKeepRefOrElse(stack) { stack.popOrNull() ?: return null }
                 }
 
                 is InternalNode -> {
@@ -44,7 +45,6 @@ class Rope(value: String) {
                     // push the current node, so we can always return as a fallback.
                     stack.push(node)
                     // Start by checking conditions on the first child
-                    // traverse each child 1-by-1
                     if (curIndex < node.weight) {
                         // index is in this subtree
                         curNode = node.nextChildOrElse {
@@ -61,6 +61,9 @@ class Rope(value: String) {
                         // No need to check leaves on leftmost child,
                         // since we are sure `index` is not here.
                         if (!node.tryIncIndex()) { // skip first-child
+                            // No more children to traverse in this node, go to the parent node.
+                            // If either node is the root or there is no parent, then it means there
+                            // are no more nodes to traverse, and `index` is out of bounds.
                             curNode = node.findParentInStack(stack) ?: return null
                             continue
                         }
@@ -83,11 +86,17 @@ class Rope(value: String) {
         return stackNode
     }
 
-    /**
-     * Returns next-child in [this] indexed-node or next element in stack. In case stack is empty, it returns null.
-     */
-    private fun IndexedInternalNode.nextChildOrMoveStack(stack: ArrayStack<IndexedInternalNode>): BTreeNode? {
-        return nextChildOrElse { stack.popOrNull() ?: return null }
+    //TODO: probably we need something like this
+    private inline fun IndexedInternalNode.nextChildAndKeepRefOrElse(
+        stack: ArrayStack<IndexedInternalNode>,
+        action: () -> BTreeNode
+    ): BTreeNode = nextChildOrNull.let {
+        if (it == null) {
+            action()
+        } else {
+            stack.push(this)
+            return it
+        }
     }
 
     fun length(): Int {
@@ -123,6 +132,8 @@ private fun InternalNode.indexed(): IndexedInternalNode {
     return IndexedInternalNode(weight, height, children)
 }
 
+// Warning: careful when using this API.
+//TODO: delete it? to avoid bad usages
 private inline fun IndexedInternalNode.nextChildOrElse(action: () -> BTreeNode): BTreeNode {
     return nextChildOrNull ?: action()
 }

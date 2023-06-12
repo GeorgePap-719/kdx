@@ -2,7 +2,6 @@ package ropes
 
 import keb.assert
 import keb.ropes.Rope
-import kotlin.random.Random
 import kotlin.test.Test
 
 class TestRope {
@@ -24,15 +23,17 @@ class TestRope {
 
     @Test
     fun testBigIndexes() {
-        val random = Random
         val bigString = buildString {
+            var indexStr = 0
             for (i in 0 until 64 * 32 * 10) {
-                append(random.nextInt(0, 9))
+                if (indexStr == 10) indexStr = 0
+                append(indexStr++)
             }
         }
+        val len = bigString.length
         val rope = Rope(bigString)
         println(rope)
-        println(rope.length())
+        println(bigString.length)
 
 //        assert { rope[0] == '0' }
 //        assert { rope[1] == '1' }
@@ -42,8 +43,11 @@ class TestRope {
 //        assert { rope[5] == '5' }
 //        assert { rope[6] == '6' }
 //        assert { rope[7] == '7' }
-//        println("indexOf:2986:${rope[2987]}")
-//        assert { rope[rope.length()] == null }
+
+        println(rope[len - 1])
+        assert { rope[len - 1] == '9' }
+
+        assert { rope[len] == null }
     }
 
     @Test
@@ -53,7 +57,7 @@ class TestRope {
         assert { rope.length() == testValue.length }
     }
 
-    @Test
+    @Test//TODO:
     fun testBigLengths() {
         val bigString = buildString {
             for (i in 0 until 64 * 32 * 10) {
