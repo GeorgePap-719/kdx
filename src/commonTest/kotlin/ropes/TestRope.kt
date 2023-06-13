@@ -23,31 +23,35 @@ class TestRope {
 
     @Test
     fun testBigIndexes() {
-        val bigString = buildString {
-            var indexStr = 0
-            for (i in 0 until 64 * 32 * 10) {
-                if (indexStr == 10) indexStr = 0
-                append(indexStr++)
-            }
-        }
-        val len = bigString.length
+        val bigString = createString(10 * SIZE_OF_LEAF)
         val rope = Rope(bigString)
-        println(rope)
-        println(bigString.length)
 
-        assert { rope[0] == '0' }
-        assert { rope[1] == '1' }
-        assert { rope[2] == '2' }
-        assert { rope[3] == '3' }
-        assert { rope[4] == '4' }
-        assert { rope[5] == '5' }
-        assert { rope[6] == '6' }
-        assert { rope[7] == '7' }
-//
-        println(rope[len - 1])
-        assert { rope[len - 1] == '9' }
+        for (index in bigString.indices) {
+            assert { rope[index] == bigString[index] }
+        }
 
-        assert { rope[len] == null }
+        assert { rope[bigString.length] == null } // out of bounds
+    }
+
+    @Test
+    fun stressTestIndexed() {
+        val bigString = createString(100_000)
+        val rope = Rope(bigString)
+
+        for (index in bigString.indices) {
+            assert { rope[index] == bigString[index] }
+        }
+
+        assert { rope[bigString.length] == null } // out of bounds
+    }
+
+    @Test
+    fun stressTestForBigNumbersOutOfBounds() {
+        val string = createString(SIZE_OF_LEAF)
+        val rope = Rope(string)
+        for (i in SIZE_OF_LEAF..SIZE_OF_LEAF * 100) {
+            assert { rope[i] == null }
+        }
     }
 
     @Test
@@ -65,8 +69,18 @@ class TestRope {
             }
         }
         val rope = Rope(bigString)
-        println(bigString.length)
-        println(rope.length())
         assert { rope.length() == bigString.length }
     }
 }
+
+private fun createString(factor: Int): String {
+    return buildString {
+        var indexStr = 0
+        for (i in 0 until factor) {
+            if (indexStr == 10) indexStr = 0
+            append(indexStr++)
+        }
+    }
+}
+
+private const val SIZE_OF_LEAF = 64 * 32
