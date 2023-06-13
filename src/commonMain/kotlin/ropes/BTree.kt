@@ -168,7 +168,7 @@ sealed class BTreeNode(
 
             is LeafNode -> {
                 sb.append("isLeafNode=true,")
-//                sb.append("value=$value,")
+                sb.append("value=$value,")
             }
         }
         sb.append("height=$height,")

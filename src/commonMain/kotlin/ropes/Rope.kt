@@ -28,11 +28,10 @@ class Rope(value: String) {
                     if (curIndex < curNode.weight) return curNode.value[curIndex] // fast-path
                     if (curNode === root) return null // single-node btree.
                     // Two major cases:
-                    // 1. out-of-bounds for this leaf, but we still have the next child to check.
+                    // 1. out-of-bounds for this leaf, but we still have the next child to check (if there is one).
                     // 2. subtract weight properly
                     curIndex -= curNode.weight
                     //TODO: state here all procedure
-                    //TODO: this scenario prob does not cover up all subcases.
                     val parent = stack.popOrNull()
                         ?: error("leaf:$curNode does not have a parent in stack")
                     // Iterate the next child and keep `self` reference in stack, since we
@@ -52,11 +51,12 @@ class Rope(value: String) {
                     if (curIndex < node.weight) {
                         // index is in this subtree
                         curNode = node.nextChildOrElse {
-                            // Current state:
-                            // - "curIndex < node.weight" is true.
-                            // - we are an internal node.
-                            // Since meet all preconditions, then at this point, there is a node to traverse.
-                            error("unexpected result for node:$node")
+                            // At this point, `index` is out of bounds because we tried to traverse
+                            // a non-existent "next" node, in an internal node where we are certain that
+                            // `index` should be within this subtree. Technically, this happens because
+                            // when we are in the rightmost leafNode, we cannot be sure there is not a
+                            // "next" leaf. We have to traverse the tree backwards and check explicitly.
+                            return null
                         }
                         continue
                     }

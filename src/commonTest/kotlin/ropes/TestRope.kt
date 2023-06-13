@@ -35,15 +35,15 @@ class TestRope {
         println(rope)
         println(bigString.length)
 
-//        assert { rope[0] == '0' }
-//        assert { rope[1] == '1' }
-//        assert { rope[2] == '2' }
-//        assert { rope[3] == '3' }
-//        assert { rope[4] == '4' }
-//        assert { rope[5] == '5' }
-//        assert { rope[6] == '6' }
-//        assert { rope[7] == '7' }
-
+        assert { rope[0] == '0' }
+        assert { rope[1] == '1' }
+        assert { rope[2] == '2' }
+        assert { rope[3] == '3' }
+        assert { rope[4] == '4' }
+        assert { rope[5] == '5' }
+        assert { rope[6] == '6' }
+        assert { rope[7] == '7' }
+//
         println(rope[len - 1])
         assert { rope[len - 1] == '9' }
 
