@@ -21,17 +21,12 @@ class Rope(value: String) {
         var curNode = root
         val stack = ArrayStack<IndexedInternalNode>(root.height)
 
-        //TODO: we give next child, but we lose ref to ourselves
         while (true) {
             when (curNode) {
                 is LeafNode -> {
                     if (curIndex < curNode.weight) return curNode.value[curIndex] // fast-path
                     if (curNode === root) return null // single-node btree.
-                    // Two major cases:
-                    // 1. out-of-bounds for this leaf, but we still have the next child to check (if there is one).
-                    // 2. subtract weight properly
                     curIndex -= curNode.weight
-                    //TODO: state here all procedure
                     val parent = stack.popOrNull()
                         ?: error("leaf:$curNode does not have a parent in stack")
                     // Iterate the next child and keep `self` reference in stack, since we
