@@ -332,20 +332,22 @@ private fun createParent(left: BTreeNode, right: BTreeNode): InternalNode {
  * Creates a parent for [nodes], without checking if satisfies the requirements for a legal btree.
  */
 private fun createParent(nodes: List<BTreeNode>): InternalNode {
-    val weight = nodes.first().computeWeightInLeftSubtree()
+    val weight = computeWeightInLeftSubtreeForParent(nodes)
     val height = nodes.maxOf { it.height } + 1
     return InternalNode(weight, height, nodes)
 }
 
-//TODO: this can probably be improved, by not searching all leaves
-private fun BTreeNode.computeWeightInLeftSubtree(): Int {
-    return when (this) {
-        is InternalNode -> {
-            //TODO: is this redundant action since the weight is already computed?
-            val leftmost = this.children.first()
-            return leftmost.sumOf { it.weight } // sumOf weight in leaves
-        }
-
-        is LeafNode -> this.weight
+/**
+ * Computes weight in left subtree for a new parent.
+ */
+private fun computeWeightInLeftSubtreeForParent(children: List<BTreeNode>): Int {
+    return when (val leftmostNode = children.first()) {
+        is LeafNode -> leftmostNode.weight
+        //TODO: check if we can compute this with faster path
+        is InternalNode -> leftmostNode.sumOf { it.weight }
     }
 }
+
+
+
+
