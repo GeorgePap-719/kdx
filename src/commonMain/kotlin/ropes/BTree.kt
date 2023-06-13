@@ -75,6 +75,7 @@ sealed class BTreeNode(
      * Returns the [LeafNode] at the given [index] or `null` if the [index] is out of bounds of this tree.
      */
     //TODO: impl should be revisited
+    @Deprecated("care with this API")
     open operator fun get(index: Int): LeafNode? {
         if (index < 0) return null
         return LazyPathFinder(this, index).getOrNull()

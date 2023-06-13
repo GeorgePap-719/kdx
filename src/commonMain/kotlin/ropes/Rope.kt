@@ -24,6 +24,7 @@ class Rope(private val root: BTreeNode) {
     //  -- in that part of the tree.
     // * uses a stack to keep reference to parent nodes, in case it
     //  -- needs to traverse the tree backwards.
+    @Suppress("DuplicatedCode") //TODO: avoid dup
     private fun getImpl(index: Int, root: BTreeNode): Char? {
         var curIndex = index
         var curNode = root
@@ -107,6 +108,90 @@ class Rope(private val root: BTreeNode) {
         }
     }
 
+    // if index > length() -> will append char
+    fun insert(index: Int, char: Char): Rope {
+        if (index == 0) {
+            TODO("addFirst()")
+        }
+        TODO()
+    }
+
+    fun addFirst(input: Char): Rope {
+        // - find the first leafNode and check if it has any more space left
+        val leftmostChild = root.findLeftmostChild()
+        if (leftmostChild.weight + 1 <= MAX_SIZE_LEAF) {
+            if (leftmostChild === root) return Rope(leftmostChild.value + input) // fast-path
+            val newChild = LeafNode(leftmostChild.value + input)
+
+        }
+        // - if yes then inserted there and rebuild where necessary.
+        // - if not, check if parent (internal node) has any space left for one more child
+        // - if yes, then insert child in start and rebuild where necessary
+        // - if not, traverse the tree backwards until we find an empty spot.
+        // - rebuilding may even create a new root above old one.
+        TODO()
+    }
+
+    // note: this may even return root itself
+    private fun BTreeNode.findLeftmostChild(): LeafNode {
+        var curNode = this
+        while (true) {
+            when (curNode) {
+                is LeafNode -> return curNode
+                is InternalNode -> curNode = curNode.children.first()
+            }
+        }
+    }
+
+    private inline fun <R> getBaseImpl(
+        index: Int,
+        stack: ArrayStack<IndexedInternalNode>,
+        onOutOfBounds: () -> R,
+
+        ) {
+
+    }
+
+
+    inner class RopeIterator(root: BTreeNode) {
+        private val links = mutableMapOf<BTreeNode, BTreeNode>() // child || parent
+        private var next: BTreeNode? = null
+
+        private val stack = ArrayStack<IndexedInternalNode>(root.height)
+        var curIndex = 0
+        var curNode = root
+
+
+        @Suppress("DuplicatedCode")
+        fun hasNext(): Boolean {
+            var curNode = curNode
+            while (true) {
+                when (curNode) {
+                    is LeafNode -> {
+
+                    }
+
+                    is InternalNode -> {
+                        val indexedNode = if (curNode is IndexedInternalNode) curNode else curNode.indexed()
+                        stack.push(indexedNode)
+                        while (indexedNode.index < indexedNode.children.size) {
+
+                        }
+                    }
+                }
+            }
+            TODO("do we need here so bad a lazy iteration?")
+        }
+
+        private fun link(child: BTreeNode, parent: BTreeNode) {
+            links[child] = parent
+        }
+
+        fun next(): BTreeNode {
+            return this.next ?: throw NoSuchElementException()
+        }
+    }
+
     fun length(): Int {
         var curNode = root
         var length = 0
@@ -136,18 +221,18 @@ class Rope(private val root: BTreeNode) {
 
 // btree utils
 
-private fun InternalNode.indexed(): IndexedInternalNode {
+internal fun InternalNode.indexed(): IndexedInternalNode {
     return IndexedInternalNode(weight, height, children)
 }
 
-private inline fun IndexedInternalNode.nextChildOrElse(action: () -> BTreeNode): BTreeNode {
+internal inline fun IndexedInternalNode.nextChildOrElse(action: () -> BTreeNode): BTreeNode {
     return nextChildOrNull ?: action()
 }
 
 /**
  * A helper class to iterate through an internal node's children, similarly to an iterator.
  */
-private class IndexedInternalNode(
+internal class IndexedInternalNode(
     weight: Int,
     height: Int,
     children: List<BTreeNode>,
