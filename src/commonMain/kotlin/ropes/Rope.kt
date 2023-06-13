@@ -15,7 +15,11 @@ class Rope(value: String) {
         return getImpl(index, root)
     }
 
-    // variant of binary search
+    // variant of binary search.
+    // * is able to skip effectively left subtrees if `index` is not
+    //  -- in that part of the tree.
+    // * uses a stack to keep reference to parent nodes, in case it
+    //  -- needs to traverse the tree backwards.
     private fun getImpl(index: Int, root: BTreeNode): Char? {
         var curIndex = index
         var curNode = root
@@ -87,7 +91,6 @@ class Rope(value: String) {
         return stackNode
     }
 
-    //TODO: probably we need something like this
     private inline fun IndexedInternalNode.nextChildAndKeepRefOrElse(
         stack: ArrayStack<IndexedInternalNode>,
         action: () -> BTreeNode
@@ -133,8 +136,6 @@ private fun InternalNode.indexed(): IndexedInternalNode {
     return IndexedInternalNode(weight, height, children)
 }
 
-// Warning: careful when using this API.
-//TODO: delete it? to avoid bad usages
 private inline fun IndexedInternalNode.nextChildOrElse(action: () -> BTreeNode): BTreeNode {
     return nextChildOrNull ?: action()
 }
