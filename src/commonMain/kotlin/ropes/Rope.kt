@@ -1,11 +1,15 @@
 package keb.ropes
 
 
+fun Rope(value: String): Rope {
+    val root = btreeOf(value)
+    return Rope(root)
+}
+
 /**
  * Represents a [Rope data structure](https://en.wikipedia.org/wiki/Rope_(data_structure)#Index).
  */
-class Rope(value: String) {
-    val root = btreeOf(value)
+class Rope(private val root: BTreeNode) {
 
     /**
      * Returns the [Char] at the given [index] or `null` if the [index] is out of bounds of this rope.

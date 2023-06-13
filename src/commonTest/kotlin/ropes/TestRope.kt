@@ -61,7 +61,7 @@ class TestRope {
         assert { rope.length() == testValue.length }
     }
 
-    @Test//TODO:
+    @Test//TODO: fails for more than one leaf
     fun testBigLengths() {
         val bigString = buildString {
             for (i in 0 until 64 * 32 * 10) {
