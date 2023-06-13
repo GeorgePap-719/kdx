@@ -46,9 +46,9 @@ class Rope(value: String) {
                     val node = if (curNode is IndexedInternalNode) curNode else curNode.indexed()
                     // push the current node, so we can always return as a fallback.
                     stack.push(node)
-                    // Start by checking conditions on the first child
+                    // If `index` is less than node's weight, then we know
+                    // for use that `index` is in this subtree.
                     if (curIndex < node.weight) {
-                        // index is in this subtree
                         curNode = node.nextChildOrElse {
                             // At this point, `index` is out of bounds because we tried to traverse
                             // a non-existent "next" node, in an internal node where we are certain that
