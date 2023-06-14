@@ -14,30 +14,32 @@ class Rope(private val root: BTreeNode) {
     /**
      * Returns the [Char] at the given [index] or `null` if the [index] is out of bounds of this rope.
      */
-    operator fun get(index: Int): Char? {
-        val stack = ArrayStack<IndexedInternalNode>(root.height)
-        return getImpl(index,
-            root,
-            stack,
-            onOutOfBounds = { null },
-            onElementRetrieved = { e -> e }
+    operator fun get(index: Int): Char? =
+        getImpl(
+            index = index,
+            root = root,
+            onOutOfBounds = { return null },
+            onElementRetrieved = { _, _, element -> return element }
         )
-    }
 
     // if index > length() -> will append char
     fun insert(index: Int, char: Char): Rope {
         if (index == 0) {
-            TODO("addFirst()")
+            return addFirst(char)
         }
         TODO()
     }
 
     fun addFirst(input: Char): Rope {
         // - find the first leafNode and check if it has any more space left
-        val leftmostChild = root.findLeftmostChild()
+        val leftmostChild = getWithSafeIndex(
+            index = 0,
+            root = root,
+            onElementRetrieved = { leaf, _, _ -> leaf }
+        )
         if (leftmostChild.weight + 1 <= MAX_SIZE_LEAF) {
-            if (leftmostChild === root) return Rope(leftmostChild.value + input) // fast-path
-            val newChild = LeafNode(leftmostChild.value + input)
+            if (leftmostChild === root) return Rope(input + leftmostChild.value) // fast-path
+            val newChild = LeafNode(input + leftmostChild.value)
 
         }
         // - if yes then inserted there and rebuild where necessary.
@@ -48,18 +50,13 @@ class Rope(private val root: BTreeNode) {
         TODO()
     }
 
-    // note: this may even return root itself
-    private fun BTreeNode.findLeftmostChild(): LeafNode {
-        TODO()
-    }
-
     private inline fun <R> getWithSafeIndex(
         /* The target index to retrieve. */
         index: Int,
         /* The tree which we iterate. */
         root: BTreeNode,
         /* The stack which keeps references to parent nodes. */
-        stack: ArrayStack<IndexedInternalNode>,
+        stack: ArrayStack<IndexedInternalNode> = defaultStack(),
         /* This lambda is invoked when the target element has
         been retrieved successfully. */
         onElementRetrieved: (
@@ -92,7 +89,7 @@ class Rope(private val root: BTreeNode) {
         /* The tree which we iterate. */
         root: BTreeNode,
         /* The stack which keeps references to parent nodes. */
-        stack: ArrayStack<IndexedInternalNode>,
+        stack: ArrayStack<IndexedInternalNode> = defaultStack(),
         /* This lambda is invoked when the target index is
         out of bounds for the current in tree. */
         onOutOfBounds: () -> R,
@@ -192,43 +189,51 @@ class Rope(private val root: BTreeNode) {
         }
     }
 
+    private fun defaultStack(): ArrayStack<IndexedInternalNode> = ArrayStack(root.height)
 
-    inner class RopeIterator(root: BTreeNode) {
+    inner class PersistentRopeIteratorWithHistory(root: BTreeNode, index: Int) {
         private val links = mutableMapOf<BTreeNode, BTreeNode>() // child || parent
         private var next: BTreeNode? = null
+        private var curIndex = index
+        //TODO: curNode = root
 
-        private val stack = ArrayStack<IndexedInternalNode>(root.height)
-        var curIndex = 0
-        var curNode = root
+        //TODO: peek()
+        private val path = ArrayStack<BTreeNode>(root.height)
 
+        private var _i: Int? = null
+        private var _leaf: LeafNode? = null
+        private var _element: Char? = null
 
-        @Suppress("DuplicatedCode")
+        val i: Int get() = _i!!
+        val leaf: LeafNode get() = _leaf!!
+        val element: Char get() = _element!!
+
+        // TODO("do we need here so bad a lazy iteration?")
         fun hasNext(): Boolean {
-            var curNode = curNode
-            while (true) {
-                when (curNode) {
-                    is LeafNode -> {
-
-                    }
-
-                    is InternalNode -> {
-                        val indexedNode = if (curNode is IndexedInternalNode) curNode else curNode.indexed()
-                        stack.push(indexedNode)
-                        while (indexedNode.index < indexedNode.children.size) {
-
-                        }
-                    }
-                }
-            }
-            TODO("do we need here so bad a lazy iteration?")
+            next = getImpl(
+                index = curIndex, // curIndex++
+                root = root,
+                onOutOfBounds = { null },
+                onElementRetrieved = { leaf, i, element ->
+                    _i = i
+                    _leaf = leaf
+                    _element = element
+                    leaf
+                },
+                // add comments
+                onNextChild = { path.push(it) }
+            )
+            return if (next == null) return false else true
         }
 
         private fun link(child: BTreeNode, parent: BTreeNode) {
             links[child] = parent
         }
 
-        fun next(): BTreeNode {
-            return this.next ?: throw NoSuchElementException()
+        fun next(): BTreeNode = next ?: throw NoSuchElementException()
+
+        fun set(element: Char): BTreeNode {
+            TODO()
         }
     }
 
@@ -249,7 +254,6 @@ class Rope(private val root: BTreeNode) {
             }
         }
     }
-
 
     // ###################
     // # Debug Functions #
