@@ -20,28 +20,8 @@ class Rope(private val root: BTreeNode) {
             root,
             stack,
             onOutOfBounds = { null },
-            onElement = { e -> e }
+            onElementRetrieved = { e -> e }
         )
-    }
-
-    private fun BTreeNode.findParentInStack(stack: ArrayStack<IndexedInternalNode>): IndexedInternalNode? {
-        var stackNode = stack.popOrNull() ?: return null
-        while (stackNode === this) {
-            stackNode = stack.popOrNull() ?: return null
-        }
-        return stackNode
-    }
-
-    private inline fun IndexedInternalNode.nextChildAndKeepRefOrElse(
-        stack: ArrayStack<IndexedInternalNode>,
-        action: () -> BTreeNode
-    ): BTreeNode = nextChildOrNull.let {
-        if (it == null) {
-            action()
-        } else {
-            stack.push(this)
-            return it
-        }
     }
 
     // if index > length() -> will append char
@@ -70,14 +50,35 @@ class Rope(private val root: BTreeNode) {
 
     // note: this may even return root itself
     private fun BTreeNode.findLeftmostChild(): LeafNode {
-        var curNode = this
-        while (true) {
-            when (curNode) {
-                is LeafNode -> return curNode
-                is InternalNode -> curNode = curNode.children.first()
-            }
-        }
+        TODO()
     }
+
+    private inline fun <R> getWithSafeIndex(
+        /* The target index to retrieve. */
+        index: Int,
+        /* The tree which we iterate. */
+        root: BTreeNode,
+        /* The stack which keeps references to parent nodes. */
+        stack: ArrayStack<IndexedInternalNode>,
+        /* This lambda is invoked when the target element has
+        been retrieved successfully. */
+        onElementRetrieved: (
+            leaf: LeafNode,
+            i: Int,
+            element: Char
+        ) -> R,
+        /* This lambda is invoked when we retrieve the next
+        child-node by a preceding nextChild() call. */
+        onNextChild: (next: BTreeNode) -> Unit = {}
+    ): R = getImpl(
+        index = index,
+        root = root,
+        stack = stack,
+        // This fun should be invoked only for safe `index`.
+        onOutOfBounds = { error("unexpected out-of-bounds error for index:$index") },
+        onElementRetrieved = onElementRetrieved,
+        onNextChild = onNextChild
+    )
 
     // abstract get implementation.
     // variant of binary search.
@@ -95,19 +96,26 @@ class Rope(private val root: BTreeNode) {
         /* This lambda is invoked when the target index is
         out of bounds for the current in tree. */
         onOutOfBounds: () -> R,
-        /* This lambda is invoked when the target index is found. */
-        onElement: (element: Char) -> R,
+        /* This lambda is invoked when the target element has
+        been retrieved successfully. */
+        onElementRetrieved: (
+            leaf: LeafNode,
+            i: Int,
+            element: Char
+        ) -> R,
         /* This lambda is invoked when we retrieve the next
         child-node by a preceding nextChild() call. */
         onNextChild: (next: BTreeNode) -> Unit = {}
     ): R {
-        if (index < 0) return onOutOfBounds() // does not support negative `index`
+        if (index < 0) return onOutOfBounds() // rope does not support negative `index`
         var curIndex = index
         var curNode = root
         while (true) {
             when (curNode) {
                 is LeafNode -> {
-                    if (curIndex < curNode.weight) return onElement(curNode.value[curIndex]) // fast-path
+                    if (curIndex < curNode.weight) {
+                        return onElementRetrieved(curNode, curIndex, curNode.value[curIndex]) // fast-path
+                    }
                     if (curNode === root) return onOutOfBounds() // single-node btree.
                     curIndex -= curNode.weight
                     val parent = stack.popOrNull()
@@ -161,6 +169,26 @@ class Rope(private val root: BTreeNode) {
                     onNextChild(curNode)
                 }
             }
+        }
+    }
+
+    private fun BTreeNode.findParentInStack(stack: ArrayStack<IndexedInternalNode>): IndexedInternalNode? {
+        var stackNode = stack.popOrNull() ?: return null
+        while (stackNode === this) {
+            stackNode = stack.popOrNull() ?: return null
+        }
+        return stackNode
+    }
+
+    private inline fun IndexedInternalNode.nextChildAndKeepRefOrElse(
+        stack: ArrayStack<IndexedInternalNode>,
+        action: () -> BTreeNode
+    ): BTreeNode = nextChildOrNull.let {
+        if (it == null) {
+            action()
+        } else {
+            stack.push(this)
+            return it
         }
     }
 
