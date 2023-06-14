@@ -143,13 +143,76 @@ class Rope(private val root: BTreeNode) {
         }
     }
 
+    @Suppress("DuplicatedCode")
     private inline fun <R> getBaseImpl(
         index: Int,
+        root: BTreeNode,
         stack: ArrayStack<IndexedInternalNode>,
         onOutOfBounds: () -> R,
+        onElement: (element: Char) -> R,
+        onNextChild: (next: BTreeNode) -> Unit = {}
+    ): R {
+        if (index < 0) return onOutOfBounds() // does not support negative `index`
+        var curIndex = index
+        var curNode = root
+        while (true) {
+            when (curNode) {
+                is LeafNode -> {
+                    if (curIndex < curNode.weight) return onElement(curNode.value[curIndex]) // fast-path
+                    if (curNode === root) return onOutOfBounds() // single-node btree.
+                    curIndex -= curNode.weight
+                    val parent = stack.popOrNull()
+                        ?: error("leaf:$curNode does not have a parent in stack")
+                    // Iterate the next child and keep `self` reference in stack, since we
+                    // need to allow a child to find its parent in stack in the case of "failure".
+                    curNode = parent.nextChildAndKeepRefOrElse(stack) {
+                        // If neither `parent` nor stack has a node to give back, then there are no more
+                        // nodes to traverse. Technically, returning `null` here means we are in rightmost subtree.
+                        stack.popOrNull() ?: return onOutOfBounds()
+                    }
+                    onNextChild(curNode)
+                }
 
-        ) {
-
+                is InternalNode -> {
+                    val node = if (curNode is IndexedInternalNode) curNode else curNode.indexed()
+                    // push the current node, so we can always return as a fallback.
+                    stack.push(node)
+                    // If `index` is less than node's weight, then we know
+                    // for use that `index` is in this subtree.
+                    if (curIndex < node.weight) {
+                        curNode = node.nextChildOrElse {
+                            // At this point, `index` is out of bounds because we tried to traverse
+                            // a non-existent "next" node, in an internal node where we are certain that
+                            // `index` should be within this subtree. Technically, this happens because
+                            // when we are in the rightmost leafNode, we cannot be sure there is not a
+                            // "next" leaf. We have to traverse the tree backwards and check explicitly.
+                            return onOutOfBounds()
+                        }
+                        onNextChild(curNode)
+                        continue
+                    }
+                    if (node.index == 0) { // leftmost child
+                        curIndex -= node.weight
+                        // No need to check leaves on leftmost child,
+                        // since we are sure `index` is not here.
+                        if (!node.tryIncIndex()) { // skip first-child
+                            // No more children to traverse in this node, go to the parent node.
+                            // If either node is the root or there is no parent, then it means there
+                            // are no more nodes to traverse, and `index` is out of bounds.
+                            curNode = node.findParentInStack(stack) ?: return onOutOfBounds()
+                            onNextChild(curNode)
+                            continue
+                        }
+                    }
+                    curNode = node.nextChildOrElse {
+                        // If stack returns `null`, there are no more nodes to traverse.
+                        // In that case, we can safely assume we are out of bounds.
+                        node.findParentInStack(stack) ?: return onOutOfBounds()
+                    }
+                    onNextChild(curNode)
+                }
+            }
+        }
     }
 
 
