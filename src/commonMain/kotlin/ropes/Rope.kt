@@ -15,77 +15,13 @@ class Rope(private val root: BTreeNode) {
      * Returns the [Char] at the given [index] or `null` if the [index] is out of bounds of this rope.
      */
     operator fun get(index: Int): Char? {
-        if (index < 0) return null
-        return getImpl(index, root)
-    }
-
-    // variant of binary search.
-    // * is able to skip effectively left subtrees if `index` is not
-    //  -- in that part of the tree.
-    // * uses a stack to keep reference to parent nodes, in case it
-    //  -- needs to traverse the tree backwards.
-    @Suppress("DuplicatedCode") //TODO: avoid dup
-    private fun getImpl(index: Int, root: BTreeNode): Char? {
-        var curIndex = index
-        var curNode = root
         val stack = ArrayStack<IndexedInternalNode>(root.height)
-
-        while (true) {
-            when (curNode) {
-                is LeafNode -> {
-                    if (curIndex < curNode.weight) return curNode.value[curIndex] // fast-path
-                    if (curNode === root) return null // single-node btree.
-                    curIndex -= curNode.weight
-                    val parent = stack.popOrNull()
-                        ?: error("leaf:$curNode does not have a parent in stack")
-                    // Iterate the next child and keep `self` reference in stack, since we
-                    // need to allow a child to find its parent in stack in the case of "failure".
-                    curNode = parent.nextChildAndKeepRefOrElse(stack) {
-                        // If neither `parent` nor stack has a node to give back, then there are no more
-                        // nodes to traverse. Technically, returning `null` here means we are in rightmost subtree.
-                        stack.popOrNull() ?: return null
-                    }
-                }
-
-                is InternalNode -> {
-                    val node = if (curNode is IndexedInternalNode) curNode else curNode.indexed()
-                    // push the current node, so we can always return as a fallback.
-                    stack.push(node)
-                    // If `index` is less than node's weight, then we know
-                    // for use that `index` is in this subtree.
-                    if (curIndex < node.weight) {
-                        curNode = node.nextChildOrElse {
-                            // At this point, `index` is out of bounds because we tried to traverse
-                            // a non-existent "next" node, in an internal node where we are certain that
-                            // `index` should be within this subtree. Technically, this happens because
-                            // when we are in the rightmost leafNode, we cannot be sure there is not a
-                            // "next" leaf. We have to traverse the tree backwards and check explicitly.
-                            return null
-                        }
-                        continue
-                    }
-                    if (node.index == 0) { // leftmost child
-                        //TODO: we do not calculate here proper subtraction
-                        // Bug is in computing of weight.
-                        curIndex -= node.weight
-                        // No need to check leaves on leftmost child,
-                        // since we are sure `index` is not here.
-                        if (!node.tryIncIndex()) { // skip first-child
-                            // No more children to traverse in this node, go to the parent node.
-                            // If either node is the root or there is no parent, then it means there
-                            // are no more nodes to traverse, and `index` is out of bounds.
-                            curNode = node.findParentInStack(stack) ?: return null
-                            continue
-                        }
-                    }
-                    curNode = node.nextChildOrElse {
-                        // If stack returns `null`, there are no more nodes to traverse.
-                        // In that case, we can safely assume we are out of bounds.
-                        node.findParentInStack(stack) ?: return null
-                    }
-                }
-            }
-        }
+        return getImpl(index,
+            root,
+            stack,
+            onOutOfBounds = { null },
+            onElement = { e -> e }
+        )
     }
 
     private fun BTreeNode.findParentInStack(stack: ArrayStack<IndexedInternalNode>): IndexedInternalNode? {
@@ -143,13 +79,26 @@ class Rope(private val root: BTreeNode) {
         }
     }
 
-    @Suppress("DuplicatedCode")
-    private inline fun <R> getBaseImpl(
+    // abstract get implementation.
+    // variant of binary search.
+    // * is able to skip effectively left subtrees if `index` is not
+    //  -- in that part of the tree.
+    // * uses a stack to keep reference to parent nodes, in case it
+    //  -- needs to traverse the tree backwards.
+    private inline fun <R> getImpl(
+        /* The target index to retrieve. */
         index: Int,
+        /* The tree which we iterate. */
         root: BTreeNode,
+        /* The stack which keeps references to parent nodes. */
         stack: ArrayStack<IndexedInternalNode>,
+        /* This lambda is invoked when the target index is
+        out of bounds for the current in tree. */
         onOutOfBounds: () -> R,
+        /* This lambda is invoked when the target index is found. */
         onElement: (element: Char) -> R,
+        /* This lambda is invoked when we retrieve the next
+        child-node by a preceding nextChild() call. */
         onNextChild: (next: BTreeNode) -> Unit = {}
     ): R {
         if (index < 0) return onOutOfBounds() // does not support negative `index`
@@ -181,11 +130,11 @@ class Rope(private val root: BTreeNode) {
                     // for use that `index` is in this subtree.
                     if (curIndex < node.weight) {
                         curNode = node.nextChildOrElse {
-                            // At this point, `index` is out of bounds because we tried to traverse
+                            // At this point, `index` is out of bounds because we tried to iterate
                             // a non-existent "next" node, in an internal node where we are certain that
                             // `index` should be within this subtree. Technically, this happens because
                             // when we are in the rightmost leafNode, we cannot be sure there is not a
-                            // "next" leaf. We have to traverse the tree backwards and check explicitly.
+                            // "next" leaf. We have to iterate the tree backwards and check explicitly.
                             return onOutOfBounds()
                         }
                         onNextChild(curNode)
@@ -205,7 +154,7 @@ class Rope(private val root: BTreeNode) {
                         }
                     }
                     curNode = node.nextChildOrElse {
-                        // If stack returns `null`, there are no more nodes to traverse.
+                        // If stack returns `null`, there are no more nodes to iterate.
                         // In that case, we can safely assume we are out of bounds.
                         node.findParentInStack(stack) ?: return onOutOfBounds()
                     }
