@@ -191,12 +191,12 @@ class Rope(private val root: BTreeNode) {
 
     private fun defaultStack(): ArrayStack<IndexedInternalNode> = ArrayStack(root.height)
 
-    inner class RopeIteratorWithHistory(private val root: BTreeNode, index: Int) {
+    inner class SingleIndexRopeIteratorWithHistory(private val root: BTreeNode, index: Int) {
         init {
             require(index > -1) { "index cannot be negative, but got:$index" }
         }
 
-        private val links = mutableMapOf<BTreeNode, BTreeNode>() // child || parent
+        private val links = mutableMapOf<BTreeNode, InternalNode>() // child || parent
         private val stack = PeekableArrayStack<BTreeNode>(root.height)
 
         init {
@@ -220,7 +220,10 @@ class Rope(private val root: BTreeNode) {
             }
         }
 
-        val currentLeaf: LeafNode get() = curNode as? LeafNode ?: error("should be invoked after the first iteration")
+        val currentLeaf: LeafNode
+            get() = curNode as? LeafNode ?: error("should be invoked after the first iteration")
+
+        fun findParent(child: BTreeNode): InternalNode? = links[child]
 
         fun hasNext(): Boolean {
             val next = nextOrIfClosed { return false }
@@ -301,11 +304,6 @@ class Rope(private val root: BTreeNode) {
                 if (!parent.children.contains(this)) return@forEach
                 links[this] = parent // link
             }
-        }
-
-
-        fun set(element: Char): BTreeNode {
-            TODO()
         }
     }
 
