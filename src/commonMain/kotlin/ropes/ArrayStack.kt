@@ -1,7 +1,7 @@
 package keb.ropes
 
-class ArrayStack<T>(initialLength: Int) {
-    private var array = arrayOfNulls<Any?>(initialLength)
+open class ArrayStack<T>(initialLength: Int) {
+    protected var array = arrayOfNulls<Any?>(initialLength)
 
     var size = 0
         private set
@@ -27,5 +27,18 @@ class ArrayStack<T>(initialLength: Int) {
         array[size - 1] = null
         size--
         return value
+    }
+}
+
+class PeekableArrayStack<T>(initialLength: Int) : ArrayStack<T>(initialLength) {
+    fun peek(): T? {
+        if (size == 0) return null
+        @Suppress("UNCHECKED_CAST")
+        return array[size - 1] as T
+    }
+
+    fun peekAll(): List<T> {
+        @Suppress("UNCHECKED_CAST")
+        return if (size == 0) return emptyList() else array.toList() as List<T>
     }
 }
