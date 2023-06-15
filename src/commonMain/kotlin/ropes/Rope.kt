@@ -192,10 +192,26 @@ class Rope(private val root: BTreeNode) {
     private fun defaultStack(): ArrayStack<IndexedInternalNode> = ArrayStack(root.height)
 
     inner class PersistentRopeIteratorWithHistory(root: BTreeNode, index: Int) {
+        init {
+            require(index > -1) { "index cannot be negative, but got:$index" }
+        }
+
         private val links = mutableMapOf<BTreeNode, BTreeNode>() // child || parent
-        private var next: BTreeNode? = null
         private var curIndex = index
         //TODO: curNode = root
+
+        // - char -> value is retrieved successfully.
+        // - null -> element is retrieved.
+        // - CLOSED -> we are out of bounds and further operations are not allowed.
+        private var nextOrClosed: Any? = null // Char || null || CLOSED
+
+        private inline fun nextOrIfClosed(onClosedAction: () -> Nothing): Char? = nextOrClosed.let {
+            if (it == CLOSED) {
+                onClosedAction()
+            } else {
+                it as Char?
+            }
+        }
 
         //TODO: peek()
         private val path = ArrayStack<BTreeNode>(root.height)
@@ -208,9 +224,60 @@ class Rope(private val root: BTreeNode) {
         val leaf: LeafNode get() = _leaf!!
         val element: Char get() = _element!!
 
-        // TODO("do we need here so bad a lazy iteration?")
         fun hasNext(): Boolean {
-            next = getImpl(
+            val next = nextOrIfClosed { return false }
+            return if (next == null) {
+                tryIterate() != null
+            } else {
+                true
+            }
+        }
+
+        private fun link(child: BTreeNode, parent: BTreeNode) {
+            links[child] = parent
+        }
+
+        fun next(): Char {
+            val next = nextOrIfClosed { throw NoSuchElementException() }
+                ?: return tryIterate()
+                    ?: throw NoSuchElementException()
+            cleanNext()
+            return next
+        }
+
+        /**
+         * Tries to iterate the next `index` if this iterator is not marked as closed. If this iteration
+         * returns null, then it also marks the iterator as closed.
+         */
+        private fun tryIterate(): Char? {
+            if (nextOrClosed === CLOSED) return null
+            nextImpl()
+            if (nextOrClosed == null) {
+                markAsClosed()
+                return null
+            }
+            return nextOrClosed as Char
+        }
+
+        /**
+         * Marks the iterator as closed and forbids any other subsequent [next] calls.
+         */
+        private fun markAsClosed() {
+            nextOrClosed = CLOSED
+        }
+
+        /**
+         * Cleans the `next` variable.
+         */
+        private fun cleanNext() {
+            nextOrClosed = null
+        }
+
+        private fun nextImpl() {
+            check(nextOrClosed == null) {
+                "either this iterator is closed or the `nextOrClosed` has not been cleaned after previous retrieval"
+            }
+            nextOrClosed = getImpl(
                 index = curIndex, // curIndex++
                 root = root,
                 onOutOfBounds = { null },
@@ -218,19 +285,12 @@ class Rope(private val root: BTreeNode) {
                     _i = i
                     _leaf = leaf
                     _element = element
-                    leaf
+                    element
                 },
                 // add comments
                 onNextChild = { path.push(it) }
             )
-            return if (next == null) return false else true
         }
-
-        private fun link(child: BTreeNode, parent: BTreeNode) {
-            links[child] = parent
-        }
-
-        fun next(): BTreeNode = next ?: throw NoSuchElementException()
 
         fun set(element: Char): BTreeNode {
             TODO()
@@ -320,3 +380,5 @@ private fun splitIntoNodes(input: String): BTreeNode {
     }
     return merge(leaves)
 }
+
+private val CLOSED = keb.Symbol("CLOSED")
