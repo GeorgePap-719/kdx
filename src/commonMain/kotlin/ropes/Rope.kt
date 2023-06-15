@@ -191,12 +191,19 @@ class Rope(private val root: BTreeNode) {
 
     private fun defaultStack(): ArrayStack<IndexedInternalNode> = ArrayStack(root.height)
 
-    inner class RopeIteratorWithHistory(root: BTreeNode, index: Int) {
+    inner class RopeIteratorWithHistory(private val root: BTreeNode, index: Int) {
         init {
             require(index > -1) { "index cannot be negative, but got:$index" }
         }
 
         private val links = mutableMapOf<BTreeNode, BTreeNode>() // child || parent
+        private val stack = PeekableArrayStack<BTreeNode>(root.height)
+
+        init {
+            //TODO: add explanation
+            pushInStack(root)
+        }
+
         private var curIndex = index
         private var curNode = root
 
@@ -213,9 +220,6 @@ class Rope(private val root: BTreeNode) {
             }
         }
 
-        //TODO: peek()
-        private val path = ArrayStack<BTreeNode>(root.height)
-
         val currentLeaf: LeafNode get() = curNode as? LeafNode ?: error("should be invoked after the first iteration")
 
         fun hasNext(): Boolean {
@@ -225,10 +229,6 @@ class Rope(private val root: BTreeNode) {
             } else {
                 true
             }
-        }
-
-        private fun link(child: BTreeNode, parent: BTreeNode) {
-            links[child] = parent
         }
 
         fun next(): Char {
@@ -273,17 +273,36 @@ class Rope(private val root: BTreeNode) {
             }
             getImpl(
                 index = curIndex, // curIndex++
-                root = root,
+                root = curNode,
                 onOutOfBounds = { null },
                 onElementRetrieved = { leaf, i, element ->
+                    pushInStack(leaf)
                     curIndex = i
                     curNode = leaf
                     nextOrClosed = element
                 },
                 // add comments
-                onNextChild = { path.push(it) }
+                onNextChild = {
+                    pushInStack(it)
+                    it.findParentInStackAndLink()
+                }
             )
         }
+
+        private fun pushInStack(child: BTreeNode) {
+            stack.push(child)
+        }
+
+        private fun BTreeNode.findParentInStackAndLink() {
+            if (this === root) return
+            stack.forEach {
+                if (it === this) return@forEach
+                val parent = it as? InternalNode ?: return@forEach
+                if (!parent.children.contains(this)) return@forEach
+                links[this] = parent // link
+            }
+        }
+
 
         fun set(element: Char): BTreeNode {
             TODO()
