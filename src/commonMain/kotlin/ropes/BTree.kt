@@ -234,6 +234,10 @@ open class InternalNode(
     }
 }
 
+fun InternalNode.replaceChildWithCopyOnWrite(oldNode: BTreeNode, newNode: BTreeNode): InternalNode {
+    return createParent(this.children.replaceWithCopyOnWrite(oldNode, newNode))
+}
+
 fun List<BTreeNode>.replaceWithCopyOnWrite(oldNode: BTreeNode, newNode: BTreeNode): List<BTreeNode> {
     return buildList {
         for (node in this@replaceWithCopyOnWrite) {

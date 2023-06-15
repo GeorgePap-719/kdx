@@ -32,15 +32,16 @@ class Rope(private val root: BTreeNode) {
 
     fun addFirst(input: Char): Rope {
         // - find the first leafNode and check if it has any more space left
-        val leftmostChild = getWithSafeIndex(
-            index = 0,
-            root = root,
-            onElementRetrieved = { leaf, _, _ -> leaf }
-        )
+        val iterator = SingleIndexRopeIteratorWithHistory(root, 0)
+        if (!iterator.hasNext()) error("unexpected")
+
+        val leftmostChild = iterator.currentLeaf
+
         if (leftmostChild.weight + 1 <= MAX_SIZE_LEAF) {
             if (leftmostChild === root) return Rope(input + leftmostChild.value) // fast-path
             val newChild = LeafNode(input + leftmostChild.value)
-
+            val newTree = rebuildTree(leftmostChild, newChild, iterator)
+            return Rope(newTree)
         }
         // - if yes then inserted there and rebuild where necessary.
         // - if not, check if parent (internal node) has any space left for one more child
@@ -50,6 +51,23 @@ class Rope(private val root: BTreeNode) {
         TODO()
     }
 
+    private fun rebuildTree(
+        oldNode: BTreeNode,
+        newNode: BTreeNode,
+        iterator: SingleIndexRopeIteratorWithHistory
+    ): BTreeNode {
+        var old = oldNode
+        var new = newNode
+        while (true) {
+            val parent = iterator.findParent(old) ?: error("todo") //TODO: should we just return new here?
+            val newParent = parent.replaceChildWithCopyOnWrite(old, new)
+            old = parent
+            new = newParent
+            if (old === root) return new
+        }
+    }
+
+    //TODO: check if we really need this.
     private inline fun <R> getWithSafeIndex(
         /* The target index to retrieve. */
         index: Int,
@@ -209,7 +227,7 @@ class Rope(private val root: BTreeNode) {
 
         // - char -> value is retrieved successfully.
         // - null -> element is retrieved.
-        // - CLOSED -> we are out of bounds and further operations are not allowed.
+        // - CLOSED -> we are out of bounds and further next() calls are not allowed.
         private var nextOrClosed: Any? = null // Char || null || CLOSED
 
         private inline fun nextOrIfClosed(onClosedAction: () -> Nothing): Char? = nextOrClosed.let {
