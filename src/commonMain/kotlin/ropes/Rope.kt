@@ -191,14 +191,14 @@ class Rope(private val root: BTreeNode) {
 
     private fun defaultStack(): ArrayStack<IndexedInternalNode> = ArrayStack(root.height)
 
-    inner class PersistentRopeIteratorWithHistory(root: BTreeNode, index: Int) {
+    inner class RopeIteratorWithHistory(root: BTreeNode, index: Int) {
         init {
             require(index > -1) { "index cannot be negative, but got:$index" }
         }
 
         private val links = mutableMapOf<BTreeNode, BTreeNode>() // child || parent
         private var curIndex = index
-        //TODO: curNode = root
+        private var curNode = root
 
         // - char -> value is retrieved successfully.
         // - null -> element is retrieved.
@@ -216,18 +216,12 @@ class Rope(private val root: BTreeNode) {
         //TODO: peek()
         private val path = ArrayStack<BTreeNode>(root.height)
 
-        private var _i: Int? = null
-        private var _leaf: LeafNode? = null
-        private var _element: Char? = null
-
-        val i: Int get() = _i!!
-        val leaf: LeafNode get() = _leaf!!
-        val element: Char get() = _element!!
+        val currentLeaf: LeafNode get() = curNode as? LeafNode ?: error("should be invoked after the first iteration")
 
         fun hasNext(): Boolean {
             val next = nextOrIfClosed { return false }
             return if (next == null) {
-                tryIterate() != null
+                tryGetNext() != null
             } else {
                 true
             }
@@ -239,17 +233,17 @@ class Rope(private val root: BTreeNode) {
 
         fun next(): Char {
             val next = nextOrIfClosed { throw NoSuchElementException() }
-                ?: return tryIterate()
+                ?: return tryGetNext()
                     ?: throw NoSuchElementException()
             cleanNext()
             return next
         }
 
         /**
-         * Tries to iterate the next `index` if this iterator is not marked as closed. If this iteration
-         * returns null, then it also marks the iterator as closed.
+         * Tries to get the next `Char` if this iterator is not marked as closed. If this iteration
+         * returns null, then it marks the iterator as closed.
          */
-        private fun tryIterate(): Char? {
+        private fun tryGetNext(): Char? {
             if (nextOrClosed === CLOSED) return null
             nextImpl()
             if (nextOrClosed == null) {
@@ -277,15 +271,14 @@ class Rope(private val root: BTreeNode) {
             check(nextOrClosed == null) {
                 "either this iterator is closed or the `nextOrClosed` has not been cleaned after previous retrieval"
             }
-            nextOrClosed = getImpl(
+            getImpl(
                 index = curIndex, // curIndex++
                 root = root,
                 onOutOfBounds = { null },
                 onElementRetrieved = { leaf, i, element ->
-                    _i = i
-                    _leaf = leaf
-                    _element = element
-                    element
+                    curIndex = i
+                    curNode = leaf
+                    nextOrClosed = element
                 },
                 // add comments
                 onNextChild = { path.push(it) }
