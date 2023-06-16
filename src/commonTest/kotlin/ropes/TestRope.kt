@@ -71,6 +71,16 @@ class TestRope {
         val rope = Rope(bigString)
         assert { rope.length() == bigString.length }
     }
+
+    @Test
+    fun testAddFirstSingleNodeWithRoomInLeaf() {
+        val string = createString(SIZE_OF_LEAF - 1)
+        val rope = Rope(string)
+        val newRope = rope.addFirst('h')
+        assert { newRope !== rope }
+        println(newRope)
+
+    }
 }
 
 private fun createString(factor: Int): String {

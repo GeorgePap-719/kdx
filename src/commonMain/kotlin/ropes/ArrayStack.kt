@@ -1,7 +1,7 @@
 package keb.ropes
 
 open class ArrayStack<T>(initialLength: Int) {
-    protected var array = arrayOfNulls<Any?>(initialLength)
+    protected var array = arrayOfNulls<Any?>(initialLength.coerceAtLeast(1))
 
     var size = 0
         private set
@@ -9,12 +9,12 @@ open class ArrayStack<T>(initialLength: Int) {
     fun push(value: T) {
         val curArray = array // defensive-copy. TODO: not sure if it's worth it
         val curLen = size
-        if (size + 1 <= array.size) {
+        if (curLen + 1 <= array.size) {
             curArray[size++] = value
             return
         }
         // needs resize
-        val newArray = arrayOfNulls<Any?>(size * 2)
+        val newArray = arrayOfNulls<Any?>((curLen * 2).coerceAtLeast(curLen + 1))
         for (i in 0 until curLen) newArray[i] = array[i]
         newArray[size++] = value
         array = newArray
