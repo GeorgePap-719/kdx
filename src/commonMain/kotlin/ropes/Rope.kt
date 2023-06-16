@@ -351,7 +351,7 @@ class Rope(private val root: BTreeNode) {
                     curNode = leaf
                     nextOrClosed = element
                 },
-                // add comments
+                //TODO: add comments
                 onNextChild = {
                     pushInStack(it)
                     it.findParentInStackAndLink()
