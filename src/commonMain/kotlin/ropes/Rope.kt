@@ -1,5 +1,7 @@
 package keb.ropes
 
+import keb.assert
+
 
 fun Rope(value: String): Rope {
     val root = btreeOf(value)
@@ -10,6 +12,10 @@ fun Rope(value: String): Rope {
  * Represents a [Rope data structure](https://en.wikipedia.org/wiki/Rope_(data_structure)#Index).
  */
 class Rope(private val root: BTreeNode) {
+
+    init {
+        assert { root.isBalanced() }
+    }
 
     /**
      * Returns the [Char] at the given [index] or `null` if the [index] is out of bounds of this rope.
