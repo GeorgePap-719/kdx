@@ -344,7 +344,7 @@ class Rope(private val root: BTreeNode) {
             getImpl(
                 index = curIndex, // curIndex++
                 root = curNode,
-                onOutOfBounds = { null },
+                onOutOfBounds = { nextOrClosed = null },
                 onElementRetrieved = { leaf, i, element ->
                     pushInStack(leaf)
                     curIndex = i
