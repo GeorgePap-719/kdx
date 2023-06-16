@@ -285,7 +285,7 @@ fun List<BTreeNode>.addWithCopyOnWrite(newNode: List<BTreeNode>, index: Int): Li
 fun InternalNode.tryAddChildren(children: List<BTreeNode>, index: Int? = null): InternalNode? {
     if (this.children.size + children.size > MAX_CHILDREN) return null
     val newChildren = this.children.addWithCopyOnWrite(children, index ?: children.size)
-    return InternalNode(this.weight, this.height, newChildren)
+    return createParent(newChildren)
 }
 
 /**
@@ -295,17 +295,24 @@ fun InternalNode.tryAddChildren(children: List<BTreeNode>, index: Int? = null): 
 fun InternalNode.tryAddChild(child: BTreeNode, index: Int? = null): InternalNode? {
     if (this.children.size + 1 > MAX_CHILDREN) return null
     val newChildren = this.children.addWithCopyOnWrite(child, index ?: children.size)
-    return InternalNode(this.weight, this.height, newChildren)
+    return createParent(newChildren)
 }
 
 // --- builders ---
+
+/**
+ * Merges [left] and [right] nodes into one balanced btree.
+ *
+ * @throws IllegalArgumentException if a node [is-not-legal][BTreeNode.isLegalNode].
+ */
+fun merge(left: BTreeNode, right: BTreeNode): InternalNode = merge(listOf(left, right))
 
 /**
  * Merges [nodes] into one balanced btree.
  *
  * @throws IllegalArgumentException if a node [is-not-legal][BTreeNode.isLegalNode].
  */
-fun merge(nodes: List<BTreeNode>): BTreeNode {
+fun merge(nodes: List<BTreeNode>): InternalNode {
     nodes.forEach {
         require(it.isLegalNode) { "node:$it does not meet the requirements" }
     }
@@ -316,7 +323,7 @@ fun merge(nodes: List<BTreeNode>): BTreeNode {
  * An analogue of the [merge] builder that does not check for invariants. Used internally in operators
  * where we trust the validity of nodes.
  */
-private fun unsafeMerge(nodes: List<BTreeNode>): BTreeNode {
+private fun unsafeMerge(nodes: List<BTreeNode>): InternalNode {
     if (nodes.size <= MAX_CHILDREN) return createParent(nodes)
     val leftList = nodes.subList(0, MAX_CHILDREN)
     val rightList = nodes.subList(MAX_CHILDREN, nodes.size)

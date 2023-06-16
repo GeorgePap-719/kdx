@@ -36,25 +36,66 @@ class Rope(private val root: BTreeNode) {
         TODO()
     }
 
+    // - find the first leafNode and check if it has any more space left
+    // - if yes then inserted there and rebuild where necessary.
+    // - if not, check if parent (internal node) has any space left for one more child
+    // - if yes, then insert child in start and rebuild where necessary
+    // - if not, split and merge.
+    // - rebuilding may even create a new root above old one.
     fun addFirst(input: Char): Rope {
-        // - find the first leafNode and check if it has any more space left
         val iterator = SingleIndexRopeIteratorWithHistory(root, 0)
         if (!iterator.hasNext()) error("unexpected")
-
         val leftmostChild = iterator.currentLeaf
-
         if (leftmostChild.weight + 1 <= MAX_SIZE_LEAF) {
             if (leftmostChild === root) return Rope(input + leftmostChild.value) // fast-path
             val newChild = LeafNode(input + leftmostChild.value)
             val newTree = rebuildTree(leftmostChild, newChild, iterator)
             return Rope(newTree)
         }
-        // - if yes then inserted there and rebuild where necessary.
-        // - if not, check if parent (internal node) has any space left for one more child
-        // - if yes, then insert child in start and rebuild where necessary
-        // - if not, traverse the tree backwards until we find an empty spot.
-        // - rebuilding may even create a new root above old one.
-        TODO()
+        return addFirstSlow(leftmostChild, iterator, input)
+    }
+
+    // split and merge
+    private fun addFirstSlow(
+        leftmostChild: LeafNode,
+        iterator: SingleIndexRopeIteratorWithHistory,
+        input: Char
+    ): Rope {
+        val parent = iterator.findParent(leftmostChild) ?: error("unexpected")
+        val newChild = LeafNode(input.toString())
+        val newParent = addChildFirstOrExpand(newChild, parent)
+        val newTree = rebuildTree(parent, newParent, iterator)
+        return Rope(newTree)
+    }
+
+    private fun addChildFirstOrExpand(child: LeafNode, parent: InternalNode): InternalNode {
+        val newNode = parent.tryAddChild(child, 0)
+        if (newNode != null) return newNode
+        val newParent = expandInternalNode(parent)
+        return newParent.tryAddChild(child, 0) ?: error("unexpected")
+    }
+
+    private fun expand(node: BTreeNode): BTreeNode {
+        return when (node) {
+            is LeafNode -> expandLeaf(node)
+            is InternalNode -> expandInternalNode(node)
+        }
+    }
+
+    private fun expandLeaf(leaf: LeafNode): InternalNode {
+        val half = leaf.weight / 2
+        val left = LeafNode(leaf.value.substring(0, half))
+        val right = LeafNode(leaf.value.substring(half))
+        return merge(left, right)
+    }
+
+    private fun expandInternalNode(node: InternalNode): InternalNode {
+        val half = node.children.size / 2
+        val left = node.children.subList(0, half)
+        val right = node.children.subList(half, node.children.size)
+        val leftParent = merge(left)
+        val rightParent = merge(right)
+        return merge(leftParent, rightParent)
     }
 
     private fun rebuildTree(
@@ -64,8 +105,10 @@ class Rope(private val root: BTreeNode) {
     ): BTreeNode {
         var old = oldNode
         var new = newNode
+        if (old === root) return newNode
         while (true) {
-            val parent = iterator.findParent(old) ?: error("todo") //TODO: should we just return new here?
+            // for non-root nodes, findParent() should always return a parent.
+            val parent = iterator.findParent(old) ?: error("unexpected:TODO") //TODO: should we just return new here?
             val newParent = parent.replaceChildWithCopyOnWrite(old, new)
             old = parent
             new = newParent

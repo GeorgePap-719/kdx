@@ -81,7 +81,7 @@ class TestRope {
         assert { newRope[0] == 'h' }
     }
 
-    @Test//TODO: this cannot be tested easily for now.
+    //@Test//TODO: this cannot be tested easily for now.
     fun testAddFirstWithRoomInLeaf() {
         val string = createString((SIZE_OF_LEAF - 1) * 8)
         val rope = Rope(string)
@@ -90,6 +90,17 @@ class TestRope {
         assert { newRope[0] == 'h' }
         println(newRope)
     }
+
+    @Test
+    fun testAddFirstWithNotRoomInLeaf() {
+        val string = createString(SIZE_OF_LEAF * 8)
+        val rope = Rope(string)
+        val newRope = rope.addFirst('h')
+        println(newRope)
+        assert { newRope !== rope }
+        assert { newRope[0] == 'h' }
+    }
+
 }
 
 private fun createString(factor: Int): String {
