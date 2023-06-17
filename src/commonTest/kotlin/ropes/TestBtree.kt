@@ -7,10 +7,7 @@ class TestBtree {
 
     @Test
     fun testCreationOfRope() {
-        val root = InternalNode(0, 0)
-        for (node in root) {
 
-        }
     }
 
     @Test

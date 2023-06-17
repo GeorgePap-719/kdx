@@ -179,9 +179,6 @@ sealed class BTreeNode(
     }
 }
 
-@Deprecated("bad api", ReplaceWith("listOf(this, other)"))
-operator fun BTreeNode.plus(other: BTreeNode): List<BTreeNode> = listOf(this, other)
-
 /**
  * Represents a leaf-node in Btree.
  */
@@ -197,16 +194,22 @@ const val MAX_CHILDREN = 8
 const val MAX_SIZE_LEAF = 2048
 
 /**
- * Represents an internal-node in Btree.
+ * Represents an internal-node in Btree with a maximum of 8 children.
  */
 open class InternalNode(
     weight: Int,
     height: Int,
-    val children: List<BTreeNode> = listOf(),
+    val children: List<BTreeNode>,
 ) : BTreeNode(weight, height) {
+
+    init {
+        require(children.isNotEmpty()) { "internal node cannot be empty" }
+    }
+
     override val isInternalNode: Boolean = true
     override val isLeafNode: Boolean = false
     override val isLegalNode: Boolean = isLegalNodeImpl()
+
 
     val areChildrenLegal: Boolean = areChildrenLegalImpl() //TODO: check if this pulls his weight
 
@@ -232,7 +235,62 @@ open class InternalNode(
         }
         return isLegal
     }
+
+    /**
+     * Returns a new expanded [node][InternalNode] by a factor of 2. This operation splits
+     * the tree in half and creates a new parent node for them.
+     *
+     * @throws IllegalArgumentException if a child node is not a legal ([BTreeNode.isLegalNode]).
+     */
+    fun expand(): InternalNode {
+        if (children.size == 1) return this
+        val half = children.size / 2
+        val left = children.subList(0, half)
+        val right = children.subList(half, children.size)
+        val leftParent = merge(left)
+        val rightParent = merge(right)
+        return merge(leftParent, rightParent) //TODO: check if we better use merge or unsafe merge
+    }
+
+    /**
+     * Merges the [other] tree to the right side of this tree, and creates a new balanced btree.
+     *
+     * @throws IllegalArgumentException if a child node is not a legal ([BTreeNode.isLegalNode]).
+     */
+    fun merge(other: InternalNode): InternalNode = merge(this, other)
+
+    /**
+     * Returns a new [node][InternalNode] with the specified [child] inserted at the specified [index].
+     *
+     * @throws IndexOutOfBoundsException if [index] is greater than or equal to the maximum size of children.
+     * @throws IllegalArgumentException if the resulting node has more than the maximum size of children.
+     */
+    fun add(index: Int, child: BTreeNode): InternalNode {
+        if (index >= MAX_CHILDREN) throw IndexOutOfBoundsException()
+        require(children.size + 1 <= MAX_CHILDREN) { "node cannot hold more than:$MAX_CHILDREN children" }
+        val newChildren = children.addWithCopyOnWrite(child, index)
+        return createParent(newChildren)
+    }
+
+    fun addLast(child: BTreeNode): InternalNode = add(children.size - 1, child)
+
+    fun addFirst(child: BTreeNode): InternalNode = add(0, child)
+
+    fun addAll(index: Int, children: List<BTreeNode>): InternalNode {
+        if (index >= MAX_CHILDREN) throw IndexOutOfBoundsException()
+        require(this.children.size + children.size <= MAX_CHILDREN) {
+            "node cannot hold more than:$MAX_CHILDREN children"
+        }
+        val newChildren = this.children.addWithCopyOnWrite(children, index)
+        return createParent(newChildren)
+    }
 }
+
+/**
+ * Adds the [other] tree to the right side of this tree, and creates a new balanced btree
+ * (see [InternalNode.merge]).
+ */
+operator fun InternalNode.plus(other: InternalNode): InternalNode = merge(other)
 
 fun InternalNode.replaceChildWithCopyOnWrite(oldNode: BTreeNode, newNode: BTreeNode): InternalNode {
     return createParent(this.children.replaceWithCopyOnWrite(oldNode, newNode))
@@ -253,6 +311,7 @@ fun List<BTreeNode>.replaceWithCopyOnWrite(oldNode: BTreeNode, newNode: BTreeNod
 fun List<BTreeNode>.addWithCopyOnWrite(newNode: BTreeNode, index: Int): List<BTreeNode> {
     return buildList {
         var added = false // flag to check if the new element is in the bounds of the current list.
+        //TODO: flag is no more needed, delete it.
         for ((_index, node) in this@addWithCopyOnWrite.withIndex()) {
             if (_index == index) {
                 add(newNode)
@@ -282,10 +341,9 @@ fun List<BTreeNode>.addWithCopyOnWrite(newNode: List<BTreeNode>, index: Int): Li
  * Tries to add a list of [children] on this node, with copy-on-write semantics, in the specified [index].
  * In case [index] is `null` the nodes are appended to the end of list. If receiver node cannot hold more children, it returns `null`.
  */
-fun InternalNode.tryAddChildren(children: List<BTreeNode>, index: Int? = null): InternalNode? {
+fun InternalNode.tryAddAll(children: List<BTreeNode>, index: Int? = null): InternalNode? {
     if (this.children.size + children.size > MAX_CHILDREN) return null
-    val newChildren = this.children.addWithCopyOnWrite(children, index ?: children.size)
-    return createParent(newChildren)
+    return addAll(index ?: (children.size - 1), children)
 }
 
 /**
@@ -294,8 +352,7 @@ fun InternalNode.tryAddChildren(children: List<BTreeNode>, index: Int? = null): 
  */
 fun InternalNode.tryAddChild(child: BTreeNode, index: Int? = null): InternalNode? {
     if (this.children.size + 1 > MAX_CHILDREN) return null
-    val newChildren = this.children.addWithCopyOnWrite(child, index ?: children.size)
-    return createParent(newChildren)
+    return add(index ?: (children.size - 1), child)
 }
 
 // --- builders ---
@@ -303,7 +360,7 @@ fun InternalNode.tryAddChild(child: BTreeNode, index: Int? = null): InternalNode
 /**
  * Merges [left] and [right] nodes into one balanced btree.
  *
- * @throws IllegalArgumentException if a node [is-not-legal][BTreeNode.isLegalNode].
+ * @throws IllegalArgumentException if a child node is not a legal ([BTreeNode.isLegalNode]).
  */
 fun merge(left: BTreeNode, right: BTreeNode): InternalNode = merge(listOf(left, right))
 

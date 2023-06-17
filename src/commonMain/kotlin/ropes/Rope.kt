@@ -29,11 +29,24 @@ class Rope(private val root: BTreeNode) {
         )
 
     // if index > length() -> will append char
-    fun insert(index: Int, char: Char): Rope {
+    fun insert(index: Int, element: Char): Rope {
         if (index == 0) {
-            return addFirst(char)
+            return addFirst(element)
         }
         TODO()
+    }
+
+    private fun add(index: Int, element: Char): Rope {
+        val iterator = SingleIndexRopeIteratorWithHistory(root, index)
+        if (!iterator.hasNext()) error("unexpected")
+        val leaf = iterator.currentLeaf
+        if (leaf.weight + 1 <= MAX_SIZE_LEAF) {
+            val newChild = leaf.add(index, element)
+            if (leaf === root) return Rope(newChild) // fast-path
+            val newTree = rebuildTree(leaf, newChild, iterator)
+            return Rope(newTree)
+        }
+        return addFirstSlow(leaf, iterator, element)
     }
 
     // - find the first leafNode and check if it has any more space left
@@ -72,6 +85,7 @@ class Rope(private val root: BTreeNode) {
         val newNode = parent.tryAddChild(child, 0)
         if (newNode != null) return newNode
         val newParent = expandInternalNode(parent)
+        //
         return newParent.tryAddChild(child, 0) ?: error("unexpected")
     }
 
@@ -261,6 +275,7 @@ class Rope(private val root: BTreeNode) {
     inner class SingleIndexRopeIteratorWithHistory(private val root: BTreeNode, index: Int) {
         init {
             require(index > -1) { "index cannot be negative, but got:$index" }
+            // This implementation has second `init`.
         }
 
         private val links = mutableMapOf<BTreeNode, InternalNode>() // child || parent
@@ -458,4 +473,26 @@ private fun splitIntoNodes(input: String): BTreeNode {
     return merge(leaves)
 }
 
+/**
+ * Returns a new leaf with the specified [element] inserted at the specified [index].
+ *
+ * @throws IllegalArgumentException if the resulting length exceeds the maximum size of a leaf.
+ */
+fun LeafNode.add(index: Int, element: String): LeafNode {
+    val newLen = value.length + element.length
+    require(newLen <= MAX_SIZE_LEAF) { "max size of a leaf is:$MAX_SIZE_LEAF, but got:$newLen" }
+    if (index == 0) return LeafNode(element + value)
+    if (index >= value.length) return LeafNode(value + element)
+    val newValue = buildString {
+        for (i in value.indices) {
+            if (i == index) append(element)
+            append(value[i])
+        }
+    }
+    return LeafNode(newValue)
+}
+
+fun LeafNode.add(index: Int, element: Char): LeafNode = add(index, element.toString())
+
+// Internal result for [SingleIndexRopeIteratorWithHistory.nextOrClosed]
 private val CLOSED = keb.Symbol("CLOSED")
