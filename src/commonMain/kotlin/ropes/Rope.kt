@@ -30,6 +30,13 @@ class Rope(private val root: BTreeNode) {
 
     // if index > length() -> will append char
     // throws for index -1 && out-of-bounds
+    //
+    // - find target leafNode and check if it has any more space left
+    // - if yes then inserted there and rebuild where necessary.
+    // - if not, check if parent (internal node) has any space left for one more child
+    // - if yes, then insert child in start and rebuild where necessary
+    // - if not, split and merge.
+    // - rebuilding may even create a new root above old one.
     fun insert(index: Int, element: Char): Rope {
         require(index > -1) { "index cannot be negative" }
         val iterator = SingleIndexRopeIteratorWithHistory(root, index)
@@ -41,40 +48,9 @@ class Rope(private val root: BTreeNode) {
             val newTree = rebuildTree(leaf, newChild, iterator)
             return Rope(newTree)
         }
+        // split and merge
         val parent = iterator.findParent(leaf) ?: error("unexpected")
         val newChild = LeafNode(element)
-        val newParent = addChildFirstOrExpand(newChild, parent)
-        val newTree = rebuildTree(parent, newParent, iterator)
-        return Rope(newTree)
-    }
-
-    // - find target leafNode and check if it has any more space left
-    // - if yes then inserted there and rebuild where necessary.
-    // - if not, check if parent (internal node) has any space left for one more child
-    // - if yes, then insert child in start and rebuild where necessary
-    // - if not, split and merge.
-    // - rebuilding may even create a new root above old one.
-    fun addFirst(input: Char): Rope {
-        val iterator = SingleIndexRopeIteratorWithHistory(root, 0)
-        if (!iterator.hasNext()) error("unexpected")
-        val leftmostChild = iterator.currentLeaf
-        if (leftmostChild.weight + 1 <= MAX_SIZE_LEAF) {
-            if (leftmostChild === root) return Rope(input + leftmostChild.value) // fast-path
-            val newChild = LeafNode(input + leftmostChild.value)
-            val newTree = rebuildTree(leftmostChild, newChild, iterator)
-            return Rope(newTree)
-        }
-        return addFirstSlow(leftmostChild, iterator, input)
-    }
-
-    // split and merge
-    private fun addFirstSlow(
-        leftmostChild: LeafNode,
-        iterator: SingleIndexRopeIteratorWithHistory,
-        input: Char
-    ): Rope {
-        val parent = iterator.findParent(leftmostChild) ?: error("unexpected")
-        val newChild = LeafNode(input)
         val newParent = addChildFirstOrExpand(newChild, parent)
         val newTree = rebuildTree(parent, newParent, iterator)
         return Rope(newTree)
