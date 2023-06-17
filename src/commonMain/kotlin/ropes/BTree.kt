@@ -311,7 +311,6 @@ fun List<BTreeNode>.replaceWithCopyOnWrite(oldNode: BTreeNode, newNode: BTreeNod
 fun List<BTreeNode>.addWithCopyOnWrite(newNode: BTreeNode, index: Int): List<BTreeNode> {
     return buildList {
         var added = false // flag to check if the new element is in the bounds of the current list.
-        //TODO: flag is no more needed, delete it.
         for ((_index, node) in this@addWithCopyOnWrite.withIndex()) {
             if (_index == index) {
                 add(newNode)
@@ -339,7 +338,8 @@ fun List<BTreeNode>.addWithCopyOnWrite(newNode: List<BTreeNode>, index: Int): Li
 
 /**
  * Tries to add a list of [children] on this node, with copy-on-write semantics, in the specified [index].
- * In case [index] is `null` the nodes are appended to the end of list. If receiver node cannot hold more children, it returns `null`.
+ * In case [index] is `null` the nodes are appended to the end of list. If receiver node cannot hold more children,
+ * it returns `null`.
  */
 fun InternalNode.tryAddAll(children: List<BTreeNode>, index: Int? = null): InternalNode? {
     if (this.children.size + children.size > MAX_CHILDREN) return null
@@ -347,12 +347,22 @@ fun InternalNode.tryAddAll(children: List<BTreeNode>, index: Int? = null): Inter
 }
 
 /**
- * Tries to add a child on this node, with copy-on-write semantics, in the specified [index]. In case [index]
- * is `null` the nodes are appended to the end of list. If receiver node cannot hold more children, it returns `null`.
+ * Returns a new [node][InternalNode] with the specified [child] inserted at the specified [index].
+ * In case [index] is `null` the nodes are appended to the end of list. If receiver node cannot
+ * hold more children, it returns `null`.
  */
-fun InternalNode.tryAddChild(child: BTreeNode, index: Int? = null): InternalNode? {
+fun InternalNode.tryAdd(child: BTreeNode, index: Int? = null): InternalNode? {
     if (this.children.size + 1 > MAX_CHILDREN) return null
     return add(index ?: (children.size - 1), child)
+}
+
+/**
+ * Returns a new [node][InternalNode] with the specified [child] inserted first. If receiver node
+ * cannot hold more children, it returns `null`.
+ */
+fun InternalNode.tryAddFirst(child: BTreeNode): InternalNode? {
+    if (this.children.size + 1 > MAX_CHILDREN) return null
+    return addFirst(child)
 }
 
 // --- builders ---

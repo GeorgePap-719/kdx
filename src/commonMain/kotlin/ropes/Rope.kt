@@ -82,34 +82,12 @@ class Rope(private val root: BTreeNode) {
     }
 
     private fun addChildFirstOrExpand(child: LeafNode, parent: InternalNode): InternalNode {
-        val newNode = parent.tryAddChild(child, 0)
-        if (newNode != null) return newNode
-        val newParent = expandInternalNode(parent)
-        //
-        return newParent.tryAddChild(child, 0) ?: error("unexpected")
-    }
-
-    private fun expand(node: BTreeNode): BTreeNode {
-        return when (node) {
-            is LeafNode -> expandLeaf(node)
-            is InternalNode -> expandInternalNode(node)
+        val newNode = parent.tryAddFirst(child)
+        if (newNode == null) {
+            val newParent = parent.expand()
+            return newParent.addFirst(child)
         }
-    }
-
-    private fun expandLeaf(leaf: LeafNode): InternalNode {
-        val half = leaf.weight / 2
-        val left = LeafNode(leaf.value.substring(0, half))
-        val right = LeafNode(leaf.value.substring(half))
-        return merge(left, right)
-    }
-
-    private fun expandInternalNode(node: InternalNode): InternalNode {
-        val half = node.children.size / 2
-        val left = node.children.subList(0, half)
-        val right = node.children.subList(half, node.children.size)
-        val leftParent = merge(left)
-        val rightParent = merge(right)
-        return merge(leftParent, rightParent)
+        return newNode
     }
 
     private fun rebuildTree(
@@ -493,6 +471,20 @@ fun LeafNode.add(index: Int, element: String): LeafNode {
 }
 
 fun LeafNode.add(index: Int, element: Char): LeafNode = add(index, element.toString())
+
+private fun expandLeaf(leaf: LeafNode): InternalNode {
+    val half = leaf.weight / 2
+    val left = LeafNode(leaf.value.substring(0, half))
+    val right = LeafNode(leaf.value.substring(half))
+    return merge(left, right)
+}
+
+private fun expand(node: BTreeNode): BTreeNode {
+    return when (node) {
+        is LeafNode -> expandLeaf(node)
+        is InternalNode -> node.expand()
+    }
+}
 
 // Internal result for [SingleIndexRopeIteratorWithHistory.nextOrClosed]
 private val CLOSED = keb.Symbol("CLOSED")
