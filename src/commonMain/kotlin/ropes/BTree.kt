@@ -183,6 +183,8 @@ sealed class BTreeNode(
  * Represents a leaf-node in Btree.
  */
 class LeafNode(val value: String) : BTreeNode(value.length, 0) {
+    constructor(value: Char) : this(value.toString())
+
     override val isInternalNode: Boolean = false
     override val isLeafNode: Boolean = true
 

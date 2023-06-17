@@ -73,10 +73,10 @@ class TestRope {
     }
 
     @Test
-    fun testSingleNodeAddFirstWithRoomInLeaf() {
+    fun testSingleNodeInsertFirstWithRoomInLeaf() {
         val string = createString(SIZE_OF_LEAF - 1)
         val rope = Rope(string)
-        val newRope = rope.addFirst('h')
+        val newRope = rope.insert(0, 'h')
         assert { newRope !== rope }
         assert { newRope[0] == 'h' }
     }
@@ -92,10 +92,10 @@ class TestRope {
     }
 
     @Test
-    fun testAddFirstWithNotRoomInLeaf() {
+    fun testInsertFirstWithNoRoomInLeaf() {
         val string = createString(SIZE_OF_LEAF * 8)
         val rope = Rope(string)
-        val newRope = rope.addFirst('h')
+        val newRope = rope.insert(0, 'h')
         println(newRope)
         assert { newRope !== rope }
         assert { newRope[0] == 'h' }

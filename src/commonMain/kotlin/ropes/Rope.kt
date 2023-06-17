@@ -29,16 +29,11 @@ class Rope(private val root: BTreeNode) {
         )
 
     // if index > length() -> will append char
+    // throws for index -1 && out-of-bounds
     fun insert(index: Int, element: Char): Rope {
-        if (index == 0) {
-            return addFirst(element)
-        }
-        TODO()
-    }
-
-    private fun add(index: Int, element: Char): Rope {
+        require(index > -1) { "index cannot be negative" }
         val iterator = SingleIndexRopeIteratorWithHistory(root, index)
-        if (!iterator.hasNext()) error("unexpected")
+        if (!iterator.hasNext()) throw IndexOutOfBoundsException()
         val leaf = iterator.currentLeaf
         if (leaf.weight + 1 <= MAX_SIZE_LEAF) {
             val newChild = leaf.add(index, element)
@@ -46,10 +41,14 @@ class Rope(private val root: BTreeNode) {
             val newTree = rebuildTree(leaf, newChild, iterator)
             return Rope(newTree)
         }
-        return addFirstSlow(leaf, iterator, element)
+        val parent = iterator.findParent(leaf) ?: error("unexpected")
+        val newChild = LeafNode(element)
+        val newParent = addChildFirstOrExpand(newChild, parent)
+        val newTree = rebuildTree(parent, newParent, iterator)
+        return Rope(newTree)
     }
 
-    // - find the first leafNode and check if it has any more space left
+    // - find target leafNode and check if it has any more space left
     // - if yes then inserted there and rebuild where necessary.
     // - if not, check if parent (internal node) has any space left for one more child
     // - if yes, then insert child in start and rebuild where necessary
@@ -75,7 +74,7 @@ class Rope(private val root: BTreeNode) {
         input: Char
     ): Rope {
         val parent = iterator.findParent(leftmostChild) ?: error("unexpected")
-        val newChild = LeafNode(input.toString())
+        val newChild = LeafNode(input)
         val newParent = addChildFirstOrExpand(newChild, parent)
         val newTree = rebuildTree(parent, newParent, iterator)
         return Rope(newTree)
@@ -454,13 +453,15 @@ private fun splitIntoNodes(input: String): BTreeNode {
 /**
  * Returns a new leaf with the specified [element] inserted at the specified [index].
  *
+ * @throws IndexOutOfBoundsException if [index] is greater than or equals to the size of this child.
  * @throws IllegalArgumentException if the resulting length exceeds the maximum size of a leaf.
  */
-fun LeafNode.add(index: Int, element: String): LeafNode {
+private fun LeafNode.add(index: Int, element: String): LeafNode {
+    if (index > value.lastIndex) throw IndexOutOfBoundsException()
     val newLen = value.length + element.length
     require(newLen <= MAX_SIZE_LEAF) { "max size of a leaf is:$MAX_SIZE_LEAF, but got:$newLen" }
     if (index == 0) return LeafNode(element + value)
-    if (index >= value.length) return LeafNode(value + element)
+    if (index == value.lastIndex) return LeafNode(value + element)
     val newValue = buildString {
         for (i in value.indices) {
             if (i == index) append(element)
@@ -470,7 +471,7 @@ fun LeafNode.add(index: Int, element: String): LeafNode {
     return LeafNode(newValue)
 }
 
-fun LeafNode.add(index: Int, element: Char): LeafNode = add(index, element.toString())
+private fun LeafNode.add(index: Int, element: Char): LeafNode = add(index, element.toString())
 
 private fun expandLeaf(leaf: LeafNode): InternalNode {
     val half = leaf.weight / 2
