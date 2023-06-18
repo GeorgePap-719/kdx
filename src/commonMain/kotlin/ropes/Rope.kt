@@ -76,9 +76,9 @@ class Rope(private val root: BTreeNode) {
         // - give parent one more child -> parent may be full
         // - just split leafNode and merge back as internal node -> always success
         val newChildren = leaf.expandableAdd(i, element.toString())
+        val pos = parent.indexOf(leaf)
         // We try to keep the tree wide as much as possible.
         if (newChildren.size + parent.children.size - 1 <= MAX_CHILDREN) {
-            val pos = parent.indexOf(leaf)
             val modChildren = parent.children
                 .drop(pos)
                 .addWithCopyOnWrite(newChildren, pos)
@@ -86,7 +86,14 @@ class Rope(private val root: BTreeNode) {
             val newTree = rebuildTree(parent, newParent, iterator)
             return Rope(newTree)
         }
-        val newParent = merge(newChildren)
+        // Replace leaf with new node.
+        // With this operation we deepen the tree rather than keep it wide.
+        //TODO: we lost an op here?
+        val newChild = merge(newChildren)
+        val modChildren = parent.children
+            .drop(pos)
+            .addWithCopyOnWrite(newChild, pos)
+        val newParent = createParent(modChildren)
         val newTree = rebuildTree(parent, newParent, iterator)
         return Rope(newTree)
     }
