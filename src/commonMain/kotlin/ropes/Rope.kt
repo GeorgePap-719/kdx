@@ -52,7 +52,7 @@ class Rope(private val root: BTreeNode) {
     fun insert(index: Int, element: Char): Rope {
         require(index > -1) { "index cannot be negative" }
         val iterator = SingleIndexRopeIteratorWithHistory(root, index)
-        if (!iterator.hasNext()) throw IndexOutOfBoundsException()
+        if (!iterator.hasNext()) throw IndexOutOfBoundsException("index:$index, length:${length()}")
         val leaf = iterator.currentLeaf
         val i = iterator.currentIndex // -> actual index in leaf || --> suspicious result
         // indexOf return this `i`
@@ -77,7 +77,8 @@ class Rope(private val root: BTreeNode) {
         // - just split leafNode and merge back as internal node -> always success
         val newChildren = leaf.expandableAdd(i, element.toString())
         val pos = parent.indexOf(leaf)
-        // We try to keep the tree wide as much as possible.
+        // If there is space in the parent, add new leaf to keep
+        // the tree wide as much as possible.
         if (newChildren.size + parent.children.size - 1 <= MAX_CHILDREN) {
             val modChildren = parent.children
                 .drop(pos)
@@ -87,13 +88,12 @@ class Rope(private val root: BTreeNode) {
             return Rope(newTree)
         }
         // Replace leaf with new node.
-        // With this operation we deepen the tree rather than keep it wide.
-        //TODO: we lost an op here?
-        val newChild = merge(newChildren)
+        // With this operation, we deepen the tree rather than keep it wide.
+        val newChild = merge(newChildren) //
         val modChildren = parent.children
             .drop(pos)
             .addWithCopyOnWrite(newChild, pos)
-        val newParent = createParent(modChildren)
+        val newParent = merge(modChildren)
         val newTree = rebuildTree(parent, newParent, iterator)
         return Rope(newTree)
     }

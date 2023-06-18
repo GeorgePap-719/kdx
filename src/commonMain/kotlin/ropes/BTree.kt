@@ -118,7 +118,7 @@ sealed class BTreeNode(
         }
     }
 
-    private fun List<BTreeNode>.find(value: String, len: Int): LeafNode? {
+    private tailrec fun List<BTreeNode>.find(value: String, len: Int): LeafNode? {
         for (node in this) {
             if (len > weight) continue
             when (node) {
