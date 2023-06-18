@@ -54,20 +54,27 @@ class Rope(private val root: BTreeNode) {
         val iterator = SingleIndexRopeIteratorWithHistory(root, index)
         if (!iterator.hasNext()) throw IndexOutOfBoundsException()
         val leaf = iterator.currentLeaf
-        if (leaf.weight + 1 <= MAX_SIZE_LEAF) {
-            val newChild = leaf.add(index, element)
-            if (leaf === root) return Rope(newChild) // fast-path
+        val i = iterator.currentIndex // -> actual index in leaf || --> suspicious result
+        // indexOf return this `i`
+        // TODO
+        if (leaf.weight + 1 <= MAX_SIZE_LEAF) { // fast-path
+            val newChild = leaf.add(i, element)
+            if (leaf === root) return Rope(newChild)
             val newTree = rebuildTree(leaf, newChild, iterator)
             return Rope(newTree)
         }
-        // Split and merge.
+        // --- Split and merge ---
+        if (leaf === root) {
+            val newChildren = leaf.expandableAdd(i, element.toString())
+            val newParent = createParent(newChildren)
+            return Rope(newParent)
+        }
         // At this point, we should always find a parent, since we are in a leaf
         // and hasNext() returned `true`.
         val parent = iterator.findParent(leaf) ?: error("unexpected")
         // Options:
         // - give parent one more child -> parent may be full
         // - just split leafNode and merge back as internal node -> always success
-        val i = iterator.currentIndex // -> actual index in leaf
         val newChildren = leaf.expandableAdd(i, element.toString())
         // We try to keep the tree wide as much as possible.
         if (newChildren.size + parent.children.size - 1 <= MAX_CHILDREN) {
@@ -363,21 +370,25 @@ class Rope(private val root: BTreeNode) {
     }
 
     fun length(): Int {
-        var curNode = root
-        var length = 0
-        while (true) {
-            when (curNode) {
-                is LeafNode -> return length + curNode.weight
-                is InternalNode -> {
-                    if (curNode.children.size == 1) return length + curNode.weight // only left-child
-                    val rightMostNode = curNode.children.last()
-                    // accumulate lef-subtree weight and move on
-                    length += curNode.weight
-                    curNode = rightMostNode
-                    continue
-                }
-            }
-        }
+        var len = 0
+        for (leaf in root) len += leaf.weight
+        return len
+        //TODO: proper impl
+//        var curNode = root
+//        var length = 0
+//        while (true) {
+//            when (curNode) {
+//                is LeafNode -> return length + curNode.weight
+//                is InternalNode -> {
+//                    if (curNode.children.size == 1) return length + curNode.weight // only left-child
+//                    val rightMostNode = curNode.children.last()
+//                    // accumulate lef-subtree weight and move on
+//                    length += curNode.weight
+//                    curNode = rightMostNode
+//                    continue
+//                }
+//            }
+//        }
     }
 
     // ###################

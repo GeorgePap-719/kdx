@@ -106,15 +106,19 @@ class TestRope {
     fun testInsertWithRandomIndex() {
         val string = createString(SIZE_OF_LEAF * 8)
         var rope = Rope(string)
+        println("---------- initial len:${rope.length()} ---------------")
         for (i in 0 until 100) {
             val randomI = Random.nextInt(0, string.length)
-            println("---------- for i:$i - randomI:$randomI ---------------")
             rope = rope.insert(randomI, 'a')
             println(rope.toString())
             println("---------- for i:$i - randomI:$randomI ---------------")
             println("---------- for i:$i - get:${rope[randomI]} ---------------")
             println("---------- for i:$i - indexOf:${rope.indexOf('a')} ---------------")
+            println("---------- for i:$i - len:${rope.length()} ---------------")
+
             assert { rope[randomI] == 'a' }
+            //TODO: probably rebuildTree is not behaving correctly. We are seeing big differences in lengths()
+            // Length should be increased with each insert not decrease.
         }
     }
 
