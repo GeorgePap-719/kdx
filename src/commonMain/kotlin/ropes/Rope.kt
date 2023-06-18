@@ -95,9 +95,8 @@ class Rope(private val root: BTreeNode) {
         while (true) {
             // for non-root nodes, findParent() should always return a parent.
             val parent = iterator.findParent(old) ?: error("unexpected:TODO") //TODO: should we just return new here?
-            val newParent = parent.replaceChildWithCopyOnWrite(old, new)
+            new = parent.replaceChildWithCopyOnWrite(old, new)
             old = parent
-            new = newParent
             if (old === root) return new
         }
     }
@@ -436,7 +435,12 @@ fun btreeOf(input: String): BTreeNode {
 
 private fun splitIntoNodes(input: String): BTreeNode {
     if (input.length <= MAX_SIZE_LEAF) return LeafNode(input)
-    val leaves = buildList {
+    val leaves = splitIntoLeaves(input)
+    return merge(leaves)
+}
+
+private fun splitIntoLeaves(input: String): List<LeafNode> {
+    return buildList {
         var index = 0
         while (index < input.length) {
             val leafValue = input.substring(index, minOf(index + MAX_SIZE_LEAF, input.length))
@@ -444,30 +448,23 @@ private fun splitIntoNodes(input: String): BTreeNode {
             index += MAX_SIZE_LEAF
         }
     }
-    return merge(leaves)
 }
 
+// - Adds the element into the leaf and expands as necessary. Returns the resulting leaves.
+//
+// This operation creates one resulting string from the element and this leaf. This can
+// be expensive in most cases. One solution is to avoid creating a big string by creating
+// leaf nodes on the spot. Though, this is easier than done.
+//TODO: research this if there is time.
 private fun LeafNode.expandableAdd(index: Int, element: String): List<LeafNode> {
     if (index < 0 || index > value.lastIndex) throw IndexOutOfBoundsException()
     val newLen = value.length + element.length
     if (newLen <= MAX_SIZE_LEAF) return listOf(add(index, element))
-    val leaves = buildList {
-        var i = 0
-        var added = false // kind of hacky way. TODO: check how we can improve this
-        while (i < newLen) {
-            val leafValue = if (!added && index in i..MAX_SIZE_LEAF) {
-                val str = value.substring(i, index)
-                i += index
-                added = true
-                str + element
-            } else {
-                value.substring(i, minOf(i + MAX_SIZE_LEAF, value.length)).also { i += MAX_SIZE_LEAF }
-            }
-            add(LeafNode(leafValue))
-        }
-    }
-    return leaves
+    val newValue = value.add(index, element)
+    return splitIntoLeaves(newValue)
 }
+
+private fun LeafNode.add(index: Int, element: Char): LeafNode = add(index, element.toString())
 
 /**
  * Returns a new leaf with the specified [element] inserted at the specified [index].
@@ -481,16 +478,25 @@ private fun LeafNode.add(index: Int, element: String): LeafNode {
     require(newLen <= MAX_SIZE_LEAF) { "max size of a leaf is:$MAX_SIZE_LEAF, but got:$newLen" }
     if (index == 0) return LeafNode(element + value)
     if (index == value.lastIndex) return LeafNode(value + element)
-    val newValue = buildString {
-        for (i in value.indices) {
-            if (i == index) append(element)
-            append(value[i])
-        }
-    }
+    val newValue = value.add(index, element)
     return LeafNode(newValue)
 }
 
-private fun LeafNode.add(index: Int, element: Char): LeafNode = add(index, element.toString())
+private fun String.add(index: Int, element: String): String = buildString {
+    val str = this@add
+    for (i in str.indices) {
+        if (i == index) append(element)
+        append(str[i])
+    }
+}
+
+private fun String.add(index: Int, element: Char): String = buildString {
+    val str = this@add
+    for (i in str.indices) {
+        if (i == index) append(element)
+        append(str[i])
+    }
+}
 
 private fun expandLeaf(leaf: LeafNode): InternalNode {
     val half = leaf.weight / 2
