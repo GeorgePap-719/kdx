@@ -37,6 +37,8 @@ class Rope(private val root: BTreeNode) {
     // - if yes, then insert child in start and rebuild where necessary
     // - if not, split and merge.
     // - rebuilding may even create a new root above old one.
+    //TODO: One improvement would be to check for more parents up ahead if we can split them,
+    // but at this point it is non-trivial and not worth it time-wise.
     fun insert(index: Int, element: Char): Rope {
         require(index > -1) { "index cannot be negative" }
         val iterator = SingleIndexRopeIteratorWithHistory(root, index)
@@ -48,30 +50,28 @@ class Rope(private val root: BTreeNode) {
             val newTree = rebuildTree(leaf, newChild, iterator)
             return Rope(newTree)
         }
-        // split and merge
-        // At this point, we should always find a parent since, we are in a leaf
+        // Split and merge.
+        // At this point, we should always find a parent, since we are in a leaf
         // and hasNext() returned `true`.
         val parent = iterator.findParent(leaf) ?: error("unexpected")
         // Options:
         // - give parent one more child -> parent may be full
         // - just split leafNode and merge back as internal node -> always success
-
-
-        val newChild = leaf.add(index, element)
-        val i = iterator.currentIndex // -> proper index
-        //parent.replaceChildWithCopyOnWrite()
-        val newParent = addOrExpand(index, newChild, parent)
+        val i = iterator.currentIndex // -> actual index in leaf
+        val newChildren = leaf.expandableAdd(i, element.toString())
+        // We try to keep the tree wide as much as possible.
+        if (newChildren.size + parent.children.size - 1 <= MAX_CHILDREN) {
+            val pos = parent.indexOf(leaf)
+            val modChildren = parent.children
+                .drop(index)
+                .addWithCopyOnWrite(newChildren, pos)
+            val newParent = createParent(modChildren)
+            val newTree = rebuildTree(parent, newParent, iterator)
+            return Rope(newTree)
+        }
+        val newParent = merge(newChildren)
         val newTree = rebuildTree(parent, newParent, iterator)
         return Rope(newTree)
-    }
-
-    private fun addOrExpand(oldChild: LeafNode, newChild: LeafNode, parent: InternalNode): InternalNode {
-        val newNode = parent.tryAddFirst(newChild)
-        if (newNode == null) {
-            val newParent = parent.expand()
-            return newParent.addFirst(newChild)
-        }
-        return newNode
     }
 
     private fun rebuildTree(
@@ -437,10 +437,10 @@ private fun splitIntoNodes(input: String): BTreeNode {
     return merge(leaves)
 }
 
-private fun LeafNode.expandableAdd(index: Int, element: String): BTreeNode {
+private fun LeafNode.expandableAdd(index: Int, element: String): List<LeafNode> {
     if (index < 0 || index > value.lastIndex) throw IndexOutOfBoundsException()
     val newLen = value.length + element.length
-    if (newLen <= MAX_SIZE_LEAF) return add(index, element)
+    if (newLen <= MAX_SIZE_LEAF) return listOf(add(index, element))
     val leaves = buildList {
         var i = 0
         var added = false // kind of hacky way. TODO: check how we can improve this
@@ -456,7 +456,7 @@ private fun LeafNode.expandableAdd(index: Int, element: String): BTreeNode {
             add(LeafNode(leafValue))
         }
     }
-    return merge(leaves)
+    return leaves
 }
 
 /**
