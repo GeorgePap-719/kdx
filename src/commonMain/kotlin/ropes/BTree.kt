@@ -234,6 +234,7 @@ open class InternalNode(
                 is InternalNode -> node.isLegalNode && node.areChildrenLegalImpl()
                 is LeafNode -> node.isLegalNode
             }
+            if (!isLegal) return false
         }
         return isLegal
     }

@@ -49,18 +49,27 @@ class Rope(private val root: BTreeNode) {
             return Rope(newTree)
         }
         // split and merge
+        // At this point, we should always find a parent since, we are in a leaf
+        // and hasNext() returned `true`.
         val parent = iterator.findParent(leaf) ?: error("unexpected")
-        val newChild = LeafNode(element)
-        val newParent = addChildFirstOrExpand(newChild, parent)
+        // Options:
+        // - give parent one more child -> parent may be full
+        // - just split leafNode and merge back as internal node -> always success
+
+
+        val newChild = leaf.add(index, element)
+        val i = iterator.currentIndex // -> proper index
+        //parent.replaceChildWithCopyOnWrite()
+        val newParent = addOrExpand(index, newChild, parent)
         val newTree = rebuildTree(parent, newParent, iterator)
         return Rope(newTree)
     }
 
-    private fun addChildFirstOrExpand(child: LeafNode, parent: InternalNode): InternalNode {
-        val newNode = parent.tryAddFirst(child)
+    private fun addOrExpand(oldChild: LeafNode, newChild: LeafNode, parent: InternalNode): InternalNode {
+        val newNode = parent.tryAddFirst(newChild)
         if (newNode == null) {
             val newParent = parent.expand()
-            return newParent.addFirst(child)
+            return newParent.addFirst(newChild)
         }
         return newNode
     }
@@ -70,9 +79,9 @@ class Rope(private val root: BTreeNode) {
         newNode: BTreeNode,
         iterator: SingleIndexRopeIteratorWithHistory
     ): BTreeNode {
+        if (oldNode === root) return newNode
         var old = oldNode
         var new = newNode
-        if (old === root) return newNode
         while (true) {
             // for non-root nodes, findParent() should always return a parent.
             val parent = iterator.findParent(old) ?: error("unexpected:TODO") //TODO: should we just return new here?
@@ -241,6 +250,8 @@ class Rope(private val root: BTreeNode) {
 
         private var curIndex = index
         private var curNode = root
+
+        val currentIndex get() = curIndex
 
         // - char -> value is retrieved successfully.
         // - null -> element is retrieved.
@@ -426,6 +437,28 @@ private fun splitIntoNodes(input: String): BTreeNode {
     return merge(leaves)
 }
 
+private fun LeafNode.expandableAdd(index: Int, element: String): BTreeNode {
+    if (index < 0 || index > value.lastIndex) throw IndexOutOfBoundsException()
+    val newLen = value.length + element.length
+    if (newLen <= MAX_SIZE_LEAF) return add(index, element)
+    val leaves = buildList {
+        var i = 0
+        var added = false // kind of hacky way. TODO: check how we can improve this
+        while (i < newLen) {
+            val leafValue = if (!added && index in i..MAX_SIZE_LEAF) {
+                val str = value.substring(i, index)
+                i += index
+                added = true
+                str + element
+            } else {
+                value.substring(i, minOf(i + MAX_SIZE_LEAF, value.length)).also { i += MAX_SIZE_LEAF }
+            }
+            add(LeafNode(leafValue))
+        }
+    }
+    return merge(leaves)
+}
+
 /**
  * Returns a new leaf with the specified [element] inserted at the specified [index].
  *
@@ -433,7 +466,7 @@ private fun splitIntoNodes(input: String): BTreeNode {
  * @throws IllegalArgumentException if the resulting length exceeds the maximum size of a leaf.
  */
 private fun LeafNode.add(index: Int, element: String): LeafNode {
-    if (index > value.lastIndex) throw IndexOutOfBoundsException()
+    if (index < 0 || index > value.lastIndex) throw IndexOutOfBoundsException()
     val newLen = value.length + element.length
     require(newLen <= MAX_SIZE_LEAF) { "max size of a leaf is:$MAX_SIZE_LEAF, but got:$newLen" }
     if (index == 0) return LeafNode(element + value)
@@ -454,13 +487,6 @@ private fun expandLeaf(leaf: LeafNode): InternalNode {
     val left = LeafNode(leaf.value.substring(0, half))
     val right = LeafNode(leaf.value.substring(half))
     return merge(left, right)
-}
-
-private fun expand(node: BTreeNode): BTreeNode {
-    return when (node) {
-        is LeafNode -> expandLeaf(node)
-        is InternalNode -> node.expand()
-    }
 }
 
 // Internal result for [SingleIndexRopeIteratorWithHistory.nextOrClosed]
