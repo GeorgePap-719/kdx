@@ -28,7 +28,17 @@ class Rope(private val root: BTreeNode) {
             onElementRetrieved = { _, _, element -> return element }
         )
 
-    // if index > length() -> will append char
+    fun indexOf(element: Char): Int {
+        var index = 0
+        for (leaf in root) {
+            for (c in leaf.value) {
+                if (c == element) return index
+                index++
+            }
+        }
+        return -1
+    }
+
     // throws for index -1 && out-of-bounds
     //
     // - find target leafNode and check if it has any more space left
@@ -63,7 +73,7 @@ class Rope(private val root: BTreeNode) {
         if (newChildren.size + parent.children.size - 1 <= MAX_CHILDREN) {
             val pos = parent.indexOf(leaf)
             val modChildren = parent.children
-                .drop(index)
+                .drop(pos)
                 .addWithCopyOnWrite(newChildren, pos)
             val newParent = createParent(modChildren)
             val newTree = rebuildTree(parent, newParent, iterator)
@@ -154,7 +164,7 @@ class Rope(private val root: BTreeNode) {
             when (curNode) {
                 is LeafNode -> {
                     if (curIndex < curNode.weight) {
-                        return onElementRetrieved(curNode, curIndex, curNode.value[curIndex]) // fast-path
+                        return onElementRetrieved(curNode, curIndex, curNode.value[curIndex])
                     }
                     if (curNode === root) return onOutOfBounds() // single-node btree.
                     curIndex -= curNode.weight

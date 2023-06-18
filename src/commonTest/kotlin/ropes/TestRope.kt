@@ -2,6 +2,7 @@ package ropes
 
 import keb.assert
 import keb.ropes.Rope
+import kotlin.random.Random
 import kotlin.test.Test
 
 class TestRope {
@@ -82,7 +83,7 @@ class TestRope {
     }
 
     //@Test//TODO: this cannot be tested easily for now.
-    fun testAddFirstWithRoomInLeaf() {
+    fun testInsertFirstWithRoomInLeaf() {
         val string = createString((SIZE_OF_LEAF - 1) * 8)
         val rope = Rope(string)
         val newRope = rope.insert(0, 'h')
@@ -99,6 +100,22 @@ class TestRope {
         println(newRope)
         assert { newRope !== rope }
         assert { newRope[0] == 'h' }
+    }
+
+    @Test
+    fun testInsertWithRandomIndex() {
+        val string = createString(SIZE_OF_LEAF * 8)
+        var rope = Rope(string)
+        for (i in 0 until 100) {
+            val randomI = Random.nextInt(0, string.length)
+            println("---------- for i:$i - randomI:$randomI ---------------")
+            rope = rope.insert(randomI, 'a')
+            println(rope.toString())
+            println("---------- for i:$i - randomI:$randomI ---------------")
+            println("---------- for i:$i - get:${rope[randomI]} ---------------")
+            println("---------- for i:$i - indexOf:${rope.indexOf('a')} ---------------")
+            assert { rope[randomI] == 'a' }
+        }
     }
 
 }
