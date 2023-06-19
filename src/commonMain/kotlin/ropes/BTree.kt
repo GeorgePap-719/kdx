@@ -269,7 +269,7 @@ open class InternalNode(
      * @throws IllegalArgumentException if the resulting node has more than the maximum size of children.
      */
     fun add(index: Int, child: BTreeNode): InternalNode {
-        if (index >= MAX_CHILDREN) throw IndexOutOfBoundsException()
+        checkElementIndex(index)
         require(children.size + 1 <= MAX_CHILDREN) { "node cannot hold more than:$MAX_CHILDREN children" }
         val newChildren = children.addWithCopyOnWrite(child, index)
         return unsafeCreateParent(newChildren)
@@ -280,7 +280,7 @@ open class InternalNode(
     fun addFirst(child: BTreeNode): InternalNode = add(0, child)
 
     fun addAll(index: Int, children: List<BTreeNode>): InternalNode {
-        if (index >= MAX_CHILDREN) throw IndexOutOfBoundsException()
+        checkElementIndex(index)
         require(this.children.size + children.size <= MAX_CHILDREN) {
             "node cannot hold more than:$MAX_CHILDREN children"
         }
@@ -289,6 +289,29 @@ open class InternalNode(
     }
 
     fun indexOf(child: BTreeNode): Int = children.indexOf(child)
+
+    fun replace(index: Int, child: BTreeNode): InternalNode {
+        checkElementIndex(index)
+        val newChildren = buildList {
+            for (i in children.indices) {
+                if (i == index) add(child) else add(children[i])
+            }
+        }
+        return unsafeCreateParent(newChildren)
+    }
+
+    fun replace(old: BTreeNode, new: BTreeNode): InternalNode {
+        val newChildren = buildList {
+            for (child in children) {
+                if (child === old) add(new) else add(child)
+            }
+        }
+        return unsafeCreateParent(newChildren)
+    }
+
+    private fun checkElementIndex(index: Int) {
+        if (index < 0 || index >= MAX_CHILDREN) throw IndexOutOfBoundsException("index:$index")
+    }
 }
 
 /**
@@ -297,11 +320,7 @@ open class InternalNode(
  */
 operator fun InternalNode.plus(other: InternalNode): InternalNode = merge(other)
 
-// --- XXXcow
-
-fun InternalNode.replaceChildWithCopyOnWrite(oldNode: BTreeNode, newNode: BTreeNode): InternalNode {
-    return unsafeCreateParent(this.children.replaceWithCopyOnWrite(oldNode, newNode))
-}
+// --- XXXco
 
 fun List<BTreeNode>.replaceWithCopyOnWrite(oldNode: BTreeNode, newNode: BTreeNode): List<BTreeNode> {
     return buildList {

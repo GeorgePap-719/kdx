@@ -88,7 +88,7 @@ class Rope(private val root: BTreeNode) {
             return Rope(newTree)
         }
         // Replace leaf with new node.
-        // With this operation, we deepen the tree rather than keep it wide.
+        // Note, with this operation, we deepen the tree rather than keep it wide.
         val newChild = merge(newChildren) //
         val modChildren = parent.children
             .drop(pos)
@@ -109,7 +109,7 @@ class Rope(private val root: BTreeNode) {
         while (true) {
             // for non-root nodes, findParent() should always return a parent.
             val parent = iterator.findParent(old) ?: error("unexpected:TODO") //TODO: should we just return new here?
-            new = parent.replaceChildWithCopyOnWrite(old, new)
+            new = parent.replace(old, new)
             old = parent
             if (old === root) return new
         }
