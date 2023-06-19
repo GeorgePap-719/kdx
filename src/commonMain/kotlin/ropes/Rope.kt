@@ -54,9 +54,7 @@ class Rope(private val root: BTreeNode) {
         val iterator = SingleIndexRopeIteratorWithHistory(root, index)
         if (!iterator.hasNext()) throw IndexOutOfBoundsException("index:$index, length:${length()}")
         val leaf = iterator.currentLeaf
-        val i = iterator.currentIndex // -> actual index in leaf || --> suspicious result
-        // indexOf return this `i`
-        // TODO
+        val i = iterator.currentIndex // -> actual index in leaf
         if (leaf.weight + 1 <= MAX_SIZE_LEAF) { // fast-path
             val newChild = leaf.add(i, element)
             if (leaf === root) return Rope(newChild)
@@ -481,15 +479,15 @@ private fun LeafNode.add(index: Int, element: Char): LeafNode = add(index, eleme
 /**
  * Returns a new leaf with the specified [element] inserted at the specified [index].
  *
- * @throws IndexOutOfBoundsException if [index] is greater than or equals to the size of this child.
+ * @throws IndexOutOfBoundsException if [index] is greater than or equals to the length of this child.
  * @throws IllegalArgumentException if the resulting length exceeds the maximum size of a leaf.
  */
 private fun LeafNode.add(index: Int, element: String): LeafNode {
-    if (index < 0 || index > value.lastIndex) throw IndexOutOfBoundsException()
+    if (index < 0 || index > value.lastIndex + 1) throw IndexOutOfBoundsException()
     val newLen = value.length + element.length
     require(newLen <= MAX_SIZE_LEAF) { "max size of a leaf is:$MAX_SIZE_LEAF, but got:$newLen" }
     if (index == 0) return LeafNode(element + value)
-    if (index == value.lastIndex) return LeafNode(value + element)
+    if (index == value.lastIndex + 1) return LeafNode(value + element)
     val newValue = value.add(index, element)
     return LeafNode(newValue)
 }
@@ -500,6 +498,7 @@ private fun String.add(index: Int, element: String): String = buildString {
         if (i == index) append(element)
         append(str[i])
     }
+    if (index == str.length) append(element) // it is acceptable for an index to be right after the last-index
 }
 
 private fun String.add(index: Int, element: Char): String = buildString {
