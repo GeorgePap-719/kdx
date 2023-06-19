@@ -300,6 +300,19 @@ open class InternalNode(
         return unsafeCreateParent(newChildren)
     }
 
+    fun replace(index: Int, children: List<BTreeNode>): InternalNode {
+        checkElementIndex(index)
+        require(this.children.size - 1 + children.size <= MAX_CHILDREN) {
+            "node cannot hold more than:$MAX_CHILDREN children"
+        }
+        val newChildren = buildList {
+            for (i in children.indices) {
+                if (index == i) addAll(children) else add(this@InternalNode.children[i])
+            }
+        }
+        return unsafeCreateParent(newChildren)
+    }
+
     fun replace(old: BTreeNode, new: BTreeNode): InternalNode {
         val newChildren = buildList {
             for (child in children) {
@@ -337,8 +350,8 @@ fun List<BTreeNode>.replaceWithCopyOnWrite(oldNode: BTreeNode, newNode: BTreeNod
 fun List<BTreeNode>.addWithCopyOnWrite(newNode: BTreeNode, index: Int): List<BTreeNode> {
     return buildList {
         var added = false // flag to check if the new element is in the bounds of the current list.
-        for ((_index, node) in this@addWithCopyOnWrite.withIndex()) {
-            if (_index == index) {
+        for ((i, node) in this@addWithCopyOnWrite.withIndex()) {
+            if (i == index) {
                 add(newNode)
                 added = true
             }
@@ -351,8 +364,8 @@ fun List<BTreeNode>.addWithCopyOnWrite(newNode: BTreeNode, index: Int): List<BTr
 fun List<BTreeNode>.addWithCopyOnWrite(newNode: List<BTreeNode>, index: Int): List<BTreeNode> {
     return buildList {
         var added = false // flag to check if the new element is in the bounds of the current list.
-        for ((_index, node) in this@addWithCopyOnWrite.withIndex()) {
-            if (_index == index) {
+        for ((i, node) in this@addWithCopyOnWrite.withIndex()) {
+            if (i == index) {
                 addAll(newNode)
                 added = true
             }
