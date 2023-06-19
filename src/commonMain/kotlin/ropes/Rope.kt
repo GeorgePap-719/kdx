@@ -450,13 +450,12 @@ private fun splitIntoNodes(input: String): BTreeNode {
 }
 
 private fun splitIntoLeaves(input: String): List<LeafNode> {
-    val leafMaxIndex = MAX_SIZE_LEAF - 1
     return buildList {
         var index = 0
         while (index < input.length) {
-            val leafValue = input.substring(index, minOf(index + leafMaxIndex, input.length))
+            val leafValue = input.substring(index, minOf(index + MAX_SIZE_LEAF, input.length))
             add(LeafNode(leafValue))
-            index += leafMaxIndex
+            index += MAX_SIZE_LEAF
         }
     }
 }
