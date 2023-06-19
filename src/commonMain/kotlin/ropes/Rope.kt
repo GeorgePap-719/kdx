@@ -77,6 +77,7 @@ class Rope(private val root: BTreeNode) {
         val pos = parent.indexOf(leaf)
         // If there is space in the parent, add new leaf to keep the tree wide
         // as much as possible.
+        //TODO: this operation falis!
         if (newChildren.size + parent.children.size - 1 <= MAX_CHILDREN) {
             val newParent = parent.replace(pos, newChildren)
             val newTree = rebuildTree(parent, newParent, iterator)
