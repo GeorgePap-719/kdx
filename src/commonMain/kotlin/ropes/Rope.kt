@@ -467,7 +467,7 @@ private fun splitIntoLeaves(input: String): List<LeafNode> {
 // leaf nodes on the spot. Though, this is easier than done.
 //TODO: research this if there is time.
 private fun LeafNode.expandableAdd(index: Int, element: String): List<LeafNode> {
-    if (index < 0 || index > value.lastIndex) throw IndexOutOfBoundsException()
+    checkValueIndex(index, this)
     val newLen = value.length + element.length
     if (newLen <= MAX_SIZE_LEAF) return listOf(add(index, element))
     val newValue = value.add(index, element)
@@ -483,7 +483,7 @@ private fun LeafNode.add(index: Int, element: Char): LeafNode = add(index, eleme
  * @throws IllegalArgumentException if the resulting length exceeds the maximum size of a leaf.
  */
 private fun LeafNode.add(index: Int, element: String): LeafNode {
-    if (index < 0 || index > value.lastIndex + 1) throw IndexOutOfBoundsException()
+    checkValueIndex(index, this)
     val newLen = value.length + element.length
     require(newLen <= MAX_SIZE_LEAF) { "max size of a leaf is:$MAX_SIZE_LEAF, but got:$newLen" }
     if (index == 0) return LeafNode(element + value)
@@ -498,7 +498,7 @@ private fun String.add(index: Int, element: String): String = buildString {
         if (i == index) append(element)
         append(str[i])
     }
-    if (index == str.length) append(element) // it is acceptable for an index to be right after the last-index
+    if (index == str.length) append(element)
 }
 
 private fun String.add(index: Int, element: Char): String = buildString {
@@ -507,6 +507,7 @@ private fun String.add(index: Int, element: Char): String = buildString {
         if (i == index) append(element)
         append(str[i])
     }
+    if (index == str.length) append(element)
 }
 
 private fun expandLeaf(leaf: LeafNode): InternalNode {
@@ -518,3 +519,9 @@ private fun expandLeaf(leaf: LeafNode): InternalNode {
 
 // Internal result for [SingleIndexRopeIteratorWithHistory.nextOrClosed]
 private val CLOSED = keb.Symbol("CLOSED")
+
+private fun checkValueIndex(index: Int, leaf: LeafNode) {
+    if (index < 0 || index > leaf.value.lastIndex + 1) { // it is acceptable for an index to be right after the last-index
+        throw IndexOutOfBoundsException("index:$index, leaf-length:${leaf.value.length}")
+    }
+}
