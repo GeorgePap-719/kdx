@@ -3,6 +3,7 @@ package ropes
 import keb.assert
 import keb.ropes.Rope
 import kotlin.random.Random
+import kotlin.random.nextInt
 import kotlin.test.Test
 
 class TestRope {
@@ -113,21 +114,34 @@ class TestRope {
             val randomI = Random.nextInt(0, string.length)
             rope = rope.insert(randomI, 'a')
             sb.insert(randomI, 'a')
-            println("---------- for i:$i - randomI:$randomI ---------------")
-            println("---------- for i:$i - get:${rope[randomI]} ---------------")
-            println("---------- for i:$i - indexOf:${rope.indexOf('a')} ---------------")
-            println("---------- for i:$i - len after operation:${rope.length()} ---------------")
 
             assert { rope[randomI] == 'a' }
             assert { rope.length() > len++ }
-            println("\n")
         }
 
         for (i in 0 until sb.length - 1) {
-            assert { rope[i] == sb[i] } //--> fails
+            assert { rope[i] == sb[i] }
         }
     }
 
+    @Test
+    fun stressTestInsertWithRandomIndex() {
+        val string = createString(20_000)
+        var rope = Rope(string)
+        val sb = StringBuilder(string)
+
+        for (i in 0 until 2500) { // 10_000 < takes too long.
+            val randomI = Random.nextInt(0, string.length)
+            val randomCodepoint = Random.nextInt(alphabet)
+            val randomChar = randomCodepoint.toChar()
+            rope = rope.insert(randomI, randomChar)
+            sb.insert(randomI, randomChar)
+
+            assert { rope[randomI] == randomChar }
+        }
+
+        for (i in 0 until sb.length - 1) assert { rope[i] == sb[i] }
+    }
 }
 
 private fun createString(factor: Int): String {
@@ -141,3 +155,5 @@ private fun createString(factor: Int): String {
 }
 
 private const val SIZE_OF_LEAF = 64 * 32
+
+private val alphabet = 97..122
