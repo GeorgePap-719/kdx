@@ -290,7 +290,7 @@ open class InternalNode(
 
     fun indexOf(child: BTreeNode): Int = children.indexOf(child)
 
-    fun replace(index: Int, child: BTreeNode): InternalNode {
+    operator fun set(index: Int, child: BTreeNode): InternalNode {
         checkElementIndex(index)
         val newChildren = buildList {
             for (i in children.indices) {
@@ -300,14 +300,15 @@ open class InternalNode(
         return unsafeCreateParent(newChildren)
     }
 
-    fun replace(index: Int, children: List<BTreeNode>): InternalNode {
+    operator fun set(index: Int, children: List<BTreeNode>): InternalNode {
         checkElementIndex(index)
         require(this.children.size - 1 + children.size <= MAX_CHILDREN) {
             "node cannot hold more than:$MAX_CHILDREN children"
         }
+        val childNodes = this.children
         val newChildren = buildList {
-            for (i in children.indices) {
-                if (index == i) addAll(children) else add(this@InternalNode.children[i])
+            for (i in childNodes.indices) {
+                if (index == i) addAll(children) else add(childNodes[i])
             }
         }
         return unsafeCreateParent(newChildren)

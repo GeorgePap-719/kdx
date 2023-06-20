@@ -124,7 +124,7 @@ class TestRope {
         }
 
         for (i in 0 until sb.length - 1) {
-            // assert { rope[i] == sb[i] } --> fails
+            assert { rope[i] == sb[i] } //--> fails
         }
     }
 

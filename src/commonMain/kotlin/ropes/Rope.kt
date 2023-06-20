@@ -79,14 +79,14 @@ class Rope(private val root: BTreeNode) {
         // as much as possible.
         //TODO: this operation fails!
         if (newChildren.size + parent.children.size - 1 <= MAX_CHILDREN) {
-            val newParent = parent.replace(pos, newChildren)
+            val newParent = parent.set(pos, newChildren)
             val newTree = rebuildTree(parent, newParent, iterator)
             return Rope(newTree)
         }
         // Replace leaf with new node.
         // Note, at this point, we deepen the tree rather than keep it wide.
         val newChild = merge(newChildren)
-        val newParent = parent.replace(pos, newChild)
+        val newParent = parent.set(pos, newChild)
         val newTree = rebuildTree(parent, newParent, iterator)
         return Rope(newTree)
     }
@@ -101,7 +101,7 @@ class Rope(private val root: BTreeNode) {
         var new = newNode
         while (true) {
             // for non-root nodes, findParent() should always return a parent.
-            val parent = iterator.findParent(old) ?: error("unexpected:TODO") //TODO: should we just return new here?
+            val parent = iterator.findParent(old) ?: error("unexpected")
             new = parent.replace(old, new)
             old = parent
             if (old === root) return new
