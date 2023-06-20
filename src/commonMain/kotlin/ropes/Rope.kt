@@ -78,34 +78,37 @@ class Rope(private val root: BTreeNode) {
     fun insert(index: Int, element: Char): Rope {
         require(index > -1) { "index cannot be negative" }
         val iterator = SingleIndexRopeIteratorWithHistory(root, index)
+        // First, try to find the target `index`, since we need to locate
+        // it and start adding after that `index`.
         if (!iterator.hasNext()) {
             // we allow for inserting on + 1 after last-index, since these are
             // the append() operations.
             if (index != length) throw IndexOutOfBoundsException("index:$index, length:$length")
         }
-        val leaf = iterator.currentLeaf
+        val leaf = iterator.currentLeaf // leaf where index is found
         val i = iterator.currentIndex // index in leaf
+        // If the leaf which contains the index has enough space for adding
+        // the element, create new leaf and rebuild tree.
         if (leaf.weight + 1 <= MAX_SIZE_LEAF) { // fast-path
             val newChild = leaf.add(i, element)
             if (leaf === root) return Rope(newChild)
             val newTree = rebuildTree(leaf, newChild, iterator)
             return Rope(newTree)
         }
+        //
         // --- Split and merge ---
+        // Adds the element into leaf and expand as necessary. If the operation
+        // does not split the leaf, then it will return a list with one item.
+        val newChildren = leaf.expandableAdd(i, element.toString())
         if (leaf === root) {
-            val newChildren = leaf.expandableAdd(i, element.toString())
             val newParent = createParent(newChildren)
             return Rope(newParent)
         }
         // At this point, we should always find a parent, since we are in a leaf
         // and hasNext() returned `true`.
         val parent = iterator.findParent(leaf) ?: error("unexpected")
-        // Options:
-        // - give parent one more child -> parent may be full
-        // - just split leafNode and merge back as internal node -> always success
-        val newChildren = leaf.expandableAdd(i, element.toString())
         val pos = parent.indexOf(leaf)
-        // If there is space in the parent, add new leaf to keep the tree wide
+        // If there is space in the parent, add new leaf/s to keep the tree wide
         // as much as possible.
         if (newChildren.size + parent.children.size - 1 <= MAX_CHILDREN) {
             val newParent = parent.set(pos, newChildren)
@@ -202,7 +205,7 @@ class Rope(private val root: BTreeNode) {
                         return onElementRetrieved(curNode, curIndex, curNode.value[curIndex])
                     }
                     if (curNode === root) return onOutOfBounds() // single-node btree.
-                    curIndex -= curNode.weight
+                    curIndex -= curNode.weight //TODO: explain this
                     val parent = stack.popOrNull()
                         ?: error("leaf:$curNode does not have a parent in stack")
                     // Iterate the next child and keep `self` reference in stack, since we
