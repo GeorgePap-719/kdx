@@ -307,7 +307,7 @@ class Rope(private val root: BTreeNode) {
 
         val currentIndex get() = curIndex
 
-        // - char -> value is retrieved successfully.
+        // - char -> value is found successfully.
         // - null -> element is retrieved.
         // - CLOSED -> we are out of bounds and further next() calls are not allowed.
         private var nextOrClosed: Any? = null // Char || null || CLOSED
