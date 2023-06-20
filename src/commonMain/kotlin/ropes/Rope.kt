@@ -17,14 +17,14 @@ class Rope(private val root: BTreeNode) {
         assert { root.isBalanced() }
     }
 
-    @Deprecated("use len", ReplaceWith("length2"))
+    @Deprecated("use len", ReplaceWith("length"))
     fun length0(): Int {
         var len = 0
         for (leaf in root) len += leaf.weight
         return len
     }
 
-    val length: Int = if (root is LeafNode) root.weight else lenImpl(root)
+    val length: Int by lazy { if (root is LeafNode) root.weight else lenImpl(root) }
 
     //TODO: research if we can avoid big tail-rec
     private fun lenImpl(curNode: BTreeNode): Int {
@@ -80,7 +80,10 @@ class Rope(private val root: BTreeNode) {
         // problem is how we allow it without relying on length()?
         require(index > -1) { "index cannot be negative" }
         val iterator = SingleIndexRopeIteratorWithHistory(root, index)
-        if (!iterator.hasNext()) throw IndexOutOfBoundsException("index:$index, length:$length")
+        if (!iterator.hasNext()) {
+            if (index == length)
+                throw IndexOutOfBoundsException("index:$index, length:$length")
+        }
         val leaf = iterator.currentLeaf
         val i = iterator.currentIndex // index in leaf
         if (leaf.weight + 1 <= MAX_SIZE_LEAF) { // fast-path
