@@ -142,6 +142,13 @@ class TestRope {
 
         for (i in 0 until sb.length - 1) assert { rope[i] == sb[i] }
     }
+
+    //@Test TODO: allow lastIndex + 1 (this should be append op), throw for others
+    fun insertShouldThrowForOutOfBounds() {
+        val size = 1000
+        val rope = Rope(createString(1000))
+        rope.insert(size, 'a')
+    }
 }
 
 private fun createString(factor: Int): String {

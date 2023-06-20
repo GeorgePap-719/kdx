@@ -50,6 +50,8 @@ class Rope(private val root: BTreeNode) {
     //TODO: One improvement would be to check for more parents up ahead if we can split them,
     // but at this point it is non-trivial and not worth it time-wise.
     fun insert(index: Int, element: Char): Rope {
+        //TODO: notes, we should allow for index == lastIndex + 1
+        // problem is how we allow it without relying on length()?
         require(index > -1) { "index cannot be negative" }
         val iterator = SingleIndexRopeIteratorWithHistory(root, index)
         if (!iterator.hasNext()) throw IndexOutOfBoundsException("index:$index, length:${length()}")
@@ -77,7 +79,6 @@ class Rope(private val root: BTreeNode) {
         val pos = parent.indexOf(leaf)
         // If there is space in the parent, add new leaf to keep the tree wide
         // as much as possible.
-        //TODO: this operation fails!
         if (newChildren.size + parent.children.size - 1 <= MAX_CHILDREN) {
             val newParent = parent.set(pos, newChildren)
             val newTree = rebuildTree(parent, newParent, iterator)
