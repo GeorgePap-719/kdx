@@ -446,7 +446,19 @@ private fun unsafeMerge(nodes: List<BTreeNode>): InternalNode {
 }
 
 /**
- * Creates a legal parent for [nodes].
+ * Creates a legal parent for [left] and [right] nodes. The weight of the parent is set
+ * to that of the [left] node.
+ *
+ * @throws IllegalArgumentException if a child node is not legal ([BTreeNode.isLegalNode]).
+ * @throws IllegalArgumentException if the resulting node has more than the maximum size of children.
+ */
+fun createParent(left: BTreeNode, right: BTreeNode): InternalNode {
+    return createParent(listOf(left, right))
+}
+
+/**
+ * Creates a legal parent for [nodes]. The weight of the parent is set to that of the
+ * first node.
  *
  * @throws IllegalArgumentException if a child node is not legal ([BTreeNode.isLegalNode]).
  * @throws IllegalArgumentException if the resulting node has more than the maximum size of children.

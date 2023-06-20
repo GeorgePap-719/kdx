@@ -17,6 +17,18 @@ class Rope(private val root: BTreeNode) {
         assert { root.isBalanced() }
     }
 
+    //TODO: we can also improve this too keep the tree wide.
+    fun concat(other: Rope): Rope {
+        val left = root
+        val right = other.root
+        val newRope = createParent(left, right)
+        return Rope(newRope)
+    }
+
+    fun split(index: Int): Pair<Rope, Rope> {
+        TODO()
+    }
+
     @Deprecated("use len", ReplaceWith("length"))
     fun length0(): Int {
         var len = 0
@@ -63,6 +75,15 @@ class Rope(private val root: BTreeNode) {
             }
         }
         return -1
+    }
+
+    // endIndex exclusive
+    fun deleteAt(startIndex: Int, endIndex: Int): Rope {
+        TODO()
+    }
+
+    fun deleteAt(index: Int): Rope {
+        TODO()
     }
 
     // throws for index -1 && out-of-bounds
