@@ -17,6 +17,32 @@ class Rope(private val root: BTreeNode) {
         assert { root.isBalanced() }
     }
 
+    @Deprecated("use len", ReplaceWith("length2"))
+    fun length0(): Int {
+        var len = 0
+        for (leaf in root) len += leaf.weight
+        return len
+    }
+
+    val length: Int = if (root is LeafNode) root.weight else lenImpl(root)
+
+    //TODO: research if we can avoid big tail-rec
+    private fun lenImpl(curNode: BTreeNode): Int {
+        return when (curNode) {
+            is LeafNode -> curNode.weight
+            is InternalNode -> {
+                val children = curNode.children
+                var curLen = 0
+                curLen += curNode.weight
+                for (index in children.indices) {
+                    if (index == 0) continue
+                    curLen += lenImpl(children[index])
+                }
+                curLen
+            }
+        }
+    }
+
     /**
      * Returns the [Char] at the given [index] or `null` if the [index] is out of bounds of this rope.
      */
@@ -54,7 +80,7 @@ class Rope(private val root: BTreeNode) {
         // problem is how we allow it without relying on length()?
         require(index > -1) { "index cannot be negative" }
         val iterator = SingleIndexRopeIteratorWithHistory(root, index)
-        if (!iterator.hasNext()) throw IndexOutOfBoundsException("index:$index, length:${length()}")
+        if (!iterator.hasNext()) throw IndexOutOfBoundsException("index:$index, length:$length")
         val leaf = iterator.currentLeaf
         val i = iterator.currentIndex // index in leaf
         if (leaf.weight + 1 <= MAX_SIZE_LEAF) { // fast-path
@@ -237,18 +263,6 @@ class Rope(private val root: BTreeNode) {
         return stackNode
     }
 
-    private inline fun IndexedInternalNode.nextChildAndKeepRefOrElse(
-        stack: ArrayStack<IndexedInternalNode>,
-        action: () -> BTreeNode
-    ): BTreeNode = nextChildOrNull.let {
-        if (it == null) {
-            action()
-        } else {
-            stack.push(this)
-            return it
-        }
-    }
-
     private fun defaultStack(): ArrayStack<IndexedInternalNode> = ArrayStack(root.height)
 
     inner class SingleIndexRopeIteratorWithHistory(private val root: BTreeNode, index: Int) {
@@ -370,28 +384,6 @@ class Rope(private val root: BTreeNode) {
         }
     }
 
-    fun length(): Int {
-        var len = 0
-        for (leaf in root) len += leaf.weight
-        return len
-        //TODO: proper impl
-//        var curNode = root
-//        var length = 0
-//        while (true) {
-//            when (curNode) {
-//                is LeafNode -> return length + curNode.weight
-//                is InternalNode -> {
-//                    if (curNode.children.size == 1) return length + curNode.weight // only left-child
-//                    val rightMostNode = curNode.children.last()
-//                    // accumulate lef-subtree weight and move on
-//                    length += curNode.weight
-//                    curNode = rightMostNode
-//                    continue
-//                }
-//            }
-//        }
-    }
-
     // ###################
     // # Debug Functions #
     // ###################
@@ -408,6 +400,18 @@ internal fun InternalNode.indexed(): IndexedInternalNode {
 
 internal inline fun IndexedInternalNode.nextChildOrElse(action: () -> BTreeNode): BTreeNode {
     return nextChildOrNull ?: action()
+}
+
+private inline fun IndexedInternalNode.nextChildAndKeepRefOrElse(
+    stack: ArrayStack<IndexedInternalNode>,
+    action: () -> BTreeNode
+): BTreeNode = nextChildOrNull.let {
+    if (it == null) {
+        action()
+    } else {
+        stack.push(this)
+        return it
+    }
 }
 
 /**

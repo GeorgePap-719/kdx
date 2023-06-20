@@ -60,18 +60,21 @@ class TestRope {
     fun testLength() {
         val testValue = "Test something"
         val rope = Rope(testValue)
-        assert { rope.length() == testValue.length }
+        assert { rope.length == testValue.length }
     }
 
-    @Test//TODO: fails for more than one leaf
+    @Test
     fun testBigLengths() {
-        val bigString = buildString {
-            for (i in 0 until 64 * 32 * 10) {
-                append("1")
-            }
-        }
+        val bigString = createString(SIZE_OF_LEAF * 10)
         val rope = Rope(bigString)
-        assert { rope.length() == bigString.length }
+        assert { rope.length == bigString.length }
+    }
+
+    @Test
+    fun stressTestLength() {
+        val bigString = createString(SIZE_OF_LEAF * 1000)
+        val rope = Rope(bigString)
+        assert { rope.length == bigString.length }
     }
 
     @Test
@@ -90,7 +93,6 @@ class TestRope {
         val newRope = rope.insert(0, 'h')
         assert { newRope !== rope }
         assert { newRope[0] == 'h' }
-        println(newRope)
     }
 
     @Test
@@ -98,7 +100,6 @@ class TestRope {
         val string = createString(SIZE_OF_LEAF * 8)
         val rope = Rope(string)
         val newRope = rope.insert(0, 'h')
-        println(newRope)
         assert { newRope !== rope }
         assert { newRope[0] == 'h' }
     }
@@ -107,16 +108,16 @@ class TestRope {
     fun testInsertWithRandomIndex() {
         val string = createString(SIZE_OF_LEAF * 8)
         var rope = Rope(string)
-        var len = rope.length()
+        var len = rope.length
         val sb = StringBuilder(string)
-        println("---------- initial len:$len ---------------")
+
         for (i in 0 until 100) {
             val randomI = Random.nextInt(0, string.length)
             rope = rope.insert(randomI, 'a')
             sb.insert(randomI, 'a')
 
             assert { rope[randomI] == 'a' }
-            assert { rope.length() > len++ }
+            assert { rope.length > len++ }
         }
 
         for (i in 0 until sb.length - 1) {
