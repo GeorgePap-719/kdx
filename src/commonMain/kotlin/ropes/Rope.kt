@@ -76,13 +76,12 @@ class Rope(private val root: BTreeNode) {
     //TODO: One improvement would be to check for more parents up ahead if we can split them,
     // but at this point it is non-trivial and not worth it time-wise.
     fun insert(index: Int, element: Char): Rope {
-        //TODO: notes, we should allow for index == lastIndex + 1
-        // problem is how we allow it without relying on length()?
         require(index > -1) { "index cannot be negative" }
         val iterator = SingleIndexRopeIteratorWithHistory(root, index)
         if (!iterator.hasNext()) {
-            if (index == length)
-                throw IndexOutOfBoundsException("index:$index, length:$length")
+            // we allow for inserting on + 1 after last-index, since these are
+            // the append() operations.
+            if (index != length) throw IndexOutOfBoundsException("index:$index, length:$length")
         }
         val leaf = iterator.currentLeaf
         val i = iterator.currentIndex // index in leaf

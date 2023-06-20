@@ -5,6 +5,7 @@ import keb.ropes.Rope
 import kotlin.random.Random
 import kotlin.random.nextInt
 import kotlin.test.Test
+import kotlin.test.assertFailsWith
 
 class TestRope {
 
@@ -144,11 +145,18 @@ class TestRope {
         for (i in 0 until sb.length - 1) assert { rope[i] == sb[i] }
     }
 
-    //@Test TODO: allow lastIndex + 1 (this should be append op), throw for others
-    fun insertShouldThrowForOutOfBounds() {
+    @Test
+    fun testWeAllowInsertOnLenIndex() {
         val size = 1000
         val rope = Rope(createString(1000))
         rope.insert(size, 'a')
+    }
+
+    @Test
+    fun testInsertThrowsForOutOfBounds() {
+        val size = 1000
+        val rope = Rope(createString(1000))
+        assertFailsWith<IndexOutOfBoundsException> { rope.insert(size + 1, 'a') }
     }
 }
 
