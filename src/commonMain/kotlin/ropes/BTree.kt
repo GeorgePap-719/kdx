@@ -32,15 +32,15 @@ sealed class BTreeNode(
     /**
      * Checks if tree needs rebalancing and rebuilds it from the bottom-up. In case it is balanced, then it returns
      * the same tree.
+     *
+     * @throws IllegalArgumentException if a child node is not legal ([BTreeNode.isLegalNode]).
      */
     fun rebalance(): BTreeNode {
         if (isBalanced()) return this
-        //TODO: we do not check for invariant leaves here, since we do not have yet a proper impl yet.
-        val leaves = buildList { for (node in this@BTreeNode) add(node) }
-        return unsafeMerge(leaves)
+        val leaves = this.toList()
+        return merge(leaves)
     }
 
-    //TODO: check if this should be public API
     fun isBalanced(): Boolean {
         if (!this.isLegalNode) return false
         if (this is InternalNode) for (node in this.children) if (!node.isBalanced()) return false
@@ -243,7 +243,7 @@ open class InternalNode(
      * Returns a new expanded [node][InternalNode] by a factor of 2. This operation splits
      * the tree in half and creates a new parent node for them.
      *
-     * @throws IllegalArgumentException if a child node is not a legal ([BTreeNode.isLegalNode]).
+     * @throws IllegalArgumentException if a child node is not legal ([BTreeNode.isLegalNode]).
      */
     fun expand(): InternalNode {
         if (children.size == 1) return this
@@ -258,7 +258,7 @@ open class InternalNode(
     /**
      * Merges the [other] tree to the right side of this tree, and creates a new balanced btree.
      *
-     * @throws IllegalArgumentException if a child node is not a legal ([BTreeNode.isLegalNode]).
+     * @throws IllegalArgumentException if a child node is not legal ([BTreeNode.isLegalNode]).
      */
     fun merge(other: InternalNode): InternalNode = merge(this, other)
 
@@ -411,14 +411,14 @@ fun InternalNode.tryAddFirst(child: BTreeNode): InternalNode? {
 /**
  * Merges [left] and [right] nodes into one balanced btree.
  *
- * @throws IllegalArgumentException if a child node is not a legal ([BTreeNode.isLegalNode]).
+ * @throws IllegalArgumentException if a child node is not legal ([BTreeNode.isLegalNode]).
  */
 fun merge(left: BTreeNode, right: BTreeNode): InternalNode = merge(listOf(left, right))
 
 /**
  * Merges [nodes] into one balanced btree.
  *
- * @throws IllegalArgumentException if a child node is not a legal ([BTreeNode.isLegalNode]).
+ * @throws IllegalArgumentException if a child node is not legal ([BTreeNode.isLegalNode]).
  */
 fun merge(nodes: List<BTreeNode>): InternalNode {
     nodes.forEach {
@@ -447,7 +447,7 @@ private fun unsafeMerge(nodes: List<BTreeNode>): InternalNode {
 /**
  * Creates a legal parent for [nodes].
  *
- * @throws IllegalArgumentException if a child node is not a legal ([BTreeNode.isLegalNode]).
+ * @throws IllegalArgumentException if a child node is not legal ([BTreeNode.isLegalNode]).
  * @throws IllegalArgumentException if the resulting node has more than the maximum size of children.
  */
 fun createParent(nodes: List<BTreeNode>): InternalNode {

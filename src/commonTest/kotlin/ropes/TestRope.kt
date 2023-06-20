@@ -119,7 +119,7 @@ class TestRope {
             println("---------- for i:$i - len after operation:${rope.length()} ---------------")
 
             assert { rope[randomI] == 'a' }
-//            assert { rope.length() > len++ }
+            assert { rope.length() > len++ }
             println("\n")
         }
 

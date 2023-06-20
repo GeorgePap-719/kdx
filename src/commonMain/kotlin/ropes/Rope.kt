@@ -46,7 +46,7 @@ class Rope(private val root: BTreeNode) {
     // - if not, check if parent (internal node) has any space left for one more child
     // - if yes, then insert child in start and rebuild where necessary
     // - if not, split and merge.
-    // - rebuilding may even create a new root above old one.
+    // - rebuilding creates a new root and replaces old one.
     //TODO: One improvement would be to check for more parents up ahead if we can split them,
     // but at this point it is non-trivial and not worth it time-wise.
     fun insert(index: Int, element: Char): Rope {
@@ -54,7 +54,7 @@ class Rope(private val root: BTreeNode) {
         val iterator = SingleIndexRopeIteratorWithHistory(root, index)
         if (!iterator.hasNext()) throw IndexOutOfBoundsException("index:$index, length:${length()}")
         val leaf = iterator.currentLeaf
-        val i = iterator.currentIndex // -> actual index in leaf
+        val i = iterator.currentIndex // index in leaf
         if (leaf.weight + 1 <= MAX_SIZE_LEAF) { // fast-path
             val newChild = leaf.add(i, element)
             if (leaf === root) return Rope(newChild)
@@ -77,7 +77,7 @@ class Rope(private val root: BTreeNode) {
         val pos = parent.indexOf(leaf)
         // If there is space in the parent, add new leaf to keep the tree wide
         // as much as possible.
-        //TODO: this operation falis!
+        //TODO: this operation fails!
         if (newChildren.size + parent.children.size - 1 <= MAX_CHILDREN) {
             val newParent = parent.replace(pos, newChildren)
             val newTree = rebuildTree(parent, newParent, iterator)
