@@ -2,6 +2,7 @@ package ropes
 
 import keb.assert
 import keb.ropes.Rope
+import keb.ropes.insert
 import kotlin.random.Random
 import kotlin.random.nextInt
 import kotlin.test.Test

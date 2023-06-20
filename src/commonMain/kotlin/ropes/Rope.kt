@@ -75,10 +75,10 @@ class Rope(private val root: BTreeNode) {
     // - rebuilding creates a new root and replaces old one.
     //TODO: One improvement would be to check for more parents up ahead if we can split them,
     // but at this point it is non-trivial and not worth it time-wise.
-    fun insert(index: Int, element: Char): Rope {
+    fun insert(index: Int, element: String): Rope {
         require(index > -1) { "index cannot be negative" }
         val iterator = SingleIndexRopeIteratorWithHistory(root, index)
-        // First, try to find the target `index`, since we need to locate
+        // Try to find the target `index`, since we need to locate
         // it and start adding after that `index`.
         if (!iterator.hasNext()) {
             // we allow for inserting on + 1 after last-index, since these are
@@ -89,17 +89,14 @@ class Rope(private val root: BTreeNode) {
         val i = iterator.currentIndex // index in leaf
         // If the leaf which contains the index has enough space for adding
         // the element, create new leaf and rebuild tree.
-        if (leaf.weight + 1 <= MAX_SIZE_LEAF) { // fast-path
+        if (leaf.weight + element.length <= MAX_SIZE_LEAF) { // fast-path
             val newChild = leaf.add(i, element)
             if (leaf === root) return Rope(newChild)
             val newTree = rebuildTree(leaf, newChild, iterator)
             return Rope(newTree)
         }
-        //
-        // --- Split and merge ---
-        // Adds the element into leaf and expand as necessary. If the operation
-        // does not split the leaf, then it will return a list with one item.
-        val newChildren = leaf.expandableAdd(i, element.toString())
+        // Add the element into leaf and expand (split and merge) as necessary.
+        val newChildren = leaf.expandableAdd(i, element)
         if (leaf === root) {
             val newParent = createParent(newChildren)
             return Rope(newParent)
@@ -396,6 +393,8 @@ class Rope(private val root: BTreeNode) {
     override fun toString(): String = root.toStringDebug()
 
 }
+
+fun Rope.insert(index: Int, element: Char): Rope = insert(index, element.toString())
 
 // btree utils
 
