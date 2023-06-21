@@ -323,6 +323,18 @@ open class InternalNode(
         return unsafeCreateParent(newChildren)
     }
 
+    fun deleteAt(index: Int): InternalNode? {
+        checkElementIndex(index)
+        val newChildren = buildList {
+            for (i in children.indices) {
+                if (i == index) continue
+                add(children[i])
+            }
+        }
+        if (newChildren.isEmpty()) return null
+        return unsafeCreateParent(newChildren)
+    }
+
     private fun checkElementIndex(index: Int) {
         if (index < 0 || index >= MAX_CHILDREN) throw IndexOutOfBoundsException("index:$index")
     }

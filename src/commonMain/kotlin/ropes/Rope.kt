@@ -83,7 +83,27 @@ class Rope(private val root: BTreeNode) {
     }
 
     fun deleteAt(index: Int): Rope {
-        TODO()
+        require(index > -1) { "index cannot be negative" }
+        val iterator = SingleIndexRopeIteratorWithHistory(root, index)
+        if (!iterator.hasNext()) throw IndexOutOfBoundsException("index:$index, length:$length")
+        val leaf = iterator.currentLeaf // leaf where index is found
+        val i = iterator.currentIndex // index in leaf
+        // At this point, we should always find a parent, since we are in a leaf
+        // and hasNext() returned `true`.
+        val parent = iterator.findParent(leaf) ?: error("unexpected")
+        val pos = parent.indexOf(leaf)
+        val newLeaf = leaf.deleteAt(i)
+        if (newLeaf.isEmpty) {
+            val newParent = parent.deleteAt(pos)
+            if (newParent == null) {
+                TODO("check recursive upwards for empty nodes")
+            }
+            val newTree = rebuildTree(parent, newParent, iterator)
+            return Rope(newTree)
+        }
+        val newParent = parent.set(pos, newLeaf)
+        val newTree = rebuildTree(parent, newParent, iterator)
+        return Rope(newTree)
     }
 
     // throws for index -1 && out-of-bounds
@@ -491,6 +511,17 @@ private fun splitIntoLeaves(input: String): List<LeafNode> {
     }
 }
 
+// ------ string-leaf utils ------
+
+private fun expandLeaf(leaf: LeafNode): InternalNode {
+    val half = leaf.weight / 2
+    val left = LeafNode(leaf.value.substring(0, half))
+    val right = LeafNode(leaf.value.substring(half))
+    return merge(left, right)
+}
+
+// ------ addXXX ------
+
 // - Adds the element into the leaf and expands as necessary. Returns the resulting leaves.
 //
 // This operation creates one resulting string from the element and this leaf. This can
@@ -541,11 +572,26 @@ private fun String.add(index: Int, element: Char): String = buildString {
     if (index == str.length) append(element)
 }
 
-private fun expandLeaf(leaf: LeafNode): InternalNode {
-    val half = leaf.weight / 2
-    val left = LeafNode(leaf.value.substring(0, half))
-    val right = LeafNode(leaf.value.substring(half))
-    return merge(left, right)
+// ------ deleteXXX ------
+
+private inline fun LeafNode.deleteAtAndIfEmpty(index: Int, onEmpty: () -> LeafNode): LeafNode {
+    checkElementIndex(index, this)
+    val newValue = value.deleteAt(index)
+    if (newValue.isEmpty()) return onEmpty()
+    return LeafNode(newValue)
+}
+
+private fun LeafNode.deleteAt(index: Int): LeafNode {
+    checkElementIndex(index, this)
+    return LeafNode(value.deleteAt(index))
+}
+
+private fun String.deleteAt(index: Int): String = buildString {
+    val str = this@deleteAt
+    for (i in str.indices) {
+        if (i == index) continue
+        append(str[i])
+    }
 }
 
 // Internal result for [SingleIndexRopeIteratorWithHistory.nextOrClosed]
@@ -554,5 +600,11 @@ private val CLOSED = keb.Symbol("CLOSED")
 private fun checkValueIndex(index: Int, leaf: LeafNode) {
     if (index < 0 || index > leaf.value.lastIndex + 1) { // it is acceptable for an index to be right after the last-index
         throw IndexOutOfBoundsException("index:$index, leaf-length:${leaf.value.length}")
+    }
+}
+
+private fun checkElementIndex(index: Int, leaf: LeafNode) {
+    if (index < 0 || index > leaf.value.lastIndex) {
+        throw IndexOutOfBoundsException("index:$index, leaf-length:${leaf.weight}")
     }
 }
