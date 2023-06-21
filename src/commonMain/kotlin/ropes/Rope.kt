@@ -106,6 +106,14 @@ class Rope(private val root: BTreeNode) {
         return Rope(newTree)
     }
 
+    private fun rebuildAndCleanTree(
+        oldNode: BTreeNode,
+        newNode: BTreeNode?,
+        iterator: SingleIndexRopeIteratorWithHistory
+    ): BTreeNode {
+        TODO()
+    }
+
     // throws for index -1 && out-of-bounds
     //
     // - find target leafNode and check if it has any more space left
