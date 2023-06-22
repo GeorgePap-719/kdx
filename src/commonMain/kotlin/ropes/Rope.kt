@@ -460,6 +460,69 @@ class Rope(private val root: BTreeNode) {
 
 fun Rope.insert(index: Int, element: Char): Rope = insert(index, element.toString())
 
+private abstract class AbstractRopeIterator {
+    // - char -> value is found successfully.
+    // - null -> element is retrieved.
+    // - CLOSED -> we are out of bounds and further next() calls are not allowed.
+    protected var nextOrClosed: Any? = null // Char || null || CLOSED
+
+    protected inline fun nextOrIfClosed(onClosedAction: () -> Nothing): Char? = nextOrClosed.let {
+        if (it == CLOSED) {
+            onClosedAction()
+        } else {
+            it as Char?
+        }
+    }
+
+    //TODO: see channel iterator impl
+    open operator fun hasNext(): Boolean {
+        val next = nextOrIfClosed { return false }
+        return if (next == null) {
+            tryGetNext() != null
+        } else {
+            true
+        }
+    }
+
+    /**
+     * Marks the iterator as closed and forbids any other subsequent [next] calls.
+     */
+    protected fun markAsClosed() {
+        nextOrClosed = CLOSED
+    }
+
+    /**
+     * Cleans the `next` variable.
+     */
+    protected fun cleanNext() {
+        nextOrClosed = null
+    }
+
+    open operator fun next(): Char {
+        val next = nextOrIfClosed { throw NoSuchElementException() }
+            ?: return tryGetNext()
+                ?: throw NoSuchElementException()
+        cleanNext()
+        return next
+    }
+
+    protected abstract fun nextImpl()
+
+    /**
+     * Tries to get the next `Char` if this iterator is not marked as closed. If this iteration
+     * returns null, then it marks the iterator as closed.
+     */
+    protected fun tryGetNext(): Char? {
+        if (nextOrClosed === CLOSED) return null
+        nextImpl()
+        if (nextOrClosed == null) {
+            markAsClosed()
+            return null
+        }
+        return nextOrClosed as Char
+    }
+}
+
 // btree utils
 
 internal fun InternalNode.indexed(): IndexedInternalNode {
