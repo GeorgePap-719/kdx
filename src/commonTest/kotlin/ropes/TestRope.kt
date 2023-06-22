@@ -149,7 +149,7 @@ class TestRope {
     @Test
     fun testWeAllowInsertOnLenIndex() {
         val size = 1000
-        val rope = Rope(createString(1000))
+        val rope = Rope(createString(size))
         rope.insert(size, 'a')
     }
 
@@ -158,6 +158,47 @@ class TestRope {
         val size = 1000
         val rope = Rope(createString(1000))
         assertFailsWith<IndexOutOfBoundsException> { rope.insert(size + 1, 'a') }
+    }
+
+    @Test
+    fun testDeleteAtFirstIndexWithOneLeaf() {
+        val string = createString(SIZE_OF_LEAF - 1)
+        val rope = Rope(string)
+        val newRope = rope.deleteAt(0)
+        assert { newRope !== rope }
+        assert { newRope[0] != '0' }
+    }
+
+    @Test
+    fun testDeleteAtLastIndexWithOneLeaf() {
+        val string = createString(SIZE_OF_LEAF - 1)
+        val rope = Rope(string)
+        val newRope = rope.deleteAt(rope.length - 1) // lastIndex == '6'
+        assert { newRope !== rope }
+        assert { newRope[rope.length] != '6' }
+    }
+
+    @Test
+    fun testDeleteAtWithRandomIndex() {
+        val string = createString(SIZE_OF_LEAF * 8)
+        var rope = Rope(string)
+        val sb = StringBuilder(string)
+        var curLen: Int
+        var afterDeleteLen: Int
+
+        for (i in 0 until 100) {
+            val randomI = Random.nextInt(0, string.length)
+            curLen = rope.length
+            rope = rope.deleteAt(randomI)
+            afterDeleteLen = rope.length
+            sb.deleteAt(randomI)
+
+            assert { afterDeleteLen < curLen }
+        }
+
+        for (i in 0 until sb.length - 1) {
+            assert { rope[i] == sb[i] }
+        }
     }
 }
 

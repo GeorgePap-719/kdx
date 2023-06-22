@@ -8,6 +8,10 @@ fun Rope(value: String): Rope {
     return Rope(root)
 }
 
+fun emptyRope(): Rope {
+    return Rope(btreeOf(""))
+}
+
 /**
  * Represents a [Rope data structure](https://en.wikipedia.org/wiki/Rope_(data_structure)#Index).
  */
@@ -88,30 +92,29 @@ class Rope(private val root: BTreeNode) {
         if (!iterator.hasNext()) throw IndexOutOfBoundsException("index:$index, length:$length")
         val leaf = iterator.currentLeaf // leaf where index is found
         val i = iterator.currentIndex // index in leaf
-        // At this point, we should always find a parent, since we are in a leaf
-        // and hasNext() returned `true`.
-        val parent = iterator.findParent(leaf) ?: error("unexpected")
-        val pos = parent.indexOf(leaf)
         val newLeaf = leaf.deleteAt(i)
-        if (newLeaf.isEmpty) {
-            val newParent = parent.deleteAt(pos)
-            if (newParent == null) {
-                TODO("check recursive upwards for empty nodes")
-            }
-            val newTree = rebuildTree(parent, newParent, iterator)
-            return Rope(newTree)
-        }
-        val newParent = parent.set(pos, newLeaf)
-        val newTree = rebuildTree(parent, newParent, iterator)
+        val newTree = rebuildTreeCleaningEmptyNodes(leaf, newLeaf, iterator)
         return Rope(newTree)
     }
 
-    private fun rebuildAndCleanTree(
+    private fun rebuildTreeCleaningEmptyNodes(
         oldNode: BTreeNode,
-        newNode: BTreeNode?,
+        newNode: BTreeNode,
         iterator: SingleIndexRopeIteratorWithHistory
     ): BTreeNode {
-        TODO()
+        if (oldNode === root && newNode.isEmpty) return emptyBtree()
+        var old = oldNode
+        var new: BTreeNode? = newNode
+        while (true) {
+            if (new?.isEmpty == true) new = null // mark empty nodes as null to clean them out
+            if (new != null) return rebuildTree(old, new, iterator)
+            // for non-root nodes, findParent() should always return a parent.
+            val parent = iterator.findParent(old) ?: error("unexpected")
+            val pos = parent.indexOf(old)
+            new = parent.deleteAt(pos)
+            old = parent
+            if (old === root) return new ?: old
+        }
     }
 
     // throws for index -1 && out-of-bounds
@@ -500,6 +503,10 @@ internal class IndexedInternalNode(
 
 fun btreeOf(input: String): BTreeNode {
     return splitIntoNodes(input)
+}
+
+fun emptyBtree(): BTreeNode {
+    return LeafNode("")
 }
 
 private fun splitIntoNodes(input: String): BTreeNode {

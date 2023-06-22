@@ -27,7 +27,7 @@ sealed class BTreeNode(
 
     abstract val isLegalNode: Boolean
 
-    val isEmpty: Boolean = weight == 0
+    abstract val isEmpty: Boolean
 
     /**
      * Checks if tree needs rebalancing and rebuilds it from the bottom-up. In case it is balanced, then it returns
@@ -189,6 +189,7 @@ class LeafNode(val value: String) : BTreeNode(value.length, 0) {
     override val isLeafNode: Boolean = true
 
     override val isLegalNode: Boolean = value.length <= MAX_SIZE_LEAF
+    override val isEmpty: Boolean = value.isEmpty()
 }
 
 const val MIN_CHILDREN = 4
@@ -211,6 +212,7 @@ open class InternalNode(
     override val isInternalNode: Boolean = true
     override val isLeafNode: Boolean = false
     override val isLegalNode: Boolean = isLegalNodeImpl()
+    override val isEmpty: Boolean = children.isEmpty()
 
 
     val areChildrenLegal: Boolean = areChildrenLegalImpl() //TODO: check if this pulls his weight
