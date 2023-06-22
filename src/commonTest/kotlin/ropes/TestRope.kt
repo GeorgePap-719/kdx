@@ -8,6 +8,7 @@ import kotlin.random.nextInt
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
 
+//TODO: refactor assert {} -> assert()
 class TestRope {
 
     @Test

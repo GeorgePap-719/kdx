@@ -81,13 +81,22 @@ class Rope(private val root: BTreeNode) {
         return -1
     }
 
+    fun subRope(startIndex: Int) {
+        TODO()
+    }
+
+    fun subRope(startIndex: Int, endIndex: Int): Rope {
+        checkPositionIndex(startIndex)
+        TODO()
+    }
+
     // endIndex exclusive
     fun deleteAt(startIndex: Int, endIndex: Int): Rope {
         TODO()
     }
 
     fun deleteAt(index: Int): Rope {
-        require(index > -1) { "index cannot be negative" }
+        checkPositionIndex(index)
         val iterator = SingleIndexRopeIteratorWithHistory(root, index)
         if (!iterator.hasNext()) throw IndexOutOfBoundsException("index:$index, length:$length")
         val leaf = iterator.currentLeaf // leaf where index is found
@@ -128,7 +137,7 @@ class Rope(private val root: BTreeNode) {
     //TODO: One improvement would be to check for more parents up ahead if we can split them,
     // but at this point it is non-trivial and not worth it time-wise.
     fun insert(index: Int, element: String): Rope {
-        require(index > -1) { "index cannot be negative" }
+        checkPositionIndex(index)
         val iterator = SingleIndexRopeIteratorWithHistory(root, index)
         // Try to find the target `index`, since we need to locate
         // it and start adding after that `index`.
@@ -321,7 +330,7 @@ class Rope(private val root: BTreeNode) {
 
     inner class SingleIndexRopeIteratorWithHistory(private val root: BTreeNode, index: Int) {
         init {
-            require(index > -1) { "index cannot be negative, but got:$index" }
+            checkPositionIndex(index)
             // This implementation has second `init`.
         }
 
@@ -444,6 +453,9 @@ class Rope(private val root: BTreeNode) {
 
     override fun toString(): String = root.toStringDebug()
 
+    private fun checkPositionIndex(index: Int) {
+        if (index < 0) throw IndexOutOfBoundsException("index:$index")
+    }
 }
 
 fun Rope.insert(index: Int, element: Char): Rope = insert(index, element.toString())
