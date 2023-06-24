@@ -2,7 +2,6 @@ package keb.ropes
 
 import keb.assert
 
-
 fun Rope(value: String): Rope {
     val root = btreeOf(value)
     return Rope(root)
@@ -328,6 +327,117 @@ class Rope(private val root: BTreeNode) {
 
     private fun defaultStack(): ArrayStack<IndexedInternalNode> = ArrayStack(root.height)
 
+    open inner class RopeIterator(private val root: BTreeNode, startIndex: Int) {
+        init {
+            checkPositionIndex(startIndex)
+            // This implementation has second `init`.
+        }
+
+        private val links = mutableMapOf<BTreeNode, InternalNode>() // child || parent
+        private val stack = PeekableArrayStack<BTreeNode>(root.height)
+
+        init {
+            //TODO: add explanation
+            pushInStack(root)
+        }
+
+        private var curIndex = startIndex
+        private var nextIndex = curIndex
+        private var curNode = root
+
+        val currentIndex get() = curIndex
+
+        // - char -> value is found successfully.
+        // - null ->  indicates the absence of pre-received result.
+        // - CLOSED -> we are out of bounds and further next() calls are not allowed.
+        private var nextOrClosed: Any? = null // Char || null || CLOSED
+
+        val currentLeaf: LeafNode
+            get() = curNode as? LeafNode ?: error("should be invoked after the first iteration")
+
+        fun findParent(child: BTreeNode): InternalNode? = links[child]
+
+        // `hasNext()` is a special get() opearation.
+        open operator fun hasNext(): Boolean {
+            if (nextOrClosed === CLOSED) throw NoSuchElementException(DEFAULT_CLOSED_MESSAGE)
+            return getImpl(
+                index = nextIndex,
+                root = curNode,
+                onOutOfBounds = { onOutOfBoundsHasNext() },
+                onElementRetrieved = { leaf, i, element ->
+                    pushInStack(leaf)
+                    curIndex = i
+                    curNode = leaf
+                    nextOrClosed = element
+                    nextIndex = ++curIndex
+                    true
+                },
+                //TODO: add comments
+                onNextChild = {
+                    pushInStack(it)
+                    it.findParentInStackAndLink()
+                }
+            )
+        }
+
+        private fun onOutOfBoundsHasNext(): Boolean {
+            nextOrClosed = CLOSED
+            return false
+        }
+
+        open operator fun next(): Char {
+            // Read the already received result or `null` if [hasNext] has not been invoked yet.
+            val result = nextOrClosed
+            check(result != null) { "`hasNext()` has not been invoked" }
+            nextOrClosed = null
+            // Is this iterator closed?
+            if (nextOrClosed === CLOSED) throw NoSuchElementException(DEFAULT_CLOSED_MESSAGE)
+            return result as Char
+        }
+
+        /**
+         * Tries to get the next `Char` if this iterator is not marked as closed. If this iteration
+         * returns null, then it marks the iterator as closed.
+         */
+//        private fun tryGetNext(): Char? {
+//            if (nextOrClosed === CLOSED) return null
+//            nextImpl()
+//            if (nextOrClosed == null) {
+//                markClosed()
+//                return null
+//            }
+//            return nextOrClosed as Char
+//        }
+
+        /**
+         * Marks the iterator as closed and forbids any other subsequent [next] calls.
+         */
+        protected fun markClosed() {
+            nextOrClosed = CLOSED
+        }
+
+        /**
+         * Cleans the `next` variable.
+         */
+        protected fun cleanNext() {
+            nextOrClosed = null
+        }
+
+        private fun pushInStack(child: BTreeNode) {
+            stack.push(child)
+        }
+
+        private fun BTreeNode.findParentInStackAndLink() {
+            if (this === root) return
+            stack.forEach {
+                if (it === this) return@forEach
+                val parent = it as? InternalNode ?: return@forEach
+                if (!parent.children.contains(this)) return@forEach
+                links[this] = parent // link
+            }
+        }
+    }
+
     inner class SingleIndexRopeIteratorWithHistory(private val root: BTreeNode, index: Int) {
         init {
             checkPositionIndex(index)
@@ -459,69 +569,6 @@ class Rope(private val root: BTreeNode) {
 }
 
 fun Rope.insert(index: Int, element: Char): Rope = insert(index, element.toString())
-
-private abstract class AbstractRopeIterator {
-    // - char -> value is found successfully.
-    // - null -> element is retrieved.
-    // - CLOSED -> we are out of bounds and further next() calls are not allowed.
-    protected var nextOrClosed: Any? = null // Char || null || CLOSED
-
-    protected inline fun nextOrIfClosed(onClosedAction: () -> Nothing): Char? = nextOrClosed.let {
-        if (it == CLOSED) {
-            onClosedAction()
-        } else {
-            it as Char?
-        }
-    }
-
-    //TODO: see channel iterator impl
-    open operator fun hasNext(): Boolean {
-        val next = nextOrIfClosed { return false }
-        return if (next == null) {
-            tryGetNext() != null
-        } else {
-            true
-        }
-    }
-
-    /**
-     * Marks the iterator as closed and forbids any other subsequent [next] calls.
-     */
-    protected fun markAsClosed() {
-        nextOrClosed = CLOSED
-    }
-
-    /**
-     * Cleans the `next` variable.
-     */
-    protected fun cleanNext() {
-        nextOrClosed = null
-    }
-
-    open operator fun next(): Char {
-        val next = nextOrIfClosed { throw NoSuchElementException() }
-            ?: return tryGetNext()
-                ?: throw NoSuchElementException()
-        cleanNext()
-        return next
-    }
-
-    protected abstract fun nextImpl()
-
-    /**
-     * Tries to get the next `Char` if this iterator is not marked as closed. If this iteration
-     * returns null, then it marks the iterator as closed.
-     */
-    protected fun tryGetNext(): Char? {
-        if (nextOrClosed === CLOSED) return null
-        nextImpl()
-        if (nextOrClosed == null) {
-            markAsClosed()
-            return null
-        }
-        return nextOrClosed as Char
-    }
-}
 
 // btree utils
 
@@ -686,6 +733,10 @@ private fun String.deleteAt(index: Int): String = buildString {
 
 // Internal result for [SingleIndexRopeIteratorWithHistory.nextOrClosed]
 private val CLOSED = keb.Symbol("CLOSED")
+
+//
+
+private const val DEFAULT_CLOSED_MESSAGE = "iterator was closed"
 
 private fun checkValueIndex(index: Int, leaf: LeafNode) {
     if (index < 0 || index > leaf.value.lastIndex + 1) { // it is acceptable for an index to be right after the last-index
