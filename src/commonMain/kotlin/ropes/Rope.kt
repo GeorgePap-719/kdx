@@ -91,12 +91,37 @@ class Rope(private val root: BTreeNode) {
 
     // endIndex exclusive
     fun deleteAt(startIndex: Int, endIndex: Int): Rope {
-        TODO()
+        checkPositionIndex(startIndex)
+
+        // 1. get left and right positions
+        val leftIterator = RopeIterator(root, startIndex)
+        if (!leftIterator.hasNext()) throw IndexOutOfBoundsException("index:$startIndex, length:$length")
+        val leftLeaf = leftIterator.currentLeaf // leaf where index is found
+        val leftI = leftIterator.currentIndex // index in leaf
+        val rightIterator = SingleElementRopeIterator(root, endIndex)
+        if (!rightIterator.hasNext()) throw IndexOutOfBoundsException("index:$startIndex, length:$length")
+        val rightLeaf = rightIterator.currentLeaf
+        val rightI = rightIterator.currentIndex
+        // 2. check if they are in the same leaf
+        if (leftLeaf === rightLeaf) {
+            val newValue = leftLeaf.value.removeRange(leftI, rightI) // `endIndex` is exclusive here
+            val newLeaf = LeafNode(newValue)
+            val newTree = rebuildTreeCleaningEmptyNodes(leftLeaf, newLeaf, leftIterator)
+            return Rope(newTree)
+        }
+        val range = startIndex until endIndex
+        for (i in range) {
+            if (!leftIterator.hasNext()) error("todo")
+            TODO("at this point, without a mutable implementation, tracking all changes is non-trivial.")
+        }
+        leftLeaf.value
+        // 3. if not, then gl hf
+        TODO("wip")
     }
 
     fun deleteAt(index: Int): Rope {
         checkPositionIndex(index)
-        val iterator = SingleIndexRopeIteratorWithHistory(root, index)
+        val iterator = SingleElementRopeIterator(root, index)
         if (!iterator.hasNext()) throw IndexOutOfBoundsException("index:$index, length:$length")
         val leaf = iterator.currentLeaf // leaf where index is found
         val i = iterator.currentIndex // index in leaf
@@ -108,7 +133,7 @@ class Rope(private val root: BTreeNode) {
     private fun rebuildTreeCleaningEmptyNodes(
         oldNode: BTreeNode,
         newNode: BTreeNode,
-        iterator: SingleIndexRopeIteratorWithHistory
+        iterator: RopeIteratorWithHistory
     ): BTreeNode {
         if (oldNode === root && newNode.isEmpty) return emptyBtree()
         var old = oldNode
@@ -137,7 +162,7 @@ class Rope(private val root: BTreeNode) {
     // but at this point it is non-trivial and not worth it time-wise.
     fun insert(index: Int, element: String): Rope {
         checkPositionIndex(index)
-        val iterator = SingleIndexRopeIteratorWithHistory(root, index)
+        val iterator = SingleElementRopeIterator(root, index)
         // Try to find the target `index`, since we need to locate
         // it and start adding after that `index`.
         if (!iterator.hasNext()) {
@@ -183,7 +208,7 @@ class Rope(private val root: BTreeNode) {
     private fun rebuildTree(
         oldNode: BTreeNode,
         newNode: BTreeNode,
-        iterator: SingleIndexRopeIteratorWithHistory
+        iterator: RopeIteratorWithHistory
     ): BTreeNode {
         if (oldNode === root) return newNode
         var old = oldNode
@@ -326,7 +351,11 @@ class Rope(private val root: BTreeNode) {
 
     private fun defaultStack(): ArrayStack<IndexedInternalNode> = ArrayStack(root.height)
 
-    open inner class RopeIterator(private val root: BTreeNode, startIndex: Int) {
+    internal interface RopeIteratorWithHistory {
+        fun findParent(child: BTreeNode): InternalNode?
+    }
+
+    open inner class RopeIterator(private val root: BTreeNode, startIndex: Int) : RopeIteratorWithHistory {
         init {
             checkPositionIndex(startIndex)
             // This implementation has second `init`.
@@ -365,7 +394,8 @@ class Rope(private val root: BTreeNode) {
                 return leaf
             }
 
-        internal fun findParent(child: BTreeNode): InternalNode? = links[child]
+        // internal API
+        override fun findParent(child: BTreeNode): InternalNode? = links[child]
 
         // `hasNext()` is a special get() operation.
         open operator fun hasNext(): Boolean {
@@ -413,13 +443,13 @@ class Rope(private val root: BTreeNode) {
             nextOrClosed = CLOSED
         }
 
-        private fun findParentInStackAndLink(node: BTreeNode) {
-            if (node === root) return
-            onNextStack.peekEach {
-                if (it === node) return@peekEach
-                val parent = it as? InternalNode ?: return@peekEach
-                if (!parent.children.contains(node)) return@peekEach
-                links[node] = parent // link
+        private fun findParentInStackAndLink(child: BTreeNode) {
+            if (child === root) return
+            onNextStack.onEach {
+                if (it === child) return@onEach
+                val parent = it as? InternalNode ?: return@onEach
+                if (!parent.children.contains(child)) return@onEach
+                links[child] = parent // link
             }
         }
     }
@@ -437,6 +467,10 @@ class Rope(private val root: BTreeNode) {
         }
     }
 
+    @Deprecated(
+        "refactored to SingleElementRopeIterator",
+        replaceWith = ReplaceWith("SingleElementRopeIterator(root, index)")
+    )
     inner class SingleIndexRopeIteratorWithHistory(private val root: BTreeNode, index: Int) {
         init {
             checkPositionIndex(index)
@@ -547,10 +581,10 @@ class Rope(private val root: BTreeNode) {
 
         private fun BTreeNode.findParentInStackAndLink() {
             if (this === root) return
-            stack.peekEach {
-                if (it === this) return@peekEach
-                val parent = it as? InternalNode ?: return@peekEach
-                if (!parent.children.contains(this)) return@peekEach
+            stack.onEach {
+                if (it === this) return@onEach
+                val parent = it as? InternalNode ?: return@onEach
+                if (!parent.children.contains(this)) return@onEach
                 links[this] = parent // link
             }
         }
