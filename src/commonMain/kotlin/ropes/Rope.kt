@@ -279,12 +279,11 @@ class Rope(private val root: BTreeNode) {
                     val node = if (curNode is IndexedInternalNode) curNode else curNode.indexed()
                     // push the current node, so we can always return as a fallback.
                     stack.push(node)
-                    // If `index` is less than node's weight, then we know
-                    // for use that `index` is in this subtree.
+                    // if `index` is less than node's weight, then `index` is in this subtree.
                     if (curIndex < node.weight) {
                         curNode = node.nextChildOrElse {
                             // At this point, `index` is out of bounds because we tried to iterate
-                            // a non-existent "next" node, in an internal node where we are certain that
+                            // a non-existent "next" node, in an internal node when we are certain that
                             // `index` should be within this subtree. Technically, this happens because
                             // when we are in the rightmost leafNode, we cannot be sure there is not a
                             // "next" leaf. We have to iterate the tree backwards and check explicitly.
@@ -334,11 +333,12 @@ class Rope(private val root: BTreeNode) {
         }
 
         private val links = mutableMapOf<BTreeNode, InternalNode>() // child || parent
-        private val stack = PeekableArrayStack<BTreeNode>(root.height)
+        private val onNextStack = PeekableArrayStack<BTreeNode>(root.height)
+        private val parentNodesRef = defaultStack()
 
         init {
             //TODO: add explanation
-            pushInStack(root)
+            onNextStack.push(root)
         }
 
         private var curIndex = startIndex
@@ -349,33 +349,44 @@ class Rope(private val root: BTreeNode) {
 
         // - char -> value is found successfully.
         // - null ->  indicates the absence of pre-received result.
-        // - CLOSED -> we are out of bounds and further next() calls are not allowed.
+        // - CLOSED -> we are out of bounds and further `next()` calls are not allowed.
         private var nextOrClosed: Any? = null // Char || null || CLOSED
 
+        /**
+         * Stores the leaf retrieved by [hasNext] call.
+         * If [hasNext] has not been invoked yet,
+         * or [hasNext] has not retrieved successfully an element, throws [IllegalStateException].
+         */
         val currentLeaf: LeafNode
-            get() = curNode as? LeafNode ?: error("should be invoked after the first iteration")
+            get() {
+                val leaf = curNode as? LeafNode
+                check(nextOrClosed != null) { "`hasNext()` has not been invoked" }
+                check(leaf != null) { "`hasNext()` has not retrieved a leaf" }
+                return leaf
+            }
 
-        fun findParent(child: BTreeNode): InternalNode? = links[child]
+        internal fun findParent(child: BTreeNode): InternalNode? = links[child]
 
-        // `hasNext()` is a special get() opearation.
+        // `hasNext()` is a special get() operation.
         open operator fun hasNext(): Boolean {
-            if (nextOrClosed === CLOSED) throw NoSuchElementException(DEFAULT_CLOSED_MESSAGE)
+            if (nextOrClosed === CLOSED) return false
             return getImpl(
                 index = nextIndex,
                 root = curNode,
+                stack = parentNodesRef,
                 onOutOfBounds = { onOutOfBoundsHasNext() },
                 onElementRetrieved = { leaf, i, element ->
-                    pushInStack(leaf)
+                    onNextStack.push(leaf)
                     curIndex = i
                     curNode = leaf
                     nextOrClosed = element
-                    nextIndex = ++curIndex
+                    nextIndex = curIndex + 1
                     true
                 },
                 //TODO: add comments
                 onNextChild = {
-                    pushInStack(it)
-                    it.findParentInStackAndLink()
+                    onNextStack.push(it)
+                    findParentInStackAndLink(it)
                 }
             )
         }
@@ -396,45 +407,33 @@ class Rope(private val root: BTreeNode) {
         }
 
         /**
-         * Tries to get the next `Char` if this iterator is not marked as closed. If this iteration
-         * returns null, then it marks the iterator as closed.
-         */
-//        private fun tryGetNext(): Char? {
-//            if (nextOrClosed === CLOSED) return null
-//            nextImpl()
-//            if (nextOrClosed == null) {
-//                markClosed()
-//                return null
-//            }
-//            return nextOrClosed as Char
-//        }
-
-        /**
          * Marks the iterator as closed and forbids any other subsequent [next] calls.
          */
         protected fun markClosed() {
             nextOrClosed = CLOSED
         }
 
-        /**
-         * Cleans the `next` variable.
-         */
-        protected fun cleanNext() {
-            nextOrClosed = null
-        }
-
-        private fun pushInStack(child: BTreeNode) {
-            stack.push(child)
-        }
-
-        private fun BTreeNode.findParentInStackAndLink() {
-            if (this === root) return
-            stack.forEach {
-                if (it === this) return@forEach
-                val parent = it as? InternalNode ?: return@forEach
-                if (!parent.children.contains(this)) return@forEach
-                links[this] = parent // link
+        private fun findParentInStackAndLink(node: BTreeNode) {
+            if (node === root) return
+            onNextStack.peekEach {
+                if (it === node) return@peekEach
+                val parent = it as? InternalNode ?: return@peekEach
+                if (!parent.children.contains(node)) return@peekEach
+                links[node] = parent // link
             }
+        }
+    }
+
+    inner class SingleElementRopeIterator(root: BTreeNode, index: Int) : RopeIterator(root, index) {
+        private var invoked = false
+
+        override fun hasNext(): Boolean {
+            if (invoked) {
+                markClosed()
+                return false
+            }
+            invoked = true
+            return super.hasNext()
         }
     }
 
@@ -548,10 +547,10 @@ class Rope(private val root: BTreeNode) {
 
         private fun BTreeNode.findParentInStackAndLink() {
             if (this === root) return
-            stack.forEach {
-                if (it === this) return@forEach
-                val parent = it as? InternalNode ?: return@forEach
-                if (!parent.children.contains(this)) return@forEach
+            stack.peekEach {
+                if (it === this) return@peekEach
+                val parent = it as? InternalNode ?: return@peekEach
+                if (!parent.children.contains(this)) return@peekEach
                 links[this] = parent // link
             }
         }

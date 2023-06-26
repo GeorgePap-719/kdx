@@ -43,7 +43,7 @@ class PeekableArrayStack<T>(initialLength: Int) : ArrayStack<T>(initialLength) {
     }
 
     // iterates elements as we would pop from stack
-    internal inline fun forEach(action: (T) -> Unit) {
+    internal inline fun peekEach(action: (T) -> Unit) {
         var curIndex = 0
         while (curIndex != size) {
             @Suppress("UNCHECKED_CAST")
