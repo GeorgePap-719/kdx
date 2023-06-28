@@ -37,12 +37,12 @@ sealed class BTreeNode(
      */
     fun rebalance(): BTreeNode {
         if (isBalanced()) return this
-        val leaves = this.toList()
+        val leaves = this.mapNotNull { if (it.isEmpty) null else it }
         return merge(leaves)
     }
 
     fun isBalanced(): Boolean {
-        if (!this.isLegalNode) return false
+        if (!this.isLegalNode || isEmpty) return false
         if (this is InternalNode) for (node in this.children) if (!node.isBalanced()) return false
         return true
     }
