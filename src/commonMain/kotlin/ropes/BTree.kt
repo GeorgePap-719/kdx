@@ -224,7 +224,7 @@ open class InternalNode(
         // with the above condition, we have to change isBalanced() API, since it is a condition
         // where we cannot always meet.
         // Maybe we also need to distinct between legal and balanced nodes.
-        if (children.size > MAX_CHILDREN || isEmpty) return false
+        if (children.size > MAX_CHILDREN) return false
         val rootHeight = height
         for (node in children) if (node.height >= rootHeight) return false
         return true

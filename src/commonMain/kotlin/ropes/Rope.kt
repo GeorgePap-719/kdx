@@ -109,13 +109,20 @@ class Rope(private val root: BTreeNode) {
             val newTree = rebuildTreeCleaningEmptyNodes(leftLeaf, newLeaf, leftIterator)
             return Rope(newTree)
         }
+        // 3. if not, then gl hf
         val range = startIndex until endIndex
+        var i = startIndex
+        while (i < endIndex) {
+
+
+            if (i > endIndex) error("todo")
+        }
         for (i in range) {
             if (!leftIterator.hasNext()) error("todo")
+
             TODO("at this point, without a mutable implementation, tracking all changes is non-trivial.")
         }
         leftLeaf.value
-        // 3. if not, then gl hf
         TODO("wip")
     }
 

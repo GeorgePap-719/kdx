@@ -27,6 +27,8 @@ class MutableLeafNode(initialValue: String) : LeafNode(initialValue) {
     }
 }
 
+fun LeafNode.makeMutable(): MutableLeafNode = if (this is MutableLeafNode) this else MutableLeafNode(value)
+
 class MutableInternalNode(
     weight: Int,
     height: Int,
@@ -47,3 +49,6 @@ class MutableInternalNode(
         mutableChildren.removeAt(index)
     }
 }
+
+fun InternalNode.makeMutable(): MutableInternalNode =
+    if (this is MutableInternalNode) this else MutableInternalNode(weight, height, children)
