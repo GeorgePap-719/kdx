@@ -14,7 +14,7 @@ sealed class BTreeNode(
      * If this node is a leaf, then this value represents the length of the string. Else holds the sum of the lengths of
      * all the leaves in its left subtree.
      */
-    val weight: Int,
+    open val weight: Int,
     /**
      * The `height` is measured as the number of edges in the longest path from the root node to a leaf node. If this
      * node is the `root`, then it represents the `height` of the entire tree. By extension, if this is a leaf node
@@ -182,14 +182,14 @@ sealed class BTreeNode(
 /**
  * Represents a leaf-node in Btree.
  */
-class LeafNode(val value: String) : BTreeNode(value.length, 0) {
+open class LeafNode(open val value: String) : BTreeNode(value.length, 0) {
     constructor(value: Char) : this(value.toString())
 
-    override val isInternalNode: Boolean = false
-    override val isLeafNode: Boolean = true
+    final override val isInternalNode: Boolean = false
+    final override val isLeafNode: Boolean = true
 
-    override val isLegalNode: Boolean = value.length <= MAX_SIZE_LEAF
-    override val isEmpty: Boolean = value.isEmpty()
+    override val isLegalNode: Boolean get() = value.length <= MAX_SIZE_LEAF
+    override val isEmpty: Boolean get() = value.isEmpty()
 }
 
 const val MIN_CHILDREN = 4
@@ -202,18 +202,19 @@ const val MAX_SIZE_LEAF = 2048
 open class InternalNode(
     weight: Int,
     height: Int,
-    val children: List<BTreeNode>,
+    open val children: List<BTreeNode>,
 ) : BTreeNode(weight, height) {
 
     init {
+        @Suppress("LeakingThis")
         require(children.isNotEmpty()) { "internal node cannot be empty" }
     }
 
-    override val isInternalNode: Boolean = true
-    override val isLeafNode: Boolean = false
-    override val isLegalNode: Boolean = isLegalNodeImpl()
-    override val isEmpty: Boolean = children.isEmpty()
+    final override val isInternalNode: Boolean = true
+    final override val isLeafNode: Boolean = false
 
+    override val isLegalNode: Boolean get() = isLegalNodeImpl()
+    override val isEmpty: Boolean get() = children.isEmpty()
 
     val areChildrenLegal: Boolean = areChildrenLegalImpl() //TODO: check if this pulls his weight
 
@@ -223,7 +224,7 @@ open class InternalNode(
         // with the above condition, we have to change isBalanced() API, since it is a condition
         // where we cannot always meet.
         // Maybe we also need to distinct between legal and balanced nodes.
-        if (children.size > MAX_CHILDREN) return false
+        if (children.size > MAX_CHILDREN || isEmpty) return false
         val rootHeight = height
         for (node in children) if (node.height >= rootHeight) return false
         return true
@@ -337,7 +338,7 @@ open class InternalNode(
         return unsafeCreateParent(newChildren)
     }
 
-    private fun checkElementIndex(index: Int) {
+    protected fun checkElementIndex(index: Int) {
         if (index < 0 || index >= MAX_CHILDREN) throw IndexOutOfBoundsException("index:$index")
     }
 }
