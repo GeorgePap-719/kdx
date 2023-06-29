@@ -13,6 +13,5 @@ class PersistentInternalNode(
     override val height: Int,
     override val children: List<BTreeNode>
 ) : InternalNode(), PersistentBTreeNode {
-    override val isLegalNode: Boolean
-        get() = TODO("Not yet implemented")
+    override val isLegalNode: Boolean = super.isLegalNode // compute it once
 }

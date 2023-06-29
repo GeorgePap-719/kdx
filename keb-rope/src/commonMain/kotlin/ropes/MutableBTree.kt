@@ -16,7 +16,4 @@ class MutableInternalNode(
 ) : InternalNode(), MutableBTreeNode {
     private val _children = children.toMutableList()
     override val children: List<BTreeNode> get() = _children
-
-    override val isLegalNode: Boolean
-        get() = TODO("Not yet implemented")
 }
