@@ -1,8 +1,8 @@
 package keb.ropes
 
-sealed interface MutableBTreeNode : BTreeNode {
-    //operator fun plus(other: MutableBTreeNode)
-}
+sealed interface MutableBTreeNode : BTreeNode
+
+//operator fun plus(other: MutableBTreeNode)
 
 class MutableLeafNode(value: String) : LeafNode(), MutableBTreeNode {
     private val sb = StringBuilder(value)
