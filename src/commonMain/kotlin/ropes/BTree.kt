@@ -349,7 +349,7 @@ open class InternalNode(
  */
 operator fun InternalNode.plus(other: InternalNode): InternalNode = merge(other)
 
-// --- XXXco
+// --- XXXcow
 
 fun List<BTreeNode>.replaceWithCopyOnWrite(oldNode: BTreeNode, newNode: BTreeNode): List<BTreeNode> {
     return buildList {
