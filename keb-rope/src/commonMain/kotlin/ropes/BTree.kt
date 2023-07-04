@@ -6,7 +6,7 @@ import keb.hexAddress
 interface BTreeNode : Iterable<LeafNode> {
     val weight: Int
     val height: Int
-    val isLegalNode: Boolean
+    val isLegal: Boolean
     val isEmpty: Boolean
 }
 
@@ -16,7 +16,7 @@ interface BTreeNode : Iterable<LeafNode> {
 operator fun BTreeNode.plus(other: BTreeNode): InternalNode = merge(this, other)
 
 fun BTreeNode.isBalanced(): Boolean {
-    if (!this.isLegalNode || isEmpty) return false
+    if (!this.isLegal || isEmpty) return false
     if (this is InternalNode) for (node in this.children) if (!node.isBalanced()) return false
     return true
 }
@@ -26,7 +26,7 @@ abstract class LeafNode : BTreeNode {
 
     final override val height: Int = 0
     override val isEmpty: Boolean get() = value.isEmpty()
-    override val isLegalNode: Boolean get() = weight <= MAX_SIZE_LEAF
+    override val isLegal: Boolean get() = weight <= MAX_SIZE_LEAF
 
     override fun iterator(): Iterator<LeafNode> {
         return SingleBTreeNodeIterator(this)
@@ -39,7 +39,7 @@ abstract class LeafNode : BTreeNode {
         sb.append("isLeafNode=true,")
         sb.append("value=$value,")
         sb.append("height=$height,")
-        sb.append("isLegal=$isLegalNode")
+        sb.append("isLegal=$isLegal")
         sb.append(")")
         return sb.toString()
     }
@@ -54,7 +54,7 @@ abstract class InternalNode : BTreeNode {
     }
 
     override val isEmpty: Boolean get() = children.isEmpty()
-    override val isLegalNode: Boolean
+    override val isLegal: Boolean
         get() {
             //TODO:
             // children.size > MAX_CHILDREN || children.size < MIN_CHILDREN
@@ -92,7 +92,7 @@ abstract class InternalNode : BTreeNode {
         }
         sb.append("],")
         sb.append("height=$height,")
-        sb.append("isLegal=$isLegalNode")
+        sb.append("isLegal=$isLegal")
         sb.append(")")
         return sb.toString()
     }
@@ -149,18 +149,18 @@ fun List<BTreeNode>.addWithCopyOnWrite(newNode: List<BTreeNode>, index: Int): Li
 /**
  * Merges [left] and [right] nodes into one balanced btree.
  *
- * @throws IllegalArgumentException if a child node is not legal ([BTreeNode.isLegalNode]).
+ * @throws IllegalArgumentException if a child node is not legal ([BTreeNode.isLegal]).
  */
 fun merge(left: BTreeNode, right: BTreeNode): PersistentInternalNode = merge(listOf(left, right))
 
 /**
  * Merges [nodes] into one balanced btree.
  *
- * @throws IllegalArgumentException if a child node is not legal ([BTreeNode.isLegalNode]).
+ * @throws IllegalArgumentException if a child node is not legal ([BTreeNode.isLegal]).
  */
 fun merge(nodes: List<BTreeNode>): PersistentInternalNode {
     nodes.forEach {
-        require(it.isLegalNode) { "node:$it does not meet the requirements" }
+        require(it.isLegal) { "node:$it does not meet the requirements" }
     }
     return unsafeMerge(nodes)
 }
@@ -186,7 +186,7 @@ private fun unsafeMerge(nodes: List<BTreeNode>): PersistentInternalNode {
  * Creates a legal parent for [left] and [right] nodes.
  * The weight of the parent is set to that of the [left] node.
  *
- * @throws IllegalArgumentException if a child node is not legal ([BTreeNode.isLegalNode]).
+ * @throws IllegalArgumentException if a child node is not legal ([BTreeNode.isLegal]).
  * @throws IllegalArgumentException if the resulting node has more than the maximum size of children.
  */
 fun createParent(left: BTreeNode, right: BTreeNode): PersistentInternalNode {
@@ -197,13 +197,13 @@ fun createParent(left: BTreeNode, right: BTreeNode): PersistentInternalNode {
  * Creates a legal parent for [nodes].
  * The weight of the parent is set to that of the first node.
  *
- * @throws IllegalArgumentException if a child node is not legal ([BTreeNode.isLegalNode]).
+ * @throws IllegalArgumentException if a child node is not legal ([BTreeNode.isLegal]).
  * @throws IllegalArgumentException if the resulting node has more than the maximum size of children.
  */
 fun createParent(nodes: List<BTreeNode>): PersistentInternalNode {
     require(nodes.size <= MAX_CHILDREN) { "a node cannot hold more than:$MAX_CHILDREN children" }
     nodes.forEach {
-        require(it.isLegalNode) { "node:$it does not meet the requirements" }
+        require(it.isLegal) { "node:$it does not meet the requirements" }
     }
     return unsafeCreateParent(nodes)
 }

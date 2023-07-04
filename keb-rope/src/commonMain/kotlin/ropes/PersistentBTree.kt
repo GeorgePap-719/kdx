@@ -11,7 +11,7 @@ operator fun PersistentBTreeNode.plus(other: PersistentBTreeNode): PersistentInt
  * Checks if tree needs rebalancing and rebuilds it from the bottom-up.
  * In case it is balanced, then it returns the same tree.
  *
- * @throws IllegalArgumentException if a child node is not legal ([BTreeNode.isLegalNode]).
+ * @throws IllegalArgumentException if a child node is not legal ([BTreeNode.isLegal]).
  */
 fun PersistentBTreeNode.rebalance(): PersistentBTreeNode {
     if (isBalanced()) return this
@@ -23,7 +23,7 @@ fun PersistentBTreeNode.rebalance(): PersistentBTreeNode {
 class PersistentLeafNode(override val value: String) : LeafNode(), PersistentBTreeNode {
     override val weight: Int = value.length
     override val isEmpty: Boolean = value.isEmpty()
-    override val isLegalNode: Boolean = weight <= MAX_SIZE_LEAF
+    override val isLegal: Boolean = weight <= MAX_SIZE_LEAF
 }
 
 class PersistentInternalNode(
@@ -31,13 +31,13 @@ class PersistentInternalNode(
     override val height: Int,
     override val children: List<BTreeNode>
 ) : InternalNode(), PersistentBTreeNode {
-    override val isLegalNode: Boolean = super.isLegalNode // compute it once
+    override val isLegal: Boolean = super.isLegal // compute it once
 
     /**
      * Returns a new expanded [node][InternalNode] by a factor of 2.
      * This operation splits the tree in half and creates a new parent node for them.
      *
-     * @throws IllegalArgumentException if a child node is not legal ([BTreeNode.isLegalNode]).
+     * @throws IllegalArgumentException if a child node is not legal ([BTreeNode.isLegal]).
      */
     fun expand(): InternalNode {
         if (children.size == 1) return this
@@ -52,7 +52,7 @@ class PersistentInternalNode(
     /**
      * Adds the [other] tree to the right side of this tree, and creates a new balanced btree.
      *
-     * @throws IllegalArgumentException if a child node is not legal ([BTreeNode.isLegalNode]).
+     * @throws IllegalArgumentException if a child node is not legal ([BTreeNode.isLegal]).
      */
     operator fun plus(other: PersistentInternalNode): PersistentInternalNode = merge(this, other)
 
