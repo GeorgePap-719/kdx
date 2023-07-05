@@ -9,7 +9,7 @@ interface Leaf {
 
 val Leaf.isEmpty get() = weight == 0
 
-sealed class BTreeNode<T : Leaf> : Iterable<LeafNode<T>> {
+sealed class BTreeNode<out T : Leaf> : Iterable<LeafNode<T>> {
     abstract val weight: Int
     abstract val height: Int
     abstract val isLegal: Boolean
@@ -39,7 +39,7 @@ fun <T : Leaf> BTreeNode<T>.rebalance(): BTreeNode<T> {
     return merge(leaves)
 }
 
-class LeafNode<T : Leaf>(val value: T) : BTreeNode<T>() {
+class LeafNode<out T : Leaf>(val value: T) : BTreeNode<T>() {
     override val weight: Int = value.weight
     override val height: Int = 0
     override val isEmpty: Boolean = value.isEmpty
