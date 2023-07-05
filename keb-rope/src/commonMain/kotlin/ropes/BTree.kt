@@ -3,32 +3,49 @@ package keb.ropes
 import keb.classSimpleName
 import keb.hexAddress
 
-interface BTreeNode : Iterable<LeafNode> {
+interface Leaf {
     val weight: Int
-    val height: Int
-    val isLegal: Boolean
-    val isEmpty: Boolean
+}
+
+val Leaf.isEmpty get() = weight == 0
+
+sealed class BTreeNode<T : Leaf> : Iterable<LeafNode<T>> {
+    abstract val weight: Int
+    abstract val height: Int
+    abstract val isLegal: Boolean
+    abstract val isEmpty: Boolean
 }
 
 /**
  * Adds the [other] tree to the right side of this tree, and creates a new balanced btree.
  */
-operator fun BTreeNode.plus(other: BTreeNode): InternalNode = merge(this, other)
+operator fun <T : Leaf> BTreeNode<T>.plus(other: BTreeNode<T>): InternalNode<T> = merge(this, other)
 
-fun BTreeNode.isBalanced(): Boolean {
+fun <T : Leaf> BTreeNode<T>.isBalanced(): Boolean {
     if (!this.isLegal || isEmpty) return false
     if (this is InternalNode) for (node in this.children) if (!node.isBalanced()) return false
     return true
 }
 
-abstract class LeafNode : BTreeNode {
-    abstract val value: String
+/**
+ * Checks if tree needs rebalancing and rebuilds it from the bottom-up.
+ * In case it is balanced, then it returns the same tree.
+ *
+ * @throws IllegalArgumentException if a child node is not legal ([BTreeNode.isLegal]).
+ */
+fun <T : Leaf> BTreeNode<T>.rebalance(): BTreeNode<T> {
+    if (isBalanced()) return this
+    val leaves = this.mapNotNull { if (it.isEmpty) null else it }
+    return merge(leaves)
+}
 
-    final override val height: Int = 0
-    override val isEmpty: Boolean get() = value.isEmpty()
-    override val isLegal: Boolean get() = weight <= MAX_SIZE_LEAF
+class LeafNode<T : Leaf>(val value: T) : BTreeNode<T>() {
+    override val weight: Int = value.weight
+    override val height: Int = 0
+    override val isEmpty: Boolean = value.isEmpty
+    override val isLegal: Boolean = weight <= MAX_SIZE_LEAF
 
-    override fun iterator(): Iterator<LeafNode> {
+    override fun iterator(): Iterator<LeafNode<T>> {
         return SingleBTreeNodeIterator(this)
     }
 
@@ -45,11 +62,12 @@ abstract class LeafNode : BTreeNode {
     }
 }
 
-abstract class InternalNode : BTreeNode {
-    abstract val children: List<BTreeNode>
-
+class InternalNode<T : Leaf>(
+    override val weight: Int,
+    override val height: Int,
+    val children: List<BTreeNode<T>>
+) : BTreeNode<T>() {
     init {
-        @Suppress("LeakingThis")
         require(children.isNotEmpty()) { "internal node cannot be empty" }
     }
 
@@ -57,7 +75,8 @@ abstract class InternalNode : BTreeNode {
     override val isLegal: Boolean
         get() {
             //TODO:
-            // children.size > MAX_CHILDREN || children.size < MIN_CHILDREN
+            // 1. compute it once
+            // 2. children.size > MAX_CHILDREN || children.size < MIN_CHILDREN
             // with the above condition, we have to change isBalanced() API, since it is a condition
             // where we cannot always meet.
             // Maybe we also need to distinct between legal and balanced nodes.
@@ -67,15 +86,104 @@ abstract class InternalNode : BTreeNode {
             return true
         }
 
-    override fun iterator(): Iterator<LeafNode> {
+    override fun iterator(): Iterator<LeafNode<T>> {
         return BTreeNodeIterator(this)
     }
 
-    fun indexOf(child: BTreeNode): Int = children.indexOf(child)
+    fun indexOf(child: BTreeNode<T>): Int = children.indexOf(child)
 
-    protected fun checkElementIndex(index: Int) {
+    /**
+     * Returns a new expanded [node][InternalNode] by a factor of 2.
+     * This operation splits the tree in half and creates a new parent node for them.
+     *
+     * @throws IllegalArgumentException if a child node is not legal ([BTreeNode.isLegal]).
+     */
+    fun expand(): InternalNode<T> {
+        if (children.size == 1) return this
+        val half = children.size / 2
+        val left = children.subList(0, half)
+        val right = children.subList(half, children.size)
+        val leftParent = merge(left)
+        val rightParent = merge(right)
+        return merge(leftParent, rightParent) //TODO: check if we better use merge or unsafe merge
+    }
+
+    /**
+     * Returns a new [node][InternalNode] with the specified [child] inserted at the specified [index].
+     *
+     * @throws IndexOutOfBoundsException if [index] is greater than or equal to the maximum size of children.
+     * @throws IllegalArgumentException if the resulting node has more than the maximum size of children.
+     */
+    fun add(index: Int, child: BTreeNode<T>): InternalNode<T> {
+        checkElementIndex(index)
+        require(children.size + 1 <= MAX_CHILDREN) { "node cannot hold more than:$MAX_CHILDREN children" }
+        val newChildren = children.addWithCopyOnWrite(child, index)
+        return unsafeCreateParent(newChildren)
+    }
+
+    fun addLast(child: BTreeNode<T>): InternalNode<T> = add(children.size - 1, child)
+
+    fun addFirst(child: BTreeNode<T>): InternalNode<T> = add(0, child)
+
+    fun addAll(index: Int, children: List<BTreeNode<T>>): InternalNode<T> {
+        checkElementIndex(index)
+        require(this.children.size + children.size <= MAX_CHILDREN) {
+            "node cannot hold more than:$MAX_CHILDREN children"
+        }
+        val newChildren = this.children.addWithCopyOnWrite(children, index)
+        return unsafeCreateParent(newChildren)
+    }
+
+    operator fun set(index: Int, child: BTreeNode<T>): InternalNode<T> {
+        checkElementIndex(index)
+        val newChildren = buildList {
+            for (i in children.indices) {
+                if (i == index) add(child) else add(children[i])
+            }
+        }
+        return unsafeCreateParent(newChildren)
+    }
+
+    operator fun set(index: Int, children: List<BTreeNode<T>>): InternalNode<T> {
+        checkElementIndex(index)
+        require(this.children.size - 1 + children.size <= MAX_CHILDREN) {
+            "node cannot hold more than:$MAX_CHILDREN children"
+        }
+        val childNodes = this.children
+        val newChildren = buildList {
+            for (i in childNodes.indices) {
+                if (index == i) addAll(children) else add(childNodes[i])
+            }
+        }
+        return unsafeCreateParent(newChildren)
+    }
+
+    fun replace(old: BTreeNode<T>, new: BTreeNode<T>): InternalNode<T> {
+        val newChildren = buildList {
+            for (child in children) {
+                if (child === old) add(new) else add(child)
+            }
+        }
+        return unsafeCreateParent(newChildren)
+    }
+
+    fun deleteAt(index: Int): InternalNode<T>? {
+        checkElementIndex(index)
+        val newChildren = buildList {
+            for (i in children.indices) {
+                if (i == index) continue
+                add(children[i])
+            }
+        }
+        if (newChildren.isEmpty()) return null
+        return unsafeCreateParent(newChildren)
+    }
+
+    private fun checkElementIndex(index: Int) {
         if (index < 0 || index >= MAX_CHILDREN) throw IndexOutOfBoundsException("index:$index")
     }
+
+    // --- DEBUG FUNCTIONS ---
 
     internal fun toStringDebug(): String {
         val sb = StringBuilder()
@@ -104,7 +212,10 @@ const val MAX_SIZE_LEAF = 2048
 
 // --- XXXcow ---
 
-fun List<BTreeNode>.replaceWithCopyOnWrite(oldNode: BTreeNode, newNode: BTreeNode): List<BTreeNode> {
+fun <T : Leaf> List<BTreeNode<T>>.replaceWithCopyOnWrite(
+    oldNode: BTreeNode<T>,
+    newNode: BTreeNode<T>
+): List<BTreeNode<T>> {
     return buildList {
         for (node in this@replaceWithCopyOnWrite) {
             if (node === oldNode) {
@@ -116,7 +227,7 @@ fun List<BTreeNode>.replaceWithCopyOnWrite(oldNode: BTreeNode, newNode: BTreeNod
     }
 }
 
-fun List<BTreeNode>.addWithCopyOnWrite(newNode: BTreeNode, index: Int): List<BTreeNode> {
+fun <T : Leaf> List<BTreeNode<T>>.addWithCopyOnWrite(newNode: BTreeNode<T>, index: Int): List<BTreeNode<T>> {
     return buildList {
         var added = false // flag to check if the new element is in the bounds of the current list.
         for ((i, node) in this@addWithCopyOnWrite.withIndex()) {
@@ -130,7 +241,7 @@ fun List<BTreeNode>.addWithCopyOnWrite(newNode: BTreeNode, index: Int): List<BTr
     }
 }
 
-fun List<BTreeNode>.addWithCopyOnWrite(newNode: List<BTreeNode>, index: Int): List<BTreeNode> {
+fun <T : Leaf> List<BTreeNode<T>>.addWithCopyOnWrite(newNode: List<BTreeNode<T>>, index: Int): List<BTreeNode<T>> {
     return buildList {
         var added = false // flag to check if the new element is in the bounds of the current list.
         for ((i, node) in this@addWithCopyOnWrite.withIndex()) {
@@ -151,14 +262,14 @@ fun List<BTreeNode>.addWithCopyOnWrite(newNode: List<BTreeNode>, index: Int): Li
  *
  * @throws IllegalArgumentException if a child node is not legal ([BTreeNode.isLegal]).
  */
-fun merge(left: BTreeNode, right: BTreeNode): PersistentInternalNode = merge(listOf(left, right))
+fun <T : Leaf> merge(left: BTreeNode<T>, right: BTreeNode<T>): InternalNode<T> = merge(listOf(left, right))
 
 /**
  * Merges [nodes] into one balanced btree.
  *
  * @throws IllegalArgumentException if a child node is not legal ([BTreeNode.isLegal]).
  */
-fun merge(nodes: List<BTreeNode>): PersistentInternalNode {
+fun <T : Leaf> merge(nodes: List<BTreeNode<T>>): InternalNode<T> {
     nodes.forEach {
         require(it.isLegal) { "node:$it does not meet the requirements" }
     }
@@ -169,7 +280,7 @@ fun merge(nodes: List<BTreeNode>): PersistentInternalNode {
  * An analogue of the [merge] builder that does not check for invariants.
  * Used internally in operators where we trust the validity of nodes.
  */
-private fun unsafeMerge(nodes: List<BTreeNode>): PersistentInternalNode {
+private fun <T : Leaf> unsafeMerge(nodes: List<BTreeNode<T>>): InternalNode<T> {
     if (nodes.size <= MAX_CHILDREN) return unsafeCreateParent(nodes)
     val leftList = nodes.subList(0, MAX_CHILDREN)
     val rightList = nodes.subList(MAX_CHILDREN, nodes.size)
@@ -189,7 +300,7 @@ private fun unsafeMerge(nodes: List<BTreeNode>): PersistentInternalNode {
  * @throws IllegalArgumentException if a child node is not legal ([BTreeNode.isLegal]).
  * @throws IllegalArgumentException if the resulting node has more than the maximum size of children.
  */
-fun createParent(left: BTreeNode, right: BTreeNode): PersistentInternalNode {
+fun <T : Leaf> createParent(left: BTreeNode<T>, right: BTreeNode<T>): InternalNode<T> {
     return createParent(listOf(left, right))
 }
 
@@ -200,7 +311,7 @@ fun createParent(left: BTreeNode, right: BTreeNode): PersistentInternalNode {
  * @throws IllegalArgumentException if a child node is not legal ([BTreeNode.isLegal]).
  * @throws IllegalArgumentException if the resulting node has more than the maximum size of children.
  */
-fun createParent(nodes: List<BTreeNode>): PersistentInternalNode {
+fun <T : Leaf> createParent(nodes: List<BTreeNode<T>>): InternalNode<T> {
     require(nodes.size <= MAX_CHILDREN) { "a node cannot hold more than:$MAX_CHILDREN children" }
     nodes.forEach {
         require(it.isLegal) { "node:$it does not meet the requirements" }
@@ -208,23 +319,23 @@ fun createParent(nodes: List<BTreeNode>): PersistentInternalNode {
     return unsafeCreateParent(nodes)
 }
 
-internal fun unsafeCreateParent(left: BTreeNode, right: BTreeNode): PersistentInternalNode {
+internal fun <T : Leaf> unsafeCreateParent(left: BTreeNode<T>, right: BTreeNode<T>): InternalNode<T> {
     return unsafeCreateParent(listOf(left, right))
 }
 
 /**
  * Creates a parent for [nodes], without checking if satisfies the requirements for a legal btree.
  */
-internal fun unsafeCreateParent(nodes: List<BTreeNode>): PersistentInternalNode {
+internal fun <T : Leaf> unsafeCreateParent(nodes: List<BTreeNode<T>>): InternalNode<T> {
     val weight = computeWeightInLeftSubtreeForParent(nodes)
     val height = nodes.maxOf { it.height } + 1
-    return PersistentInternalNode(weight, height, nodes)
+    return InternalNode(weight, height, nodes)
 }
 
 /**
  * Computes weight in left subtree for a new parent.
  */
-private fun computeWeightInLeftSubtreeForParent(children: List<BTreeNode>): Int {
+private fun <T : Leaf> computeWeightInLeftSubtreeForParent(children: List<BTreeNode<T>>): Int {
     return when (val leftmostNode = children.first()) {
         is LeafNode -> leftmostNode.weight
         //TODO: check if we can compute this with faster path
