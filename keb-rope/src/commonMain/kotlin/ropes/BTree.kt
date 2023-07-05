@@ -210,7 +210,7 @@ const val MIN_CHILDREN = 4
 const val MAX_CHILDREN = 8
 const val MAX_SIZE_LEAF = 2048
 
-// --- XXXcow ---
+// --- XXXCopyOnWrite ---
 
 fun <T : Leaf> List<BTreeNode<T>>.replaceWithCopyOnWrite(
     oldNode: BTreeNode<T>,
