@@ -15,6 +15,8 @@ sealed class BTreeNode<out T : Leaf> : Iterable<LeafNode<T>> {
     abstract val height: Int
     abstract val isLegal: Boolean
     abstract val isEmpty: Boolean
+
+    internal open fun toStringDebug(): String = "todo"
 }
 
 /**
@@ -40,41 +42,28 @@ fun <T : Leaf> BTreeNode<T>.rebalance(): BTreeNode<T> {
     return merge(leaves)
 }
 
-class LeafNode<out T : Leaf>(val value: T) : BTreeNode<T>() {
-    override val weight: Int = value.weight
+class LeafNode<out T : Leaf>(val metrics: T) : BTreeNode<T>() {
+    override val weight: Int = metrics.weight
     override val height: Int = 0
-    override val isEmpty: Boolean = value.isEmpty
-    override val isLegal: Boolean = value.isLegal
+    override val isEmpty: Boolean = metrics.isEmpty
+    override val isLegal: Boolean = metrics.isLegal
 
     override fun iterator(): Iterator<LeafNode<T>> {
         return SingleBTreeNodeIterator(this)
     }
 
-    internal fun toStringDebug(): String {
+    override fun toStringDebug(): String {
         val sb = StringBuilder()
         sb.append("$classSimpleName@$hexAddress(")
         sb.append("weight=$weight,")
         sb.append("isLeafNode=true,")
-        sb.append("value=$value,")
+        sb.append("value=$metrics,")
         sb.append("height=$height,")
         sb.append("isLegal=$isLegal")
         sb.append(")")
         return sb.toString()
     }
 }
-
-internal object EmptyInternalNode : InternalNode<Nothing>(0, 0, emptyList()) {
-    override val isEmpty: Boolean = true
-    override val isLegal: Boolean = false
-
-    override fun indexOf(child: BTreeNode<Nothing>): Int = -1
-    override fun expand(): InternalNode<Nothing> = this
-    override fun equals(other: Any?): Boolean = other is InternalNode<*> && other.isEmpty
-}
-
-//TODO: check if this pulls its weight
-fun <T : Leaf> emptyBTreeNode(): BTreeNode<T> = EmptyInternalNode
-fun <T : Leaf> emptyInternalNode(): InternalNode<T> = EmptyInternalNode
 
 open class InternalNode<out T : Leaf>(
     override val weight: Int,
@@ -196,7 +185,7 @@ open class InternalNode<out T : Leaf>(
 
     // --- DEBUG FUNCTIONS ---
 
-    internal fun toStringDebug(): String {
+    override fun toStringDebug(): String {
         val sb = StringBuilder()
         sb.append("$classSimpleName@$hexAddress(")
         sb.append("weight=$weight,")
@@ -217,6 +206,19 @@ open class InternalNode<out T : Leaf>(
     }
 }
 
+internal object EmptyInternalNode : InternalNode<Nothing>(0, 0, emptyList()) {
+    override val isEmpty: Boolean = true
+    override val isLegal: Boolean = false
+
+    override fun indexOf(child: BTreeNode<Nothing>): Int = -1
+    override fun expand(): InternalNode<Nothing> = this
+    override fun equals(other: Any?): Boolean = other is InternalNode<*> && other.isEmpty
+}
+
+//TODO: check if this pulls its weight
+fun <T : Leaf> emptyBTreeNode(): BTreeNode<T> = EmptyInternalNode
+fun <T : Leaf> emptyInternalNode(): InternalNode<T> = EmptyInternalNode
+
 internal fun <T : Leaf> InternalNode<T>.mutate(mutator: BTreeNodeBuilder<T>.() -> Unit): BTreeNode<T> {
     val builder = BTreeNodeBuilder(this)
     builder.mutator()
@@ -225,7 +227,6 @@ internal fun <T : Leaf> InternalNode<T>.mutate(mutator: BTreeNodeBuilder<T>.() -
 
 const val MIN_CHILDREN = 4
 const val MAX_CHILDREN = 8
-const val MAX_SIZE_LEAF = 2048
 
 // --- XXXCopyOnWrite ---
 

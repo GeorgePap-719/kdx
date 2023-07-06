@@ -59,6 +59,8 @@ fun RopeLeafNode(input: String): RopeLeafNode = RopeLeafNode(RopeLeaf(input))
 
 typealias RopeNode = BTreeNode<RopeLeaf>
 
+fun createParent(nodes: List<RopeNode>): RopeInternalNode = createParent(nodes)
+
 fun ropeNodeOf(input: String): RopeNode {
     return splitIntoNodes(input)
 }
@@ -117,7 +119,7 @@ internal fun RopeLeafNode.add(index: Int, element: Char): RopeLeafNode = add(ind
  * @throws IndexOutOfBoundsException if [index] is greater than or equals to the length of this child.
  * @throws IllegalArgumentException if the resulting length exceeds the maximum size of a leaf.
  */
-private fun RopeLeafNode.add(index: Int, element: String): RopeLeafNode {
+internal fun RopeLeafNode.add(index: Int, element: String): RopeLeafNode {
     checkValueIndex(index, this)
     val newLen = metrics.length + element.length
     require(newLen <= MAX_SIZE_LEAF) { "max size of a leaf is:$MAX_SIZE_LEAF, but got:$newLen" }
