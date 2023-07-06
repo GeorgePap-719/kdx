@@ -1,6 +1,6 @@
 package keb.internal
 
-open class ArrayStack<T>(initialLength: Int) {
+internal open class ArrayStack<T>(initialLength: Int) {
     protected var array = arrayOfNulls<Any?>(initialLength.coerceAtLeast(1))
 
     var size = 0
@@ -30,7 +30,7 @@ open class ArrayStack<T>(initialLength: Int) {
     }
 }
 
-class PeekableArrayStack<T>(initialLength: Int) : ArrayStack<T>(initialLength) {
+internal class PeekableArrayStack<T>(initialLength: Int) : ArrayStack<T>(initialLength) {
     fun peek(): T? {
         if (size == 0) return null
         @Suppress("UNCHECKED_CAST")

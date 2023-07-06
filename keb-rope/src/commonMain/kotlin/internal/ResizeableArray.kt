@@ -1,6 +1,6 @@
 package keb.internal
 
-class ResizeableArray<T>(initialLength: Int) {
+internal class ResizeableArray<T>(initialLength: Int) {
     private var array = arrayOfNulls<Any?>(initialLength.coerceAtLeast(1))
 
     val size: Int get() = array.size // for debug output
