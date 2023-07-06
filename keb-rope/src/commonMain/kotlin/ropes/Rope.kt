@@ -4,6 +4,15 @@ import keb.assert
 import keb.internal.ArrayStack
 import keb.internal.PeekableArrayStack
 
+fun Rope(value: String): Rope {
+    val root = ropeNodeOf(value)
+    return Rope(root)
+}
+
+fun emptyRope(): Rope {
+    return Rope(emptyBTreeNode())
+}
+
 class Rope(private val root: RopeNode) {
     init {
         assert { root.isBalanced() }

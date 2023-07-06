@@ -2,12 +2,12 @@ package keb.ropes
 
 import keb.internal.ResizeableArray
 
-class BTreeNodeIterator(root: BTreeNode) : Iterator<LeafNode> {
+class BTreeNodeIterator<T : Leaf>(root: BTreeNode<T>) : Iterator<LeafNode<T>> {
     private var index = 0
     private var currentNode = root
     private val size: Int
 
-    private val path: ResizeableArray<LeafNode> = ResizeableArray(1)
+    private val path: ResizeableArray<LeafNode<T>> = ResizeableArray(1)
 
     init {
         fillPath()
@@ -22,7 +22,7 @@ class BTreeNodeIterator(root: BTreeNode) : Iterator<LeafNode> {
         }
     }
 
-    private fun traverseInOrder(nodes: List<BTreeNode>) {
+    private fun traverseInOrder(nodes: List<BTreeNode<T>>) {
         for (node in nodes) {
             when (node) {
                 is InternalNode -> traverseInOrder(node.children)
@@ -33,19 +33,19 @@ class BTreeNodeIterator(root: BTreeNode) : Iterator<LeafNode> {
 
     override fun hasNext(): Boolean = index < size
 
-    override fun next(): LeafNode {
+    override fun next(): LeafNode<T> {
         if (!hasNext()) throw NoSuchElementException()
         return path[index++]!!
     }
 }
 
-class SingleBTreeNodeIterator(private val root: LeafNode) : Iterator<LeafNode> {
+class SingleBTreeNodeIterator<T : Leaf>(private val root: LeafNode<T>) : Iterator<LeafNode<T>> {
     private var index = 0
     private val size = 1
 
     override fun hasNext(): Boolean = index < size
 
-    override fun next(): LeafNode {
+    override fun next(): LeafNode<T> {
         if (!hasNext()) throw NoSuchElementException()
         index++
         return root

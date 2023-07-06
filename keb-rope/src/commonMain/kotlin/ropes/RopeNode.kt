@@ -4,9 +4,9 @@ package keb.ropes
 class RopeLeaf(val value: String, val lineCount: Int? = null) : Leaf, Iterable<Char>, CharSequence {
     override val weight: Int = value.length
     override val isLegal: Boolean = weight < MAX_SIZE_LEAF
+
     override fun iterator(): Iterator<Char> = value.iterator()
     override val length: Int = weight
-
     override fun get(index: Int): Char = value[index]
     override fun subSequence(startIndex: Int, endIndex: Int): CharSequence = value.subSequence(startIndex, endIndex)
 
@@ -55,13 +55,13 @@ fun RopeLeaf.add(index: Int, element: Char): RopeLeaf = add(index, element.toStr
 typealias RopeInternalNode = InternalNode<RopeLeaf>
 typealias RopeLeafNode = LeafNode<RopeLeaf>
 
-fun RopeLeafNode(input: String): RopeLeafNode = RopeLeafNode(RopeLeaf(input))
+internal fun RopeLeafNode(input: String): RopeLeafNode = RopeLeafNode(RopeLeaf(input))
 
 typealias RopeNode = BTreeNode<RopeLeaf>
 
-fun createParent(nodes: List<RopeNode>): RopeInternalNode = createParent(nodes)
+internal fun createParent(nodes: List<RopeNode>): RopeInternalNode = createParent(nodes)
 
-fun ropeNodeOf(input: String): RopeNode {
+internal fun ropeNodeOf(input: String): RopeNode {
     return splitIntoNodes(input)
 }
 
