@@ -69,6 +69,7 @@ internal object EmptyInternalNode : InternalNode<Nothing>(0, 0, emptyList()) {
 
     override fun indexOf(child: BTreeNode<Nothing>): Int = -1
     override fun expand(): InternalNode<Nothing> = this
+    override fun equals(other: Any?): Boolean = other is InternalNode<*> && other.isEmpty
 }
 
 //TODO: check if this pulls its weight
@@ -214,6 +215,12 @@ open class InternalNode<out T : Leaf>(
         sb.append(")")
         return sb.toString()
     }
+}
+
+internal fun <T : Leaf> InternalNode<T>.mutate(mutator: BTreeNodeBuilder<T>.() -> Unit): BTreeNode<T> {
+    val builder = BTreeNodeBuilder(this)
+    builder.mutator()
+    return builder.build()
 }
 
 const val MIN_CHILDREN = 4
