@@ -9,7 +9,7 @@ import kotlin.test.Test
 import kotlin.test.assertFailsWith
 
 //TODO: refactor assert {} -> assert()
-class TestRope {
+class RopeTest {
 
     @Test
     fun testIndex() {
