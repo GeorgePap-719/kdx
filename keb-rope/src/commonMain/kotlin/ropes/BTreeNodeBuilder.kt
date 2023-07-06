@@ -3,11 +3,25 @@ package keb.ropes
 // Notes: maybe we need a builder rather than a mutable version.
 // After all, in `delete` operations we cannot avoid rebuilding the tree in each step (I think).
 
-//internal class BTreeNodeBuilder(private var root: BTreeNode) {
-//    val weight: Int get() = root.weight
-//    val height: Int get() = root.height
-//    val isLegal: Boolean get() = root.isLegal
-//    val isEmpty: Boolean get() = root.isEmpty
-//
-//    fun build(): BTreeNode = root
-//}
+// maybe create builder only from an internalNode
+internal class BTreeNodeBuilder<T : Leaf>(private var root: InternalNode<T>) {
+    val weight: Int get() = root.weight
+    val height: Int get() = root.height
+    val isLegal: Boolean get() = root.isLegal
+    val isEmpty: Boolean get() = root.isEmpty
+
+    fun build(): BTreeNode<T> = root.rebalance()
+
+    operator fun get(index: Int): BTreeNode<T> = root.children[index]
+
+    fun add(child: BTreeNode<T>) {
+        root = root.addLast(child)
+    }
+
+    fun deleteAt(index: Int) {
+        this.root = root.deleteAt(index)
+    }
+
+    fun subTree(fromIndex: Int, toIndex: Int): List<BTreeNode<T>> =
+        root.children.subList(fromIndex, toIndex).ifEmpty { emptyList() }
+}
