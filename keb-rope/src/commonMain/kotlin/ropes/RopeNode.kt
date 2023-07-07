@@ -3,7 +3,7 @@ package keb.ropes
 //TODO: lineCount
 class RopeLeaf(val value: String, val lineCount: Int? = null) : Leaf, Iterable<Char>, CharSequence {
     override val weight: Int = value.length
-    override val isLegal: Boolean = weight < MAX_SIZE_LEAF
+    override val isLegal: Boolean = weight <= MAX_SIZE_LEAF
 
     override fun iterator(): Iterator<Char> = value.iterator()
     override val length: Int = weight
@@ -90,8 +90,8 @@ private fun splitIntoLeaves(input: String): List<RopeLeafNode> {
 
 internal fun expandLeaf(leaf: RopeLeafNode): RopeInternalNode {
     val half = leaf.weight / 2
-    val left = RopeLeafNode(leaf.metrics.substring(0, half))
-    val right = RopeLeafNode(leaf.metrics.substring(half))
+    val left = RopeLeafNode(leaf.leaf.substring(0, half))
+    val right = RopeLeafNode(leaf.leaf.substring(half))
     return merge(left, right)
 }
 
@@ -105,9 +105,9 @@ internal fun expandLeaf(leaf: RopeLeafNode): RopeInternalNode {
 //TODO: research this if there is time.
 internal fun RopeLeafNode.expandableAdd(index: Int, element: String): List<RopeLeafNode> {
     checkValueIndex(index, this)
-    val newLen = metrics.length + element.length
+    val newLen = leaf.length + element.length
     if (newLen <= MAX_SIZE_LEAF) return listOf(add(index, element))
-    val newLeaf = metrics.add(index, element)
+    val newLeaf = leaf.add(index, element)
     return splitIntoLeaves(newLeaf.value)
 }
 
@@ -121,11 +121,11 @@ internal fun RopeLeafNode.add(index: Int, element: Char): RopeLeafNode = add(ind
  */
 internal fun RopeLeafNode.add(index: Int, element: String): RopeLeafNode {
     checkValueIndex(index, this)
-    val newLen = metrics.length + element.length
+    val newLen = leaf.length + element.length
     require(newLen <= MAX_SIZE_LEAF) { "max size of a leaf is:$MAX_SIZE_LEAF, but got:$newLen" }
-    if (index == 0) return RopeLeafNode(element + metrics.value)
-    if (index == metrics.value.lastIndex + 1) return RopeLeafNode(metrics.value + element)
-    val newValue = metrics.add(index, element)
+    if (index == 0) return RopeLeafNode(element + leaf.value)
+    if (index == leaf.value.lastIndex + 1) return RopeLeafNode(leaf.value + element)
+    val newValue = leaf.add(index, element)
     return LeafNode(newValue)
 }
 
@@ -133,24 +133,24 @@ internal fun RopeLeafNode.add(index: Int, element: String): RopeLeafNode {
 
 internal inline fun RopeLeafNode.deleteAtAndIfEmpty(index: Int, onEmpty: () -> RopeLeafNode): RopeLeafNode {
     checkElementIndex(index, this)
-    val newValue = metrics.deleteAt(index)
+    val newValue = leaf.deleteAt(index)
     if (newValue.isEmpty()) return onEmpty()
     return RopeLeafNode(newValue)
 }
 
 internal fun RopeLeafNode.deleteAt(index: Int): RopeLeafNode {
     checkElementIndex(index, this)
-    return RopeLeafNode(metrics.deleteAt(index))
+    return RopeLeafNode(leaf.deleteAt(index))
 }
 
 private fun checkValueIndex(index: Int, leaf: RopeLeafNode) {
-    if (index < 0 || index > leaf.metrics.lastIndex + 1) { // it is acceptable for an index to be right after the last-index
-        throw IndexOutOfBoundsException("index:$index, leaf-length:${leaf.metrics.length}")
+    if (index < 0 || index > leaf.leaf.lastIndex + 1) { // it is acceptable for an index to be right after the last-index
+        throw IndexOutOfBoundsException("index:$index, leaf-length:${leaf.leaf.length}")
     }
 }
 
 private fun checkElementIndex(index: Int, leaf: RopeLeafNode) {
-    if (index < 0 || index > leaf.metrics.lastIndex) {
+    if (index < 0 || index > leaf.leaf.lastIndex) {
         throw IndexOutOfBoundsException("index:$index, leaf-length:${leaf.weight}")
     }
 }

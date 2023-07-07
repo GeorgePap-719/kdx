@@ -15,8 +15,6 @@ sealed class BTreeNode<out T : Leaf> : Iterable<LeafNode<T>> {
     abstract val height: Int
     abstract val isLegal: Boolean
     abstract val isEmpty: Boolean
-
-    internal open fun toStringDebug(): String = "todo"
 }
 
 /**
@@ -42,24 +40,40 @@ fun <T : Leaf> BTreeNode<T>.rebalance(): BTreeNode<T> {
     return merge(leaves)
 }
 
-class LeafNode<out T : Leaf>(val metrics: T) : BTreeNode<T>() {
-    override val weight: Int = metrics.weight
+class LeafNode<out T : Leaf>(val leaf: T) : BTreeNode<T>() {
+    override val weight: Int = leaf.weight
     override val height: Int = 0
-    override val isEmpty: Boolean = metrics.isEmpty
-    override val isLegal: Boolean = metrics.isLegal
+    override val isEmpty: Boolean = leaf.isEmpty
+    override val isLegal: Boolean = leaf.isLegal
 
     override fun iterator(): Iterator<LeafNode<T>> {
         return SingleBTreeNodeIterator(this)
     }
 
-    override fun toStringDebug(): String {
+    // ###################
+    // # Debug Functions #
+    // ###################
+
+    override fun toString(): String {
+        val sb = StringBuilder()
+        sb.append("$classSimpleName(")
+        sb.append("weight=$weight,")
+        sb.append("value=$leaf,")
+        sb.append("height=$height,")
+        sb.append("isLegal=$isLegal")
+        sb.append(")")
+        return sb.toString()
+    }
+
+    internal fun toStringDebug(): String {
         val sb = StringBuilder()
         sb.append("$classSimpleName@$hexAddress(")
         sb.append("weight=$weight,")
         sb.append("isLeafNode=true,")
-        sb.append("value=$metrics,")
+        sb.append("value=$leaf,")
         sb.append("height=$height,")
         sb.append("isLegal=$isLegal")
+        sb.append("isBalanced=${isBalanced()}")
         sb.append(")")
         return sb.toString()
     }
@@ -183,9 +197,22 @@ open class InternalNode<out T : Leaf>(
         if (index < 0 || index >= children.size || index >= MAX_CHILDREN) throw IndexOutOfBoundsException("index:$index")
     }
 
-    // --- DEBUG FUNCTIONS ---
+    // ###################
+    // # Debug Functions #
+    // ###################
 
-    override fun toStringDebug(): String {
+    override fun toString(): String {
+        val sb = StringBuilder()
+        sb.append("$classSimpleName(")
+        sb.append("weight=$weight,")
+        sb.append("height=$height,")
+        sb.append("childrenSize=${children.size},")
+        sb.append("isLegal=$isLegal")
+        sb.append(")")
+        return sb.toString()
+    }
+
+    internal fun toStringDebug(): String {
         val sb = StringBuilder()
         sb.append("$classSimpleName@$hexAddress(")
         sb.append("weight=$weight,")
@@ -223,6 +250,11 @@ internal fun <T : Leaf> InternalNode<T>.mutate(mutator: BTreeNodeBuilder<T>.() -
     val builder = BTreeNodeBuilder(this)
     builder.mutator()
     return builder.build()
+}
+
+internal fun <T : Leaf> BTreeNode<T>.toStringDebug(): String = when (this) {
+    is LeafNode -> this.toStringDebug()
+    is InternalNode -> this.toStringDebug()
 }
 
 const val MIN_CHILDREN = 4
