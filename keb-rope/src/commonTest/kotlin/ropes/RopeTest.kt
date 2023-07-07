@@ -119,6 +119,7 @@ class RopeTest {
             rope = rope.insert(randomI, 'a')
             sb.insert(randomI, 'a')
 
+            println(rope[randomI])
             assert { rope[randomI] == 'a' }
             assert { rope.length > len++ }
         }

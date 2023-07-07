@@ -312,7 +312,7 @@ class Rope(private val root: RopeNode) {
          */
         val currentLeaf: RopeLeafNode
             get() {
-                val leaf = curNode as? LeafNode
+                val leaf = curNode as? RopeLeafNode
                 check(nextOrClosed != null) { "`hasNext()` has not been invoked" }
                 check(leaf != null) { "`hasNext()` has not retrieved a leaf" }
                 return leaf
@@ -371,7 +371,7 @@ class Rope(private val root: RopeNode) {
             if (child === root) return
             onNextStack.onEach {
                 if (it === child) return@onEach
-                val parent = it as? InternalNode ?: return@onEach
+                val parent = it as? RopeInternalNode ?: return@onEach
                 if (!parent.children.contains(child)) return@onEach
                 links[child] = parent // link
             }
