@@ -9,8 +9,6 @@ interface Leaf {
     val isEmpty: Boolean
 }
 
-
-
 sealed class BTreeNode<out T : Leaf> : Iterable<LeafNode<T>> {
     abstract val weight: Int
     abstract val height: Int
@@ -41,11 +39,11 @@ fun <T : Leaf> BTreeNode<T>.rebalance(): BTreeNode<T> {
     return merge(leaves)
 }
 
-class LeafNode<out T : Leaf>(val leaf: T) : BTreeNode<T>() {
-    override val weight: Int = leaf.weight
+class LeafNode<out T : Leaf>(val value: T) : BTreeNode<T>() {
+    override val weight: Int = value.weight
     override val height: Int = 0
-    override val isEmpty: Boolean = leaf.isEmpty
-    override val isLegal: Boolean = leaf.isLegal
+    override val isEmpty: Boolean = value.isEmpty
+    override val isLegal: Boolean = value.isLegal
 
     override fun iterator(): Iterator<LeafNode<T>> {
         return SingleBTreeNodeIterator(this)
@@ -59,7 +57,7 @@ class LeafNode<out T : Leaf>(val leaf: T) : BTreeNode<T>() {
         val sb = StringBuilder()
         sb.append("$classSimpleName(")
         sb.append("weight=$weight,")
-        sb.append("value=$leaf,")
+        sb.append("value=$value,")
         sb.append("height=$height,")
         sb.append("isLegal=$isLegal")
         sb.append(")")
@@ -71,7 +69,7 @@ class LeafNode<out T : Leaf>(val leaf: T) : BTreeNode<T>() {
         sb.append("$classSimpleName@$hexAddress(")
         sb.append("weight=$weight,")
         sb.append("isLeafNode=true,")
-        sb.append("value=$leaf,")
+        sb.append("value=$value,")
         sb.append("height=$height,")
         sb.append("isLegal=$isLegal")
         sb.append("isBalanced=${isBalanced()}")

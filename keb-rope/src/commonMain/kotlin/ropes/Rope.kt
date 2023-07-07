@@ -48,7 +48,7 @@ class Rope(private val root: RopeNode) {
     fun indexOf(element: Char): Int {
         var index = 0
         for (leaf in root) {
-            for (c in leaf.leaf) {
+            for (c in leaf.value) {
                 if (c == element) return index
                 index++
             }
@@ -208,7 +208,7 @@ class Rope(private val root: RopeNode) {
             when (curNode) {
                 is LeafNode -> {
                     if (curIndex < curNode.weight) {
-                        return onElementRetrieved(curNode, curIndex, curNode.leaf[curIndex])
+                        return onElementRetrieved(curNode, curIndex, curNode.value[curIndex])
                     }
                     if (curNode === root) return onOutOfBounds() // single-node btree.
                     curIndex -= curNode.weight //TODO: explain this

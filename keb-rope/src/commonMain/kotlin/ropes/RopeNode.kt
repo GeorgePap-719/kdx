@@ -3,19 +3,19 @@ package keb.ropes
 import keb.internal.EmptyIterator
 
 //TODO: lineCount
-open class RopeLeaf(val value: String, val lineCount: Int? = null) : Leaf, Iterable<Char>, CharSequence {
-    override val weight: Int = value.length
+open class RopeLeaf(val charCount: String, val lineCount: Int? = null) : Leaf, Iterable<Char>, CharSequence {
+    override val weight: Int = charCount.length
 
     @Suppress("LeakingThis")
-    override val isLegal: Boolean = weight <= MAX_SIZE_LEAF && value.isNotEmpty()
-    override val isEmpty: Boolean = value.isEmpty()
+    override val isLegal: Boolean = weight <= MAX_SIZE_LEAF && charCount.isNotEmpty()
+    override val isEmpty: Boolean = charCount.isEmpty()
 
-    override fun iterator(): Iterator<Char> = value.iterator()
+    override fun iterator(): Iterator<Char> = charCount.iterator()
 
     @Suppress("LeakingThis")
     override val length: Int = weight
-    override fun get(index: Int): Char = value[index]
-    override fun subSequence(startIndex: Int, endIndex: Int): CharSequence = value.subSequence(startIndex, endIndex)
+    override fun get(index: Int): Char = charCount[index]
+    override fun subSequence(startIndex: Int, endIndex: Int): CharSequence = charCount.subSequence(startIndex, endIndex)
 
     fun add(index: Int, element: String): RopeLeaf {
         val newValue = buildString {
@@ -30,7 +30,7 @@ open class RopeLeaf(val value: String, val lineCount: Int? = null) : Leaf, Itera
     }
 
     fun deleteAt(index: Int): RopeLeaf {
-        val newValue = value.deleteAt(index)
+        val newValue = charCount.deleteAt(index)
         return if (newValue.isEmpty()) EmptyRopeLeaf else RopeLeaf(newValue)
     }
 
@@ -42,17 +42,17 @@ open class RopeLeaf(val value: String, val lineCount: Int? = null) : Leaf, Itera
         }
     }
 
-    override fun toString(): String = "RopeLeaf($value,$lineCount)"
+    override fun toString(): String = "RopeLeaf($charCount,$lineCount)"
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is RopeLeaf) return false
-        if (value != other.value) return false
+        if (charCount != other.charCount) return false
         return lineCount == other.lineCount
     }
 
     override fun hashCode(): Int {
-        var result = value.hashCode()
+        var result = charCount.hashCode()
         result = 31 * result + (lineCount ?: 0)
         return result
     }
@@ -67,7 +67,7 @@ internal object EmptyRopeLeaf : RopeLeaf("", null) {
     override fun get(index: Int): Char =
         throw IndexOutOfBoundsException("Empty leaf doesn't contain element at index:$index")
 
-    override fun toString(): String = "RopeLeaf()"
+    override fun toString(): String = "RopeLeaf(\"\", 0)"
     override fun equals(other: Any?): Boolean = other is RopeLeaf && other.isEmpty
     override fun hashCode(): Int = 1
     override fun iterator(): Iterator<Char> = EmptyIterator
@@ -120,8 +120,8 @@ private fun splitIntoLeaves(input: String): List<RopeLeafNode> {
 
 internal fun expandLeaf(leaf: RopeLeafNode): RopeInternalNode {
     val half = leaf.weight / 2
-    val left = RopeLeafNode(leaf.leaf.substring(0, half))
-    val right = RopeLeafNode(leaf.leaf.substring(half))
+    val left = RopeLeafNode(leaf.value.substring(0, half))
+    val right = RopeLeafNode(leaf.value.substring(half))
     return merge(left, right)
 }
 
@@ -135,10 +135,10 @@ internal fun expandLeaf(leaf: RopeLeafNode): RopeInternalNode {
 //TODO: research this if there is time.
 internal fun RopeLeafNode.expandableAdd(index: Int, element: String): List<RopeLeafNode> {
     checkValueIndex(index, this)
-    val newLen = leaf.length + element.length
+    val newLen = value.length + element.length
     if (newLen <= MAX_SIZE_LEAF) return listOf(add(index, element))
-    val newLeaf = leaf.add(index, element)
-    return splitIntoLeaves(newLeaf.value)
+    val newLeaf = value.add(index, element)
+    return splitIntoLeaves(newLeaf.charCount)
 }
 
 internal fun RopeLeafNode.add(index: Int, element: Char): RopeLeafNode = add(index, element.toString())
@@ -151,11 +151,11 @@ internal fun RopeLeafNode.add(index: Int, element: Char): RopeLeafNode = add(ind
  */
 internal fun RopeLeafNode.add(index: Int, element: String): RopeLeafNode {
     checkValueIndex(index, this)
-    val newLen = leaf.length + element.length
+    val newLen = value.length + element.length
     require(newLen <= MAX_SIZE_LEAF) { "max size of a leaf is:$MAX_SIZE_LEAF, but got:$newLen" }
-    if (index == 0) return RopeLeafNode(element + leaf.value)
-    if (index == leaf.value.lastIndex + 1) return RopeLeafNode(leaf.value + element)
-    val newValue = leaf.add(index, element)
+    if (index == 0) return RopeLeafNode(element + value.charCount)
+    if (index == value.charCount.lastIndex + 1) return RopeLeafNode(value.charCount + element)
+    val newValue = value.add(index, element)
     return RopeLeafNode(newValue)
 }
 
@@ -163,25 +163,25 @@ internal fun RopeLeafNode.add(index: Int, element: String): RopeLeafNode {
 
 internal inline fun RopeLeafNode.deleteAtAndIfEmpty(index: Int, onEmpty: () -> RopeLeafNode): RopeLeafNode {
     checkElementIndex(index, this)
-    val newValue = leaf.deleteAt(index)
+    val newValue = value.deleteAt(index)
     if (newValue.isEmpty()) return onEmpty()
     return RopeLeafNode(newValue)
 }
 
 internal fun RopeLeafNode.deleteAt(index: Int): RopeLeafNode {
     checkElementIndex(index, this)
-    val newLeaf = leaf.deleteAt(index)
+    val newLeaf = value.deleteAt(index)
     return if (newLeaf.isEmpty) emptyRopeLeafNode else RopeLeafNode(newLeaf)
 }
 
 private fun checkValueIndex(index: Int, leafNode: RopeLeafNode) {
-    if (index < 0 || index > leafNode.leaf.lastIndex + 1) { // it is acceptable for an index to be right after the last-index
-        throw IndexOutOfBoundsException("index:$index, leaf-length:${leafNode.leaf.length}")
+    if (index < 0 || index > leafNode.value.lastIndex + 1) { // it is acceptable for an index to be right after the last-index
+        throw IndexOutOfBoundsException("index:$index, leaf-length:${leafNode.value.length}")
     }
 }
 
 private fun checkElementIndex(index: Int, leafNode: RopeLeafNode) {
-    if (index < 0 || index > leafNode.leaf.lastIndex) {
+    if (index < 0 || index > leafNode.value.lastIndex) {
         throw IndexOutOfBoundsException("index:$index, leaf-length:${leafNode.weight}")
     }
 }
