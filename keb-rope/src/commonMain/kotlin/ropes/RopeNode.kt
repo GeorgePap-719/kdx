@@ -30,7 +30,8 @@ open class RopeLeaf(val value: String, val lineCount: Int? = null) : Leaf, Itera
     }
 
     fun deleteAt(index: Int): RopeLeaf {
-        return RopeLeaf(value.deleteAt(index))
+        val newValue = value.deleteAt(index)
+        return if (newValue.isEmpty()) EmptyRopeLeaf else RopeLeaf(newValue)
     }
 
     private fun String.deleteAt(index: Int): String = buildString {
@@ -70,6 +71,10 @@ internal object EmptyRopeLeaf : RopeLeaf("", null) {
     override fun equals(other: Any?): Boolean = other is RopeLeaf && other.isEmpty
     override fun hashCode(): Int = 1
     override fun iterator(): Iterator<Char> = EmptyIterator
+    override fun subSequence(startIndex: Int, endIndex: Int): CharSequence {
+        if (startIndex == 0 && endIndex == 0) return this
+        throw IndexOutOfBoundsException("Empty leaf doesn't contain element at startIndex:$startIndex, and endIndex:$endIndex")
+    }
 }
 
 fun RopeLeaf.add(index: Int, element: Char): RopeLeaf = add(index, element.toString())
@@ -165,18 +170,19 @@ internal inline fun RopeLeafNode.deleteAtAndIfEmpty(index: Int, onEmpty: () -> R
 
 internal fun RopeLeafNode.deleteAt(index: Int): RopeLeafNode {
     checkElementIndex(index, this)
-    return RopeLeafNode(leaf.deleteAt(index))
+    val newLeaf = leaf.deleteAt(index)
+    return if (newLeaf.isEmpty) emptyRopeLeafNode else RopeLeafNode(newLeaf)
 }
 
-private fun checkValueIndex(index: Int, leaf: RopeLeafNode) {
-    if (index < 0 || index > leaf.leaf.lastIndex + 1) { // it is acceptable for an index to be right after the last-index
-        throw IndexOutOfBoundsException("index:$index, leaf-length:${leaf.leaf.length}")
+private fun checkValueIndex(index: Int, leafNode: RopeLeafNode) {
+    if (index < 0 || index > leafNode.leaf.lastIndex + 1) { // it is acceptable for an index to be right after the last-index
+        throw IndexOutOfBoundsException("index:$index, leaf-length:${leafNode.leaf.length}")
     }
 }
 
-private fun checkElementIndex(index: Int, leaf: RopeLeafNode) {
-    if (index < 0 || index > leaf.leaf.lastIndex) {
-        throw IndexOutOfBoundsException("index:$index, leaf-length:${leaf.weight}")
+private fun checkElementIndex(index: Int, leafNode: RopeLeafNode) {
+    if (index < 0 || index > leafNode.leaf.lastIndex) {
+        throw IndexOutOfBoundsException("index:$index, leaf-length:${leafNode.weight}")
     }
 }
 
