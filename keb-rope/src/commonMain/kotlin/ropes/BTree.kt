@@ -3,7 +3,7 @@ package keb.ropes
 import keb.classSimpleName
 import keb.hexAddress
 
-interface Leaf {
+interface Leaf { //TODO: check for better name : LeafInfo || LeafType
     val weight: Int
     val isLegal: Boolean
 }

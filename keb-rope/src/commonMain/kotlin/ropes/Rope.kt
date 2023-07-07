@@ -45,17 +45,6 @@ class Rope(private val root: RopeNode) {
         }
     }
 
-    fun indexOf(element: Char): Int {
-        var index = 0
-        for (leaf in root) {
-            for (c in leaf.value) {
-                if (c == element) return index
-                index++
-            }
-        }
-        return -1
-    }
-
     /**
      * Returns the [Char] at the given [index] or `null` if the [index] is out of bounds of this rope.
      */
@@ -66,6 +55,17 @@ class Rope(private val root: RopeNode) {
             onOutOfBounds = { return null },
             onElementRetrieved = { _, _, element -> return element }
         )
+
+    fun indexOf(element: Char): Int {
+        var index = 0
+        for (leaf in root) {
+            for (c in leaf.value) {
+                if (c == element) return index
+                index++
+            }
+        }
+        return -1
+    }
 
     fun deleteAt(index: Int): Rope {
         checkPositionIndex(index)
@@ -186,7 +186,7 @@ class Rope(private val root: RopeNode) {
         /* The tree which we iterate. */
         root: RopeNode,
         /* The stack which keeps references to parent nodes. */
-        stack: ArrayStack<IndexedInternalNode> = defaultStack(),
+        stack: ArrayStack<IndexedRopeInternalNode> = defaultStack(),
         /* This lambda is invoked when the target index is
         out of bounds for the current in tree. */
         onOutOfBounds: () -> R,
@@ -225,7 +225,7 @@ class Rope(private val root: RopeNode) {
                 }
 
                 is InternalNode -> {
-                    val node = if (curNode is IndexedInternalNode) curNode else curNode.indexed()
+                    val node = if (curNode is IndexedRopeInternalNode) curNode else curNode.indexed()
                     // push the current node, so we can always return as a fallback.
                     stack.push(node)
                     // if `index` is less than node's weight, then `index` is in this subtree.
@@ -265,7 +265,7 @@ class Rope(private val root: RopeNode) {
         }
     }
 
-    private fun RopeNode.findParentInStack(stack: ArrayStack<IndexedInternalNode>): IndexedInternalNode? {
+    private fun RopeNode.findParentInStack(stack: ArrayStack<IndexedRopeInternalNode>): IndexedRopeInternalNode? {
         var stackNode = stack.popOrNull() ?: return null
         while (stackNode === this) {
             stackNode = stack.popOrNull() ?: return null
@@ -273,7 +273,7 @@ class Rope(private val root: RopeNode) {
         return stackNode
     }
 
-    private fun defaultStack(): ArrayStack<IndexedInternalNode> = ArrayStack(root.height)
+    private fun defaultStack(): ArrayStack<IndexedRopeInternalNode> = ArrayStack(root.height)
 
     internal interface RopeIteratorWithHistory {
         fun findParent(child: RopeNode): RopeInternalNode?
@@ -407,16 +407,16 @@ fun Rope.insert(index: Int, element: Char): Rope = insert(index, element.toStrin
 
 // btree utils
 
-internal fun RopeInternalNode.indexed(): IndexedInternalNode {
-    return IndexedInternalNode(weight, height, children)
+internal fun RopeInternalNode.indexed(): IndexedRopeInternalNode {
+    return IndexedRopeInternalNode(weight, height, children)
 }
 
-internal inline fun IndexedInternalNode.nextChildOrElse(action: () -> RopeNode): RopeNode {
+internal inline fun IndexedRopeInternalNode.nextChildOrElse(action: () -> RopeNode): RopeNode {
     return nextChildOrNull ?: action()
 }
 
-private inline fun IndexedInternalNode.nextChildAndKeepRefOrElse(
-    stack: ArrayStack<IndexedInternalNode>,
+private inline fun IndexedRopeInternalNode.nextChildAndKeepRefOrElse(
+    stack: ArrayStack<IndexedRopeInternalNode>,
     action: () -> RopeNode
 ): RopeNode = nextChildOrNull.let {
     if (it == null) {
@@ -430,7 +430,7 @@ private inline fun IndexedInternalNode.nextChildAndKeepRefOrElse(
 /**
  * A helper class to iterate through an internal node's children, similarly to an iterator.
  */
-internal class IndexedInternalNode(
+internal class IndexedRopeInternalNode(
     weight: Int,
     height: Int,
     children: List<RopeNode>,
