@@ -1,11 +1,18 @@
 package keb.ropes
 
+import keb.internal.EmptyIterator
+
 //TODO: lineCount
-class RopeLeaf(val value: String, val lineCount: Int? = null) : Leaf, Iterable<Char>, CharSequence {
+open class RopeLeaf(val value: String, val lineCount: Int? = null) : Leaf, Iterable<Char>, CharSequence {
     override val weight: Int = value.length
-    override val isLegal: Boolean = weight <= MAX_SIZE_LEAF
+
+    @Suppress("LeakingThis")
+    override val isLegal: Boolean = weight <= MAX_SIZE_LEAF && value.isNotEmpty()
+    override val isEmpty: Boolean = value.isEmpty()
 
     override fun iterator(): Iterator<Char> = value.iterator()
+
+    @Suppress("LeakingThis")
     override val length: Int = weight
     override fun get(index: Int): Char = value[index]
     override fun subSequence(startIndex: Int, endIndex: Int): CharSequence = value.subSequence(startIndex, endIndex)
@@ -50,12 +57,30 @@ class RopeLeaf(val value: String, val lineCount: Int? = null) : Leaf, Iterable<C
     }
 }
 
+internal object EmptyRopeLeaf : RopeLeaf("", null) {
+    override val weight: Int = 0
+    override val isLegal: Boolean = false
+    override val length: Int = 0
+    override val isEmpty: Boolean = true
+
+    override fun get(index: Int): Char =
+        throw IndexOutOfBoundsException("Empty leaf doesn't contain element at index:$index")
+
+    override fun toString(): String = "RopeLeaf()"
+    override fun equals(other: Any?): Boolean = other is RopeLeaf && other.isEmpty
+    override fun hashCode(): Int = 1
+    override fun iterator(): Iterator<Char> = EmptyIterator
+}
+
 fun RopeLeaf.add(index: Int, element: Char): RopeLeaf = add(index, element.toString())
 
 typealias RopeInternalNode = InternalNode<RopeLeaf>
 typealias RopeLeafNode = LeafNode<RopeLeaf>
 
-internal fun RopeLeafNode(input: String): RopeLeafNode = RopeLeafNode(RopeLeaf(input))
+private val emptyRopeLeafNode = RopeLeafNode(EmptyRopeLeaf)
+
+internal fun RopeLeafNode(input: String): RopeLeafNode =
+    if (input.isEmpty()) emptyRopeLeafNode else RopeLeafNode(RopeLeaf(input))
 
 typealias RopeNode = BTreeNode<RopeLeaf>
 
@@ -126,7 +151,7 @@ internal fun RopeLeafNode.add(index: Int, element: String): RopeLeafNode {
     if (index == 0) return RopeLeafNode(element + leaf.value)
     if (index == leaf.value.lastIndex + 1) return RopeLeafNode(leaf.value + element)
     val newValue = leaf.add(index, element)
-    return LeafNode(newValue)
+    return RopeLeafNode(newValue)
 }
 
 // ------ deleteXXX ------

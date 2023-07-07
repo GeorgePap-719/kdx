@@ -6,9 +6,10 @@ import keb.hexAddress
 interface Leaf {
     val weight: Int
     val isLegal: Boolean
+    val isEmpty: Boolean
 }
 
-val Leaf.isEmpty get() = weight == 0
+
 
 sealed class BTreeNode<out T : Leaf> : Iterable<LeafNode<T>> {
     abstract val weight: Int
@@ -181,7 +182,7 @@ open class InternalNode<out T : Leaf>(
         return unsafeCreateParent(newChildren)
     }
 
-    fun deleteAt(index: Int): InternalNode<T> {
+    fun deleteAt(index: Int): InternalNode<T>? {
         checkElementIndex(index)
         val newChildren = buildList {
             for (i in children.indices) {
@@ -189,7 +190,8 @@ open class InternalNode<out T : Leaf>(
                 add(children[i])
             }
         }
-        if (newChildren.isEmpty()) return emptyInternalNode()
+//        if (newChildren.isEmpty()) return emptyInternalNode()
+        if (newChildren.isEmpty()) return null
         return unsafeCreateParent(newChildren)
     }
 

@@ -92,11 +92,13 @@ class Rope(private val root: RopeNode) {
             // for non-root nodes, findParent() should always return a parent.
             val parent = iterator.findParent(old) ?: error("unexpected")
             val pos = parent.indexOf(old)
+            assert { pos >= 0 } // position should always be positive.
             new = parent.deleteAt(pos)
             old = parent
-            if (old === root) {
-                return if (new.isEmpty) old else new
-            }
+//            if (old === root) {
+//                return if (new.isEmpty) old else new
+//            }
+            if (old === root) return new ?: old
         }
     }
 
@@ -393,7 +395,7 @@ class Rope(private val root: RopeNode) {
     // # Debug Functions #
     // ###################
 
-    override fun toString(): String = root.toStringDebug()
+    override fun toString(): String = root.toString()
 
     private fun checkPositionIndex(index: Int) {
         if (index < 0) throw IndexOutOfBoundsException("index:$index")
