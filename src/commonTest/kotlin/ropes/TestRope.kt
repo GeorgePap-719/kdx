@@ -188,7 +188,7 @@ class TestRope {
         var afterDeleteLen: Int
 
         for (i in 0 until 100) {
-            val randomI = Random.nextInt(0, string.length)
+            val randomI = Random.nextInt(0, string.length - i)
             curLen = rope.length
             rope = rope.deleteAt(randomI)
             afterDeleteLen = rope.length
