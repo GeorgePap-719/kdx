@@ -3,17 +3,15 @@ package keb.ropes
 import keb.internal.EmptyIterator
 
 //TODO: lineCount
-open class RopeLeaf(val charCount: String, val lineCount: Int? = null) : Leaf, Iterable<Char>, CharSequence {
+open class RopeLeaf(val charCount: String, val lineCount: Int = 0) : Leaf, Iterable<Char>, CharSequence {
     override val weight: Int = charCount.length
 
     @Suppress("LeakingThis")
     override val isLegal: Boolean = weight <= MAX_SIZE_LEAF && charCount.isNotEmpty()
-    override val isEmpty: Boolean = charCount.isEmpty()
-
-    override fun iterator(): Iterator<Char> = charCount.iterator()
 
     @Suppress("LeakingThis")
     override val length: Int = weight
+    override fun iterator(): Iterator<Char> = charCount.iterator()
     override fun get(index: Int): Char = charCount[index]
     override fun subSequence(startIndex: Int, endIndex: Int): CharSequence = charCount.subSequence(startIndex, endIndex)
 
@@ -53,16 +51,15 @@ open class RopeLeaf(val charCount: String, val lineCount: Int? = null) : Leaf, I
 
     override fun hashCode(): Int {
         var result = charCount.hashCode()
-        result = 31 * result + (lineCount ?: 0)
+        result = 31 * result + lineCount
         return result
     }
 }
 
-internal object EmptyRopeLeaf : RopeLeaf("", null) {
+internal object EmptyRopeLeaf : RopeLeaf("", 0) {
     override val weight: Int = 0
     override val isLegal: Boolean = false
     override val length: Int = 0
-    override val isEmpty: Boolean = true
 
     override fun get(index: Int): Char =
         throw IndexOutOfBoundsException("Empty leaf doesn't contain element at index:$index")
@@ -70,6 +67,7 @@ internal object EmptyRopeLeaf : RopeLeaf("", null) {
     override fun toString(): String = "RopeLeaf(\"\", 0)"
     override fun equals(other: Any?): Boolean = other is RopeLeaf && other.isEmpty
     override fun hashCode(): Int = 1
+
     override fun iterator(): Iterator<Char> = EmptyIterator
     override fun subSequence(startIndex: Int, endIndex: Int): CharSequence {
         if (startIndex == 0 && endIndex == 0) return this

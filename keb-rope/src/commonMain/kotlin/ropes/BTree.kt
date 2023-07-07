@@ -6,8 +6,9 @@ import keb.hexAddress
 interface Leaf {
     val weight: Int
     val isLegal: Boolean
-    val isEmpty: Boolean
 }
+
+val Leaf.isEmpty: Boolean get() = weight == 0
 
 sealed class BTreeNode<out T : Leaf> : Iterable<LeafNode<T>> {
     abstract val weight: Int
