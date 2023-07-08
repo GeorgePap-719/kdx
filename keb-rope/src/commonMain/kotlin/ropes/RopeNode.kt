@@ -17,7 +17,7 @@ open class RopeLeaf(val charCount: String, val lineCount: Int = 0) : Leaf, Itera
 
     fun add(index: Int, element: String): RopeLeaf {
         val newValue = buildString {
-            val str = this
+            val str = this@RopeLeaf
             for (i in str.indices) {
                 if (i == index) append(element)
                 append(str[i])
