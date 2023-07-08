@@ -2,7 +2,7 @@ package keb.ropes
 
 import keb.internal.ResizeableArray
 
-class BTreeNodeIterator<T : Leaf>(root: BTreeNode<T>) : Iterator<LeafNode<T>> {
+class BTreeNodeIterator<T : LeafInfo>(root: BTreeNode<T>) : Iterator<LeafNode<T>> {
     private var index = 0
     private var currentNode = root
     private val size: Int
@@ -39,7 +39,7 @@ class BTreeNodeIterator<T : Leaf>(root: BTreeNode<T>) : Iterator<LeafNode<T>> {
     }
 }
 
-class SingleBTreeNodeIterator<T : Leaf>(private val root: LeafNode<T>) : Iterator<LeafNode<T>> {
+class SingleBTreeNodeIterator<T : LeafInfo>(private val root: LeafNode<T>) : Iterator<LeafNode<T>> {
     private var index = 0
     private val size = 1
 

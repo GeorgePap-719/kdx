@@ -3,7 +3,7 @@ package keb.ropes
 import keb.internal.EmptyIterator
 
 //TODO: lineCount
-open class RopeLeaf(val charCount: String, val lineCount: Int = 0) : Leaf, Iterable<Char>, CharSequence {
+open class RopeLeaf(val charCount: String, val lineCount: Int = 0) : LeafInfo, Iterable<Char>, CharSequence {
     override val weight: Int = charCount.length
 
     @Suppress("LeakingThis")

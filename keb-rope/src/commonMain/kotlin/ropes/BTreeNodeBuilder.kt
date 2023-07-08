@@ -1,6 +1,6 @@
 package keb.ropes
 
-internal class BTreeNodeBuilder<T : Leaf>(private var root: InternalNode<T>) {
+internal class BTreeNodeBuilder<T : LeafInfo>(private var root: InternalNode<T>) {
     val weight: Int get() = root.weight
     val height: Int get() = root.height
     val isLegal: Boolean get() = root.isLegal
