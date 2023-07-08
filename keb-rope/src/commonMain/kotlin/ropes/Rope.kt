@@ -67,6 +67,43 @@ class Rope(private val root: RopeNode) {
         return -1
     }
 
+    // endIndex exclusive
+    fun deleteAt(startIndex: Int, endIndex: Int): Rope {
+        checkPositionIndex(startIndex)
+
+        // 1. get left and right positions
+        val leftIterator = RopeIterator(root, startIndex)
+        if (!leftIterator.hasNext()) throw IndexOutOfBoundsException("index:$startIndex, length:$length")
+        val leftLeaf = leftIterator.currentLeaf // leaf where index is found
+        val leftI = leftIterator.currentIndex // index in leaf
+        val rightIterator = SingleElementRopeIterator(root, endIndex)
+        if (!rightIterator.hasNext()) throw IndexOutOfBoundsException("index:$startIndex, length:$length")
+        val rightLeaf = rightIterator.currentLeaf
+        val rightI = rightIterator.currentIndex
+        // 2. check if they are in the same leaf
+        if (leftLeaf === rightLeaf) {
+            val newValue = leftLeaf.value.removeRange(leftI, rightI) // `endIndex` is exclusive here
+            val newLeaf = RopeLeafNode(newValue)
+            val newTree = rebuildTreeCleaningEmptyNodes(leftLeaf, newLeaf, leftIterator)
+            return Rope(newTree)
+        }
+        // 3. if not, then gl hf
+        val range = startIndex until endIndex
+        var i = startIndex
+        while (i < endIndex) {
+
+
+            if (i > endIndex) error("todo")
+        }
+        for (i in range) {
+            if (!leftIterator.hasNext()) error("todo")
+
+            TODO("at this point, without a mutable implementation, tracking all changes is non-trivial.")
+        }
+        leftLeaf.value
+        TODO("wip")
+    }
+
     fun deleteAt(index: Int): Rope {
         checkPositionIndex(index)
         val iterator = SingleElementRopeIterator(root, index)
@@ -95,10 +132,9 @@ class Rope(private val root: RopeNode) {
             assert { pos >= 0 } // position should always be positive.
             new = parent.deleteAt(pos)
             old = parent
-//            if (old === root) {
-//                return if (new.isEmpty) old else new
-//            }
-            if (old === root) return new ?: old
+            if (old === root) {
+                return if (new.isEmpty) old else new
+            }
         }
     }
 

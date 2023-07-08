@@ -181,7 +181,7 @@ open class InternalNode<out T : LeafInfo>(
         return unsafeCreateParent(newChildren)
     }
 
-    fun deleteAt(index: Int): InternalNode<T>? {
+    fun deleteAt(index: Int): InternalNode<T> {
         checkElementIndex(index)
         val newChildren = buildList {
             for (i in children.indices) {
@@ -189,8 +189,7 @@ open class InternalNode<out T : LeafInfo>(
                 add(children[i])
             }
         }
-//        if (newChildren.isEmpty()) return emptyInternalNode()
-        if (newChildren.isEmpty()) return null
+        if (newChildren.isEmpty()) return emptyInternalNode()
         return unsafeCreateParent(newChildren)
     }
 

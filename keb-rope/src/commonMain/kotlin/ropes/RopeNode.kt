@@ -56,6 +56,9 @@ open class RopeLeaf(val charCount: String, val lineCount: Int = 0) : LeafInfo, I
     }
 }
 
+fun RopeLeaf.removeRange(startIndex: Int, endIndex: Int): String =
+    (this as CharSequence).removeRange(startIndex, endIndex).toString()
+
 internal object EmptyRopeLeaf : RopeLeaf("", 0) {
     override val weight: Int = 0
     override val isLegal: Boolean = false

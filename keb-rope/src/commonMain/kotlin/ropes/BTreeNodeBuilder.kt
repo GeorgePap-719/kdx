@@ -15,7 +15,7 @@ internal class BTreeNodeBuilder<T : LeafInfo>(private var root: InternalNode<T>)
     }
 
     fun deleteAt(index: Int) {
-        this.root = root.deleteAt(index) ?: emptyInternalNode()
+        this.root = root.deleteAt(index)
     }
 
     fun replaceRoot(newRoot: InternalNode<T>) {
