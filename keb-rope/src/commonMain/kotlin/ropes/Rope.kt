@@ -70,14 +70,29 @@ class Rope(private val root: RopeNode) {
     // endIndex exclusive
     fun deleteAt(startIndex: Int, endIndex: Int): Rope {
         checkPositionIndex(startIndex)
+        return when (root) {
+            is RopeLeafNode -> {
+                val leaf = root.value
+                if (endIndex - 1 > leaf.lastIndex) {
+                    throwIndexOutOfBoundsExceptionForStartAndEndIndex(startIndex, endIndex)
+                }
+                val newLeaf = leaf.removeRange(startIndex, endIndex)
+                Rope(RopeLeafNode(newLeaf))
+            }
 
+            is RopeInternalNode -> deleteAtWithRootAsInternalNode(root, startIndex, endIndex)
+        }
+    }
+
+    @OptIn(ExperimentalStdlibApi::class)
+    private fun deleteAtWithRootAsInternalNode(root: RopeInternalNode, startIndex: Int, endIndex: Int): Rope {
         // 1. get left and right positions
         val leftIterator = RopeIterator(root, startIndex)
-        if (!leftIterator.hasNext()) throw IndexOutOfBoundsException("index:$startIndex, length:$length")
+        if (!leftIterator.hasNext()) throwIndexOutOfBoundsExceptionForStartAndEndIndex(startIndex, endIndex)
         val leftLeaf = leftIterator.currentLeaf // leaf where index is found
         val leftI = leftIterator.currentIndex // index in leaf
-        val rightIterator = SingleElementRopeIterator(root, endIndex)
-        if (!rightIterator.hasNext()) throw IndexOutOfBoundsException("index:$startIndex, length:$length")
+        val rightIterator = SingleElementRopeIterator(root, endIndex - 1)
+        if (!rightIterator.hasNext()) throwIndexOutOfBoundsExceptionForStartAndEndIndex(startIndex, endIndex)
         val rightLeaf = rightIterator.currentLeaf
         val rightI = rightIterator.currentIndex
         // 2. check if they are in the same leaf
@@ -88,20 +103,28 @@ class Rope(private val root: RopeNode) {
             return Rope(newTree)
         }
         // 3. if not, then gl hf
-        val range = startIndex until endIndex
-        var i = startIndex
-        while (i < endIndex) {
+        // -- First, we need to find how much of "index" each leaf contains, then subtract it.
+        val newRoot = root.mutate {
+            var index = startIndex
+            var curLeaf = leftLeaf
+            while (index < endIndex) {
+                val range = if (index + curLeaf.value.lastIndex < endIndex) {
+                    index..curLeaf.value.lastIndex
+                } else {
+                    index..<endIndex
+                }
+                val newLeaf = curLeaf.value.removeRange(range)
+                val newTree = rebuildTreeCleaningEmptyNodes(curLeaf, RopeLeafNode(newLeaf), leftIterator)
+                replaceRoot(newTree) // TODO:
+                index += range.last // leaf boundary
 
-
-            if (i > endIndex) error("todo")
+            }
         }
-        for (i in range) {
-            if (!leftIterator.hasNext()) error("todo")
+        return Rope(newRoot)
+    }
 
-            TODO("at this point, without a mutable implementation, tracking all changes is non-trivial.")
-        }
-        leftLeaf.value
-        TODO("wip")
+    private fun throwIndexOutOfBoundsExceptionForStartAndEndIndex(startIndex: Int, endIndex: Int): Nothing {
+        throw IndexOutOfBoundsException("startIndex:$startIndex, endIndex:$endIndex, length:$length")
     }
 
     fun deleteAt(index: Int): Rope {
