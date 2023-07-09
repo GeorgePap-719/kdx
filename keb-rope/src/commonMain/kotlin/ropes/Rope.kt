@@ -68,6 +68,9 @@ class Rope(private val root: RopeNode) {
     //TODO: make it extension fun
     fun subRope(range: IntRange): Rope = subRope(range.first, range.last + 1)
 
+    //TODO: make it extension fun
+    fun subRope(startIndex: Int): Rope = subRope(startIndex, length)
+
     // `endIndex` is exclusive
     @Suppress("DuplicatedCode")
     fun subRope(startIndex: Int, endIndex: Int): Rope {
@@ -152,40 +155,12 @@ class Rope(private val root: RopeNode) {
         }
     }
 
-    // Wiki has a better idea on how deleteAt should work.
-    // Probably will follow that, but first we need subRope operation.
     // endIndex exclusive
-    fun deleteAt(startIndex: Int, endIndex: Int): Rope {
-        checkPositionIndex(startIndex)
-        return when (root) {
-            is RopeLeafNode -> {
-                val newLeaf = root.value.removeRange(startIndex, endIndex)
-                Rope(RopeLeafNode(newLeaf))
-            }
-
-            is RopeInternalNode -> deleteAtWithRootAsInternalNode(startIndex, endIndex)
-        }
-    }
-
-    private fun deleteAtWithRootAsInternalNode(startIndex: Int, endIndex: Int): Rope {
-        TODO()
-    }
-
-    // at this point, it is easier to recreate the tree from scratch (not sure if it's optimal tho).
-    private fun rebuildTreeCleaningEmptyNodes(
-        nodesToBeReplaced: Map<RopeLeafNode, RopeLeafNode> // old | new
-    ): RopeNode {
-        var nodesReplaced = 0
-        val leaves = root.toMutableList()
-        for ((index, node /*key*/) in leaves.withIndex()) {
-            // Avoid traversing all leaves, since they can potentially be many.
-            if (nodesReplaced == nodesToBeReplaced.size) break // no more nodes to replace
-            val newNode = nodesToBeReplaced[node] ?: continue
-            if (newNode.isEmpty) leaves.removeAt(index)
-            leaves[index] = newNode
-            nodesReplaced++
-        }
-        return merge(leaves)
+    fun deleteRange(startIndex: Int, endIndex: Int): Rope {
+        if (startIndex == 0) return subRope(endIndex)
+        val leftTree = subRope(0, startIndex)
+        val rightTree = subRope(endIndex)
+        return leftTree + rightTree
     }
 
     private fun throwIndexOutOfBoundsExceptionForStartAndEndIndex(startIndex: Int, endIndex: Int): Nothing {
