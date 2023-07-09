@@ -70,11 +70,12 @@ class Rope(private val root: RopeNode) {
     }
 
     // xxxIndex variables, need rename for sure.
+    // `endIndex` is exclusive
     @Suppress("DuplicatedCode")
     fun subRope(startIndex: Int, endIndex: Int): Rope {
         checkRangeIndexes(startIndex, endIndex)
         // 1. get left and right positions
-        val leftIterator = RopeIterator(root, startIndex)
+        val leftIterator = SingleElementRopeIterator(root, startIndex)
         if (!leftIterator.hasNext()) throwIndexOutOfBoundsExceptionForStartAndEndIndex(startIndex, endIndex)
         val leftLeaf = leftIterator.currentLeaf // leaf where index is found
         val leftIndex = leftIterator.currentIndex // index in leaf
@@ -89,37 +90,22 @@ class Rope(private val root: RopeNode) {
         }
         val parent = leftIterator.findParent(leftLeaf) ?: error("unexpected")
         if (parent.contains(rightLeaf)) {
-            val children = parent.children
-            val leftLeafIndex = parent.indexOf(leftLeaf)
-            val rightLeafIndex = parent.indexOf(rightLeaf)
-            val newTree = buildBTree {
-                for (i in leftLeafIndex..rightLeafIndex) {
-                    val child = children[i]
-                    when (i) {
-                        leftLeafIndex -> {
-                            child as RopeLeafNode // this child is the `leftLeaf`
-                            val newLeaf = child.value.subStringLeaf(leftIndex)
-                            add(RopeLeafNode(newLeaf))
-                        }
-
-                        rightLeafIndex -> {
-                            child as RopeLeafNode // this child is the `rightLeaf
-                            val newLeaf = child.value.subStringLeaf(0, rightIndex)
-                            add(RopeLeafNode(newLeaf))
-                        }
-
-                        else -> {
-                            // In-between leaves can be added as they are,
-                            // since they in range: startIndex < leaf < endIndex.
-                            addAll(child.toList())
-                        }
-                    }
-                }
-            }
+            val newTree = buildTreeFromStartAndEndIndex(leftIndex, leftLeaf, rightIndex, rightLeaf, parent)
             return Rope(newTree)
         }
         val commonParent = findCommonParent(leftIterator, leftLeaf, rightIterator, rightLeaf)
-        val leaves = commonParent.toList()
+        val newTree = buildTreeFromStartAndEndIndex(leftIndex, leftLeaf, rightIndex, rightLeaf, commonParent)
+        return Rope(newTree)
+    }
+
+    private fun buildTreeFromStartAndEndIndex(
+        leftIndex: Int,
+        leftLeaf: RopeLeafNode,
+        rightIndex: Int,
+        rightLeaf: RopeLeafNode,
+        parent: RopeNode
+    ): RopeNode {
+        val leaves = parent.collectLeaves()
         val leftLeafIndex = leaves.indexOf(leftLeaf)
         val rightLeafIndex = leaves.indexOf(rightLeaf)
         val newTree = buildBTree {
@@ -144,7 +130,7 @@ class Rope(private val root: RopeNode) {
                 }
             }
         }
-        return Rope(newTree)
+        return newTree
     }
 
     private fun findCommonParent(

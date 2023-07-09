@@ -40,6 +40,9 @@ fun <T : LeafInfo> BTreeNode<T>.rebalance(): BTreeNode<T> {
     return merge(leaves)
 }
 
+// for more readable API
+fun <T : LeafInfo> BTreeNode<T>.collectLeaves(): List<LeafNode<T>> = toList()
+
 class LeafNode<out T : LeafInfo>(val value: T) : BTreeNode<T>() {
     override val weight: Int = value.weight
     override val height: Int = 0
