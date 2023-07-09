@@ -74,27 +74,27 @@ class Rope(private val root: RopeNode) {
     @Suppress("DuplicatedCode")
     fun subRope(startIndex: Int, endIndex: Int): Rope {
         checkRangeIndexes(startIndex, endIndex)
+        if (root is RopeLeafNode) {
+            root.value.subStringLeaf(startIndex, endIndex)
+        }
         // 1. get left and right positions
         val leftIterator = SingleElementRopeIterator(root, startIndex)
         if (!leftIterator.hasNext()) throwIndexOutOfBoundsExceptionForStartAndEndIndex(startIndex, endIndex)
         val leftLeaf = leftIterator.currentLeaf // leaf where index is found
         val leftIndex = leftIterator.currentIndex // index in leaf
-        val rightIterator = SingleElementRopeIterator(root, endIndex - 1)
+        val rightIterator = SingleElementRopeIterator(root, endIndex - 1) // `endIndex` is exclusive
         if (!rightIterator.hasNext()) throwIndexOutOfBoundsExceptionForStartAndEndIndex(startIndex, endIndex)
-        val rightLeaf = rightIterator.currentLeaf
-        val rightIndex = rightIterator.currentIndex
-        // --
+        val rightLeaf = rightIterator.currentLeaf // leaf where index is found
+        val rightIndex = rightIterator.currentIndex // index in leaf
+        // Fast-path, leftLeaf and rightLeaf are the same.
+        // This also covers the case where root is a leaf.
         if (leftLeaf === rightLeaf) {
             val newLeaf = leftLeaf.value.subStringLeaf(leftIndex, rightIndex + 1)
             return Rope(RopeLeafNode(newLeaf))
         }
-        val parent = leftIterator.findParent(leftLeaf) ?: error("unexpected")
-        // find common parent to both leaves
-        val commonParent = if (parent.contains(rightLeaf)) {
-            parent
-        } else {
-            findCommonParent(leftIterator, leftLeaf, rightIterator, rightLeaf)
-        }
+        // Since we need only leaves between startIndex <= leaf <= endIndex,
+        // we only need the first common parent to both leaves to retrieve them all.
+        val commonParent = findCommonParent(leftIterator, leftLeaf, rightIterator, rightLeaf)
         val newTree = buildTreeFromStartAndEndIndex(leftIndex, leftLeaf, rightIndex, rightLeaf, commonParent)
         return Rope(newTree)
     }
@@ -140,12 +140,12 @@ class Rope(private val root: RopeNode) {
         rightIterator: RopeIteratorWithHistory,
         rightLeafNode: RopeLeafNode
     ): RopeNode {
-        var leftParent: RopeNode = leftLeafNode
-        var rightParent: RopeNode = rightLeafNode
+        var leftNode: RopeNode = leftLeafNode
+        var rightNode: RopeNode = rightLeafNode
         while (true) {
-            leftParent = leftIterator.findParent(leftParent) ?: error("unexpected")
-            rightParent = rightIterator.findParent(rightParent) ?: error("unexpected")
-            if (leftParent === rightParent) return leftParent
+            leftNode = leftIterator.findParent(leftNode) ?: error("unexpected")
+            rightNode = rightIterator.findParent(rightNode) ?: error("unexpected")
+            if (leftNode === rightNode) return leftNode
         }
     }
 

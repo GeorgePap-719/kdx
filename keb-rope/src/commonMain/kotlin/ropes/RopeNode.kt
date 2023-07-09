@@ -152,7 +152,7 @@ internal fun expandLeaf(leaf: RopeLeafNode): RopeInternalNode {
 // leaf nodes on the spot. Though, this is easier than done.
 //TODO: research this if there is time.
 internal fun RopeLeafNode.expandableAdd(index: Int, element: String): List<RopeLeafNode> {
-    checkValueIndex(index, this)
+    checkValueIndex(index, this.value)
     val newLen = value.length + element.length
     if (newLen <= MAX_SIZE_LEAF) return listOf(add(index, element))
     val newLeaf = value.add(index, element)
@@ -168,7 +168,7 @@ internal fun RopeLeafNode.add(index: Int, element: Char): RopeLeafNode = add(ind
  * @throws IllegalArgumentException if the resulting length exceeds the maximum size of a leaf.
  */
 internal fun RopeLeafNode.add(index: Int, element: String): RopeLeafNode {
-    checkValueIndex(index, this)
+    checkValueIndex(index, this.value)
     val newLen = value.length + element.length
     require(newLen <= MAX_SIZE_LEAF) { "max size of a leaf is:$MAX_SIZE_LEAF, but got:$newLen" }
     if (index == 0) return RopeLeafNode(element + value.charCount)
@@ -180,27 +180,36 @@ internal fun RopeLeafNode.add(index: Int, element: String): RopeLeafNode {
 // ------ deleteXXX ------
 
 internal inline fun RopeLeafNode.deleteAtAndIfEmpty(index: Int, onEmpty: () -> RopeLeafNode): RopeLeafNode {
-    checkElementIndex(index, this)
+    checkElementIndex(index, this.value)
     val newValue = value.deleteAt(index)
     if (newValue.isEmpty()) return onEmpty()
     return RopeLeafNode(newValue)
 }
 
 internal fun RopeLeafNode.deleteAt(index: Int): RopeLeafNode {
-    checkElementIndex(index, this)
+    checkElementIndex(index, this.value)
     val newLeaf = value.deleteAt(index)
     return if (newLeaf.isEmpty) emptyRopeLeafNode else RopeLeafNode(newLeaf)
 }
 
-private fun checkValueIndex(index: Int, leafNode: RopeLeafNode) {
-    if (index < 0 || index > leafNode.value.lastIndex + 1) { // it is acceptable for an index to be right after the last-index
-        throw IndexOutOfBoundsException("index:$index, leaf-length:${leafNode.value.length}")
+private fun checkValueIndex(index: Int, leafNode: RopeLeaf) {
+    if (index < 0 || index > leafNode.lastIndex + 1) { // it is acceptable for an index to be right after the last-index
+        throw IndexOutOfBoundsException("index:$index, leaf-length:${leafNode.length}")
     }
 }
 
-private fun checkElementIndex(index: Int, leafNode: RopeLeafNode) {
-    if (index < 0 || index > leafNode.value.lastIndex) {
+private fun checkElementIndex(index: Int, leafNode: RopeLeaf) {
+    if (index < 0 || index > leafNode.lastIndex) {
         throw IndexOutOfBoundsException("index:$index, leaf-length:${leafNode.weight}")
+    }
+}
+
+private fun RopeLeaf.checkRangeIndexes(startIndex: Int, endIndex: Int) {
+    if (startIndex < 0 || endIndex > lastIndex) {
+        throw IndexOutOfBoundsException("startIndex:$startIndex, endIndex:$endIndex, leaf-length:${weight}")
+    }
+    if (endIndex < startIndex) {
+        throw IndexOutOfBoundsException("End index ($endIndex) is less than start index ($startIndex).")
     }
 }
 
