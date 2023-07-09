@@ -9,9 +9,7 @@ fun Rope(value: String): Rope {
     return Rope(root)
 }
 
-fun emptyRope(): Rope {
-    return Rope(emptyBTreeNode())
-}
+fun emptyRope(): Rope = Rope(emptyRopeNode())
 
 class Rope(private val root: RopeNode) {
     init {
@@ -67,6 +65,103 @@ class Rope(private val root: RopeNode) {
         return -1
     }
 
+    fun subRope(index: Int): Rope {
+        TODO()
+    }
+
+    // xxxIndex variables, need rename for sure.
+    @Suppress("DuplicatedCode")
+    fun subRope(startIndex: Int, endIndex: Int): Rope {
+        checkRangeIndexes(startIndex, endIndex)
+        // 1. get left and right positions
+        val leftIterator = RopeIterator(root, startIndex)
+        if (!leftIterator.hasNext()) throwIndexOutOfBoundsExceptionForStartAndEndIndex(startIndex, endIndex)
+        val leftLeaf = leftIterator.currentLeaf // leaf where index is found
+        val leftIndex = leftIterator.currentIndex // index in leaf
+        val rightIterator = SingleElementRopeIterator(root, endIndex - 1)
+        if (!rightIterator.hasNext()) throwIndexOutOfBoundsExceptionForStartAndEndIndex(startIndex, endIndex)
+        val rightLeaf = rightIterator.currentLeaf
+        val rightIndex = rightIterator.currentIndex
+        // --
+        if (leftLeaf === rightLeaf) {
+            val newLeaf = leftLeaf.value.subStringLeaf(leftIndex, rightIndex + 1)
+            return Rope(RopeLeafNode(newLeaf))
+        }
+        val parent = leftIterator.findParent(leftLeaf) ?: error("unexpected")
+        if (parent.contains(rightLeaf)) {
+            val children = parent.children
+            val leftLeafIndex = parent.indexOf(leftLeaf)
+            val rightLeafIndex = parent.indexOf(rightLeaf)
+            val newTree = buildBTree {
+                for (i in leftLeafIndex..rightLeafIndex) {
+                    val child = children[i]
+                    when (i) {
+                        leftLeafIndex -> {
+                            child as RopeLeafNode // this child is the `leftLeaf`
+                            val newLeaf = child.value.subStringLeaf(leftIndex)
+                            add(RopeLeafNode(newLeaf))
+                        }
+
+                        rightLeafIndex -> {
+                            child as RopeLeafNode // this child is the `rightLeaf
+                            val newLeaf = child.value.subStringLeaf(0, rightIndex)
+                            add(RopeLeafNode(newLeaf))
+                        }
+
+                        else -> {
+                            // In-between leaves can be added as they are,
+                            // since they in range: startIndex < leaf < endIndex.
+                            addAll(child.toList())
+                        }
+                    }
+                }
+            }
+            return Rope(newTree)
+        }
+        val commonParent = findCommonParent(leftIterator, leftLeaf, rightIterator, rightLeaf)
+        val leaves = commonParent.toList()
+        val leftLeafIndex = leaves.indexOf(leftLeaf)
+        val rightLeafIndex = leaves.indexOf(rightLeaf)
+        val newTree = buildBTree {
+            for (i in leftLeafIndex..rightLeafIndex) {
+                val child = leaves[i]
+                when (i) {
+                    leftLeafIndex -> {
+                        val newLeaf = child.value.subStringLeaf(leftIndex)
+                        add(RopeLeafNode(newLeaf))
+                    }
+
+                    rightLeafIndex -> {
+                        val newLeaf = child.value.subStringLeaf(0, rightIndex)
+                        add(RopeLeafNode(newLeaf))
+                    }
+
+                    else -> {
+                        // In-between leaves can be added as they are,
+                        // since they in range: startIndex < leaf < endIndex.
+                        addAll(child.toList())
+                    }
+                }
+            }
+        }
+        return Rope(newTree)
+    }
+
+    private fun findCommonParent(
+        leftIterator: RopeIteratorWithHistory,
+        leftLeafNode: RopeLeafNode,
+        rightIterator: RopeIteratorWithHistory,
+        rightLeafNode: RopeLeafNode
+    ): RopeNode {
+        var leftParent: RopeNode = leftLeafNode
+        var rightParent: RopeNode = rightLeafNode
+        while (true) {
+            leftParent = leftIterator.findParent(leftParent) ?: error("unexpected")
+            rightParent = rightIterator.findParent(rightParent) ?: error("unexpected")
+            if (leftParent === rightParent) return leftParent
+        }
+    }
+
     // Wiki has a better idea on how deleteAt should work.
     // Probably will follow that, but first we need subRope operation.
     // endIndex exclusive
@@ -105,28 +200,29 @@ class Rope(private val root: RopeNode) {
         }
         // 3. if not, then gl hf
         // -- First, we need to find how much of "index" each leaf contains, then subtract it.
-        val newRoot = root.mutate {
-            var index = startIndex
-            var curLeaf = leftLeaf
-            while (index < endIndex) {
-                val range = if (index + curLeaf.value.lastIndex < endIndex) {
-                    index..curLeaf.value.lastIndex
-                } else {
-                    index..<endIndex
-                }
-                val newLeaf = curLeaf.value.removeRange(range)
-                val newTree = rebuildTreeCleaningEmptyNodes(curLeaf, RopeLeafNode(newLeaf), leftIterator)
-                //TODO: replaceRoot(newTree) // TODO: ref builder
-                //TODO: go-to next leaf through lefIterator
-                index += range.last // leaf boundary
-                // ---> sadly this will not work
+//        val newRoot = root.mutate {
+        var index = startIndex
+        var curLeaf = leftLeaf
+        while (index < endIndex) {
+            val range = if (index + curLeaf.value.lastIndex < endIndex) {
+                index..curLeaf.value.lastIndex
+            } else {
+                index..<endIndex
             }
-            // Let's begin again,
-            // 1. if we compute all new leaves,
-            // 2. how can we replace them safely?
-
+            val newLeaf = curLeaf.value.removeRange(range)
+            val newTree = rebuildTreeCleaningEmptyNodes(curLeaf, RopeLeafNode(newLeaf), leftIterator)
+            //TODO: replaceRoot(newTree) // TODO: ref builder
+            //TODO: go-to next leaf through lefIterator
+            index += range.last // leaf boundary
+            // ---> sadly this will not work
         }
-        return Rope(newRoot)
+        // Let's begin again,
+        // 1. if we compute all new leaves,
+        // 2. how can we replace them safely?
+
+//        }
+//        return Rope(newRoot)
+        TODO()
     }
 
     // at this point, it is easier to recreate the tree from scratch (not sure if it's optimal tho).
@@ -481,6 +577,13 @@ class Rope(private val root: RopeNode) {
 
     private fun checkPositionIndex(index: Int) {
         if (index < 0) throw IndexOutOfBoundsException("index:$index")
+    }
+
+    private fun checkRangeIndexes(startIndex: Int, endIndex: Int) {
+        if (startIndex < 0) throw IndexOutOfBoundsException("startIndex:$startIndex")
+        if (endIndex < startIndex) {
+            throw IndexOutOfBoundsException("End index ($endIndex) is less than start index ($startIndex).")
+        }
     }
 }
 

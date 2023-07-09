@@ -66,6 +66,16 @@ fun RopeLeaf.removeRange(range: IntRange): RopeLeaf {
     return RopeLeaf(newValue)
 }
 
+fun RopeLeaf.subStringLeaf(startIndex: Int, endIndex: Int = length): RopeLeaf {
+    val newValue = substring(startIndex, endIndex)
+    return RopeLeaf(newValue)
+}
+
+fun RopeLeaf.subStringLeaf(range: IntRange): RopeLeaf {
+    val newValue = substring(range)
+    return RopeLeaf(newValue)
+}
+
 internal object EmptyRopeLeaf : RopeLeaf("", 0) {
     override val weight: Int = 0
     override val isLegal: Boolean = false

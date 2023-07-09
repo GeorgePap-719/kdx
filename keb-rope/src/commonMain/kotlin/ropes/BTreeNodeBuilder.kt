@@ -1,27 +1,34 @@
 package keb.ropes
 
-internal class BTreeNodeBuilder<T : LeafInfo>(private var root: InternalNode<T>) {
-    val weight: Int get() = root.weight
-    val height: Int get() = root.height
-    val isLegal: Boolean get() = root.isLegal
-    val isEmpty: Boolean get() = root.isEmpty
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.InvocationKind
+import kotlin.contracts.contract
+import kotlin.experimental.ExperimentalTypeInference
 
-    fun build(): BTreeNode<T> = root.rebalance()
+internal class BTreeNodeBuilder<T : LeafInfo> {
+    private val leaves = mutableListOf<BTreeNode<T>>()
 
-    operator fun get(index: Int): BTreeNode<T> = root.children[index]
+    fun build(): BTreeNode<T> = merge(leaves)
 
-    fun add(child: BTreeNode<T>) {
-        root = root.addLast(child)
+    operator fun get(index: Int): BTreeNode<T> = leaves[index]
+
+    fun add(element: BTreeNode<T>) {
+        leaves.add(element)
     }
 
-    fun deleteAt(index: Int) {
-        this.root = root.deleteAt(index)
+    fun addAll(elements: List<BTreeNode<T>>) {
+        leaves.addAll(elements)
     }
 
-    fun replaceRoot(newRoot: InternalNode<T>) {
-        root = newRoot
+    fun remove(element: BTreeNode<T>) {
+        leaves.remove(element)
     }
+}
 
-    fun subTree(fromIndex: Int, toIndex: Int): List<BTreeNode<T>> =
-        root.children.subList(fromIndex, toIndex).ifEmpty { emptyList() }
+@OptIn(ExperimentalContracts::class, ExperimentalTypeInference::class)
+internal fun <T : LeafInfo> buildBTree(@BuilderInference builderAction: BTreeNodeBuilder<T>.() -> Unit): BTreeNode<T> {
+    contract { callsInPlace(builderAction, InvocationKind.EXACTLY_ONCE) }
+    val builder = BTreeNodeBuilder<T>()
+    builder.builderAction()
+    return builder.build()
 }

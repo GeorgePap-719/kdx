@@ -246,11 +246,11 @@ internal object EmptyInternalNode : InternalNode<Nothing>(0, 0, emptyList()) {
 fun <T : LeafInfo> emptyBTreeNode(): BTreeNode<T> = EmptyInternalNode
 fun <T : LeafInfo> emptyInternalNode(): InternalNode<T> = EmptyInternalNode
 
-internal fun <T : LeafInfo> InternalNode<T>.mutate(mutator: BTreeNodeBuilder<T>.() -> Unit): BTreeNode<T> {
-    val builder = BTreeNodeBuilder(this)
-    builder.mutator()
-    return builder.build()
-}
+//internal fun <T : LeafInfo> InternalNode<T>.mutate(mutator: BTreeNodeBuilder<T>.() -> Unit): BTreeNode<T> {
+//    val builder = BTreeNodeBuilder(this)
+//    builder.mutator()
+//    return builder.build()
+//}
 
 internal fun <T : LeafInfo> BTreeNode<T>.toStringDebug(): String = when (this) {
     is LeafNode -> this.toStringDebug()
@@ -341,6 +341,17 @@ private fun <T : LeafInfo> unsafeMerge(nodes: List<BTreeNode<T>>): InternalNode<
     }
     val rightParent = unsafeMerge(rightList)
     return unsafeCreateParent(leftParent, rightParent)
+}
+
+/**
+ * Creates a legal parent for [node].
+ * The weight of the parent is set to that of the [node].
+ *
+ * @throws IllegalArgumentException if a child node is not legal ([BTreeNode.isLegal]).
+ * @throws IllegalArgumentException if the resulting node has more than the maximum size of children.
+ */
+fun <T : LeafInfo> createParent(node: BTreeNode<T>): InternalNode<T> {
+    return createParent(listOf(node))
 }
 
 /**
