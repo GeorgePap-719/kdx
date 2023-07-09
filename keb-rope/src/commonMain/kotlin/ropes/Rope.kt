@@ -156,7 +156,7 @@ class Rope(private val root: RopeNode) {
     }
 
     // endIndex exclusive
-    fun deleteRange(startIndex: Int, endIndex: Int): Rope {
+    fun removeRange(startIndex: Int, endIndex: Int): Rope {
         if (startIndex == 0) return subRope(endIndex)
         val leftTree = subRope(0, startIndex)
         val rightTree = subRope(endIndex)

@@ -232,6 +232,36 @@ class RopeTest {
             }
         }
     }
+
+    @Test
+    fun testDeleteRange() {
+        val string = createString(SIZE_OF_LEAF * 8)
+        var rope = Rope(string)
+
+        val randomI = Random.nextInt(0, string.length - 1)
+        rope = rope.removeRange(0, randomI)
+        val newString = string.removeRange(0, randomI)
+
+        for (i in 0 until newString.length - 1) {
+            assert { rope[i] == newString[i] }
+        }
+    }
+
+    @Test
+    fun minorStressTestDeleteRange() {
+        repeat(10) {
+            val string = createString(SIZE_OF_LEAF * 8)
+            var rope = Rope(string)
+
+            val randomI = Random.nextInt(0, string.length - 1)
+            rope = rope.removeRange(0, randomI)
+            val newString = string.removeRange(0, randomI)
+
+            for (i in 0 until newString.length - 1) {
+                assert { rope[i] == newString[i] }
+            }
+        }
+    }
 }
 
 private fun createString(factor: Int): String {
