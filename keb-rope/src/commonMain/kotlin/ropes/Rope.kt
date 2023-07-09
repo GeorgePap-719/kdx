@@ -73,21 +73,26 @@ class Rope(private val root: RopeNode) {
     @Suppress("DuplicatedCode")
     fun subRope(startIndex: Int, endIndex: Int): Rope {
         checkRangeIndexes(startIndex, endIndex)
+        // Fast-path, root is a leaf,
+        // call directly subStringLeaf() to retrieve subRope.
         if (root is RopeLeafNode) {
             val newLeaf = root.value.subStringLeaf(startIndex, endIndex)
             return Rope(RopeLeafNode(newLeaf))
         }
-        // 1. get left and right positions
+        // First, we retrieve left and right bounds (indexes).
+        // Then, we subtract all leaves between left and right (exclusive) bounds.
         val leftIterator = SingleElementRopeIterator(root, startIndex)
         if (!leftIterator.hasNext()) throwIndexOutOfBoundsExceptionForStartAndEndIndex(startIndex, endIndex)
-        val leftLeaf = leftIterator.currentLeaf // leaf where index is found
+        val leftLeaf = leftIterator.currentLeaf // leaf where leftIndex is found
         val leftIndex = leftIterator.currentIndex // index in leaf
-        val rightIterator = SingleElementRopeIterator(root, endIndex - 1) // `endIndex` is exclusive
+        // Since, we create the iterator with `endIndex` exclusive,
+        // all other operations can safely include `rightIndex`.
+        val rightIterator = SingleElementRopeIterator(root, endIndex - 1)
         if (!rightIterator.hasNext()) throwIndexOutOfBoundsExceptionForStartAndEndIndex(startIndex, endIndex)
-        val rightLeaf = rightIterator.currentLeaf // leaf where index is found
+        val rightLeaf = rightIterator.currentLeaf // leaf where rightIndex is found
         val rightIndex = rightIterator.currentIndex // index in leaf
-        // leftLeaf and rightLeaf are the same.
         if (leftLeaf === rightLeaf) {
+            // We use `rightIndex + 1`, because subStringLeaf() is an `endIndex` exclusive operation.
             val newLeaf = leftLeaf.value.subStringLeaf(leftIndex, rightIndex + 1)
             return Rope(RopeLeafNode(newLeaf))
         }
