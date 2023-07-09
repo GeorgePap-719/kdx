@@ -89,11 +89,12 @@ class Rope(private val root: RopeNode) {
             return Rope(RopeLeafNode(newLeaf))
         }
         val parent = leftIterator.findParent(leftLeaf) ?: error("unexpected")
-        if (parent.contains(rightLeaf)) {
-            val newTree = buildTreeFromStartAndEndIndex(leftIndex, leftLeaf, rightIndex, rightLeaf, parent)
-            return Rope(newTree)
+        // find common parent to both leaves
+        val commonParent = if (parent.contains(rightLeaf)) {
+            parent
+        } else {
+            findCommonParent(leftIterator, leftLeaf, rightIterator, rightLeaf)
         }
-        val commonParent = findCommonParent(leftIterator, leftLeaf, rightIterator, rightLeaf)
         val newTree = buildTreeFromStartAndEndIndex(leftIndex, leftLeaf, rightIndex, rightLeaf, commonParent)
         return Rope(newTree)
     }
@@ -125,7 +126,7 @@ class Rope(private val root: RopeNode) {
                     else -> {
                         // In-between leaves can be added as they are,
                         // since they in range: startIndex < leaf < endIndex.
-                        addAll(child.toList())
+                        addAll(child.collectLeaves())
                     }
                 }
             }
