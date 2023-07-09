@@ -67,6 +67,8 @@ class Rope(private val root: RopeNode) {
         return -1
     }
 
+    // Wiki has a better idea on how deleteAt should work.
+    // Probably will follow that, but first we need subRope operation.
     // endIndex exclusive
     fun deleteAt(startIndex: Int, endIndex: Int): Rope {
         checkPositionIndex(startIndex)
@@ -84,7 +86,6 @@ class Rope(private val root: RopeNode) {
         }
     }
 
-    @OptIn(ExperimentalStdlibApi::class)
     private fun deleteAtWithRootAsInternalNode(root: RopeInternalNode, startIndex: Int, endIndex: Int): Rope {
         // 1. get left and right positions
         val leftIterator = RopeIterator(root, startIndex)
@@ -115,12 +116,34 @@ class Rope(private val root: RopeNode) {
                 }
                 val newLeaf = curLeaf.value.removeRange(range)
                 val newTree = rebuildTreeCleaningEmptyNodes(curLeaf, RopeLeafNode(newLeaf), leftIterator)
-                replaceRoot(newTree) // TODO:
+                //TODO: replaceRoot(newTree) // TODO: ref builder
+                //TODO: go-to next leaf through lefIterator
                 index += range.last // leaf boundary
-
+                // ---> sadly this will not work
             }
+            // Let's begin again,
+            // 1. if we compute all new leaves,
+            // 2. how can we replace them safely?
+
         }
         return Rope(newRoot)
+    }
+
+    // at this point, it is easier to recreate the tree from scratch (not sure if it's optimal tho).
+    private fun rebuildTreeCleaningEmptyNodes(
+        nodesToBeReplaced: Map<RopeLeafNode, RopeLeafNode> // old | new
+    ): RopeNode {
+        var nodesReplaced = 0
+        val leaves = root.toMutableList()
+        for ((index, node /*key*/) in leaves.withIndex()) {
+            // Avoid traversing all leaves, since they can potentially be many.
+            if (nodesReplaced == nodesToBeReplaced.size) break // no more nodes to replace
+            val newNode = nodesToBeReplaced[node] ?: continue
+            if (newNode.isEmpty) leaves.removeAt(index)
+            leaves[index] = newNode
+            nodesReplaced++
+        }
+        return merge(leaves)
     }
 
     private fun throwIndexOutOfBoundsExceptionForStartAndEndIndex(startIndex: Int, endIndex: Int): Nothing {
