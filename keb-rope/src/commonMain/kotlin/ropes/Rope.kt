@@ -65,9 +65,8 @@ class Rope(private val root: RopeNode) {
         return -1
     }
 
-    fun subRope(index: Int): Rope {
-        TODO()
-    }
+    //TODO: make it extension fun
+    fun subRope(range: IntRange): Rope = subRope(range.first, range.last + 1)
 
     // `endIndex` is exclusive
     @Suppress("DuplicatedCode")
