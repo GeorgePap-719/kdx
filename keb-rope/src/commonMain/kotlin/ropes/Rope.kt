@@ -17,7 +17,7 @@ class Rope(private val root: RopeNode) {
     }
 
     //TODO: we can also improve this too keep the tree wide.
-    fun concat(other: Rope): Rope {
+    operator fun plus(other: Rope): Rope {
         val left = root
         val right = other.root
         val newRope = createParent(left, right)
@@ -69,13 +69,13 @@ class Rope(private val root: RopeNode) {
         TODO()
     }
 
-    // xxxIndex variables, need rename for sure.
     // `endIndex` is exclusive
     @Suppress("DuplicatedCode")
     fun subRope(startIndex: Int, endIndex: Int): Rope {
         checkRangeIndexes(startIndex, endIndex)
         if (root is RopeLeafNode) {
-            root.value.subStringLeaf(startIndex, endIndex)
+            val newLeaf = root.value.subStringLeaf(startIndex, endIndex)
+            return Rope(RopeLeafNode(newLeaf))
         }
         // 1. get left and right positions
         val leftIterator = SingleElementRopeIterator(root, startIndex)
@@ -86,8 +86,7 @@ class Rope(private val root: RopeNode) {
         if (!rightIterator.hasNext()) throwIndexOutOfBoundsExceptionForStartAndEndIndex(startIndex, endIndex)
         val rightLeaf = rightIterator.currentLeaf // leaf where index is found
         val rightIndex = rightIterator.currentIndex // index in leaf
-        // Fast-path, leftLeaf and rightLeaf are the same.
-        // This also covers the case where root is a leaf.
+        // leftLeaf and rightLeaf are the same.
         if (leftLeaf === rightLeaf) {
             val newLeaf = leftLeaf.value.subStringLeaf(leftIndex, rightIndex + 1)
             return Rope(RopeLeafNode(newLeaf))
