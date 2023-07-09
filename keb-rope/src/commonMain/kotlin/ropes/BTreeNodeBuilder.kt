@@ -30,5 +30,6 @@ internal fun <T : LeafInfo> buildBTree(@BuilderInference builderAction: BTreeNod
     contract { callsInPlace(builderAction, InvocationKind.EXACTLY_ONCE) }
     val builder = BTreeNodeBuilder<T>()
     builder.builderAction()
-    return builder.build()
+    val tree = builder.build()
+    return if (tree.isEmpty) emptyBTreeNode() else tree
 }
