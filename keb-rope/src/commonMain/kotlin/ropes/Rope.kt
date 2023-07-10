@@ -361,6 +361,10 @@ class Rope(private val root: RopeNode) {
 
     private fun defaultStack(): ArrayStack<RopeInternalNodeChildrenIterator> = ArrayStack(root.height)
 
+    fun iteratorWithIndex(startIndex: Int) = RopeIterator(root, startIndex)
+
+    operator fun iterator(): RopeIterator = RopeIterator(root, 0)
+
     internal interface RopeIteratorWithHistory {
         fun findParent(child: RopeNode): RopeInternalNode?
     }
