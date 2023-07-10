@@ -268,7 +268,7 @@ class Rope(private val root: RopeNode) {
         /* The tree which we iterate. */
         root: RopeNode,
         /* The stack which keeps references to parent nodes. */
-        stack: ArrayStack<RopeInternalNodeIterator> = defaultStack(),
+        stack: ArrayStack<RopeInternalNodeChildrenIterator> = defaultStack(),
         /* This lambda is invoked when the target index is
         out of bounds for the current in tree. */
         onOutOfBounds: () -> R,
@@ -307,7 +307,11 @@ class Rope(private val root: RopeNode) {
                 }
 
                 is InternalNode -> {
-                    val node = if (curNode is RopeInternalNodeIterator) curNode else curNode.indexed()
+                    val node = if (curNode is RopeInternalNodeChildrenIterator) {
+                        curNode
+                    } else {
+                        curNode.childrenIterator()
+                    }
                     // push the current node, so we can always return as a fallback.
                     stack.push(node)
                     // if `index` is less than node's weight, then `index` is in this subtree.
@@ -347,7 +351,7 @@ class Rope(private val root: RopeNode) {
         }
     }
 
-    private fun RopeNode.findParentInStack(stack: ArrayStack<RopeInternalNodeIterator>): RopeInternalNodeIterator? {
+    private fun RopeNode.findParentInStack(stack: ArrayStack<RopeInternalNodeChildrenIterator>): RopeInternalNodeChildrenIterator? {
         var stackNode = stack.popOrNull() ?: return null
         while (stackNode === this) {
             stackNode = stack.popOrNull() ?: return null
@@ -355,7 +359,7 @@ class Rope(private val root: RopeNode) {
         return stackNode
     }
 
-    private fun defaultStack(): ArrayStack<RopeInternalNodeIterator> = ArrayStack(root.height)
+    private fun defaultStack(): ArrayStack<RopeInternalNodeChildrenIterator> = ArrayStack(root.height)
 
     internal interface RopeIteratorWithHistory {
         fun findParent(child: RopeNode): RopeInternalNode?
@@ -496,16 +500,16 @@ fun Rope.insert(index: Int, element: Char): Rope = insert(index, element.toStrin
 
 // btree utils
 
-internal fun RopeInternalNode.indexed(): RopeInternalNodeIterator {
-    return RopeInternalNodeIterator(weight, height, children)
+internal fun RopeInternalNode.childrenIterator(): RopeInternalNodeChildrenIterator {
+    return RopeInternalNodeChildrenIterator(weight, height, children)
 }
 
-internal inline fun RopeInternalNodeIterator.nextChildOrElse(action: () -> RopeNode): RopeNode {
+internal inline fun RopeInternalNodeChildrenIterator.nextChildOrElse(action: () -> RopeNode): RopeNode {
     return nextChildOrNull ?: action()
 }
 
-private inline fun RopeInternalNodeIterator.nextChildAndKeepRefOrElse(
-    stack: ArrayStack<RopeInternalNodeIterator>,
+private inline fun RopeInternalNodeChildrenIterator.nextChildAndKeepRefOrElse(
+    stack: ArrayStack<RopeInternalNodeChildrenIterator>,
     action: () -> RopeNode
 ): RopeNode = nextChildOrNull.let {
     if (it == null) {
@@ -519,7 +523,7 @@ private inline fun RopeInternalNodeIterator.nextChildAndKeepRefOrElse(
 /**
  * A helper class to iterate through an internal node's children.
  */
-internal class RopeInternalNodeIterator(
+internal class RopeInternalNodeChildrenIterator(
     weight: Int,
     height: Int,
     children: List<RopeNode>,
