@@ -199,7 +199,7 @@ class Rope(private val root: RopeNode) {
         val iterator = SingleElementRopeIterator(root, index)
         // Try to find the target `index`, since we need to locate
         // it and start adding after that `index`.
-        if (!iterator.hasNext()) {
+        if (!iterator.hasNext()) { //TODO: what im doing here?
             // we allow for inserting on + 1 after last-index, since these are
             // the append() operations.
             if (index != length) throw IndexOutOfBoundsException("index:$index, length:$length")
