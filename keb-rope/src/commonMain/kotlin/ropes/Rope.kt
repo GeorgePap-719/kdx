@@ -256,12 +256,16 @@ class Rope(private val root: RopeNode) {
         }
     }
 
-    // abstract get implementation.
-    // variant of binary search.
-    // * is able to skip effectively left subtrees if `index` is not
-    //  -- in that part of the tree.
-    // * uses a stack to keep reference to parent nodes, in case it
-    //  -- needs to traverse the tree backwards.
+    /**
+     * Abstract get implementation.
+     *
+     * It is a variant of binary search whereas we move down the tree,
+     * if `index` is less than the weight of the node, we go to the left.
+     * If on the other hand `index` is higher we go to the right, subtracting the value of weight from `index`.
+     * This way we are able to skip left subtrees if `index` is not in that part of the tree.
+     *
+     * Note: It uses a stack to keep references to parent nodes, in case it needs to traverse the tree backwards.
+     */
     private inline fun <R> getImpl(
         /* The target index to retrieve. */
         index: Int,
@@ -292,8 +296,15 @@ class Rope(private val root: RopeNode) {
                     if (curIndex < curNode.weight) {
                         return onElementRetrieved(curNode, curIndex, curNode.value[curIndex])
                     }
-                    if (curNode === root) return onOutOfBounds() // single-node btree.
-                    curIndex -= curNode.weight //TODO: explain this
+                    if (curNode === root) return onOutOfBounds() // Single-node btree.
+                    // If "curIndex" is higher than the node's weight,
+                    // then we subtract from the node's weight.
+                    // This way as we move down the tree,
+                    // the "curIndex"  decreases,
+                    // and once we reach a leafNode
+                    // the character at position "curIndex"
+                    // is the target.
+                    curIndex -= curNode.weight
                     val parent = stack.popOrNull()
                         ?: error("leaf:$curNode does not have a parent in stack")
                     // Iterate the next child and keep `self` reference in stack, since we
@@ -312,9 +323,9 @@ class Rope(private val root: RopeNode) {
                     } else {
                         curNode.childrenIterator()
                     }
-                    // push the current node, so we can always return as a fallback.
+                    // Push the current node, so we can always return as a fallback.
                     stack.push(node)
-                    // if `index` is less than node's weight, then `index` is in this subtree.
+                    // If `index` is less than node's weight, then `index` is in this subtree.
                     if (curIndex < node.weight) {
                         curNode = node.nextChildOrElse {
                             // At this point, `index` is out of bounds because we tried to iterate
@@ -327,11 +338,12 @@ class Rope(private val root: RopeNode) {
                         onNextChild(curNode)
                         continue
                     }
-                    if (node.index == 0) { // leftmost child
-                        curIndex -= node.weight
+                    if (node.index == 0) { // Leftmost child.
                         // No need to check leaves on leftmost child,
-                        // since we are sure `index` is not here.
-                        if (!node.tryIncIndex()) { // skip first-child
+                        // since "curIndex" is higher than node's weight,
+                        // and each node holds the sum of the lengths of all the leaves in its left subtree.
+                        curIndex -= node.weight
+                        if (!node.tryIncIndex()) { // Skip leftmost-child
                             // No more children to traverse in this node, go to the parent node.
                             // If either node is the root or there is no parent, then it means there
                             // are no more nodes to traverse, and `index` is out of bounds.
@@ -340,6 +352,7 @@ class Rope(private val root: RopeNode) {
                             continue
                         }
                     }
+                    // Move to the next child node.
                     curNode = node.nextChildOrElse {
                         // If stack returns `null`, there are no more nodes to iterate.
                         // In that case, we can safely assume we are out of bounds.
@@ -351,7 +364,9 @@ class Rope(private val root: RopeNode) {
         }
     }
 
-    private fun RopeNode.findParentInStack(stack: ArrayStack<RopeInternalNodeChildrenIterator>): RopeInternalNodeChildrenIterator? {
+    private fun RopeNode.findParentInStack(
+        stack: ArrayStack<RopeInternalNodeChildrenIterator>
+    ): RopeInternalNodeChildrenIterator? {
         var stackNode = stack.popOrNull() ?: return null
         while (stackNode === this) {
             stackNode = stack.popOrNull() ?: return null
@@ -481,12 +496,6 @@ class Rope(private val root: RopeNode) {
         }
     }
 
-    // ###################
-    // # Debug Functions #
-    // ###################
-
-    override fun toString(): String = root.toString()
-
     private fun checkPositionIndex(index: Int) {
         if (index < 0) throw IndexOutOfBoundsException("index:$index")
     }
@@ -497,18 +506,24 @@ class Rope(private val root: RopeNode) {
             throw IndexOutOfBoundsException("End index ($endIndex) is less than start index ($startIndex).")
         }
     }
+
+    // ###################
+    // # Debug Functions #
+    // ###################
+
+    override fun toString(): String = root.toString()
+
+    internal fun toStringDebug(): String = root.toStringDebug()
 }
 
 fun Rope.insert(index: Int, element: Char): Rope = insert(index, element.toString())
 
 
-// btree utils
-
-internal fun RopeInternalNode.childrenIterator(): RopeInternalNodeChildrenIterator {
+private fun RopeInternalNode.childrenIterator(): RopeInternalNodeChildrenIterator {
     return RopeInternalNodeChildrenIterator(weight, height, children)
 }
 
-internal inline fun RopeInternalNodeChildrenIterator.nextChildOrElse(action: () -> RopeNode): RopeNode {
+private inline fun RopeInternalNodeChildrenIterator.nextChildOrElse(action: () -> RopeNode): RopeNode {
     return nextChildOrNull ?: action()
 }
 
