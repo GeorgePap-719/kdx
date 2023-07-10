@@ -347,7 +347,7 @@ class Rope(private val root: RopeNode) {
                             // No more children to traverse in this node, go to the parent node.
                             // If either node is the root or there is no parent, then it means there
                             // are no more nodes to traverse, and `index` is out of bounds.
-                            curNode = node.findParentInStack(stack) ?: return onOutOfBounds()
+                            curNode = node.moveStackForward(stack) ?: return onOutOfBounds()
                             onNextChild(curNode)
                             continue
                         }
@@ -356,7 +356,7 @@ class Rope(private val root: RopeNode) {
                     curNode = node.nextChildOrElse {
                         // If stack returns `null`, there are no more nodes to iterate.
                         // In that case, we can safely assume we are out of bounds.
-                        node.findParentInStack(stack) ?: return onOutOfBounds()
+                        node.moveStackForward(stack) ?: return onOutOfBounds()
                     }
                     onNextChild(curNode)
                 }
@@ -364,7 +364,12 @@ class Rope(private val root: RopeNode) {
         }
     }
 
-    private fun RopeNode.findParentInStack(
+    /**
+     * Moves forward in the specified [stack] until we find the first node that is not [this] node,
+     * or returns `null` if stack holds no more elements.
+     * This is needed because [stack] might hold up a reference to [this] node.
+     */
+    private fun RopeNode.moveStackForward(
         stack: ArrayStack<RopeInternalNodeChildrenIterator>
     ): RopeInternalNodeChildrenIterator? {
         var stackNode = stack.popOrNull() ?: return null
@@ -374,6 +379,10 @@ class Rope(private val root: RopeNode) {
         return stackNode
     }
 
+    /**
+     * Returns an optimal sized-stack, where the size is equal to root's height.
+     * In most use-cases, stack will not need to resize.
+     */
     private fun defaultStack(): ArrayStack<RopeInternalNodeChildrenIterator> = ArrayStack(root.height)
 
     fun iteratorWithIndex(startIndex: Int) = RopeIterator(root, startIndex)
