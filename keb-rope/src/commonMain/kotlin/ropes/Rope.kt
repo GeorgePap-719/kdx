@@ -268,7 +268,7 @@ class Rope(private val root: RopeNode) {
         /* The tree which we iterate. */
         root: RopeNode,
         /* The stack which keeps references to parent nodes. */
-        stack: ArrayStack<IndexedRopeInternalNode> = defaultStack(),
+        stack: ArrayStack<RopeInternalNodeIterator> = defaultStack(),
         /* This lambda is invoked when the target index is
         out of bounds for the current in tree. */
         onOutOfBounds: () -> R,
@@ -307,7 +307,7 @@ class Rope(private val root: RopeNode) {
                 }
 
                 is InternalNode -> {
-                    val node = if (curNode is IndexedRopeInternalNode) curNode else curNode.indexed()
+                    val node = if (curNode is RopeInternalNodeIterator) curNode else curNode.indexed()
                     // push the current node, so we can always return as a fallback.
                     stack.push(node)
                     // if `index` is less than node's weight, then `index` is in this subtree.
@@ -347,7 +347,7 @@ class Rope(private val root: RopeNode) {
         }
     }
 
-    private fun RopeNode.findParentInStack(stack: ArrayStack<IndexedRopeInternalNode>): IndexedRopeInternalNode? {
+    private fun RopeNode.findParentInStack(stack: ArrayStack<RopeInternalNodeIterator>): RopeInternalNodeIterator? {
         var stackNode = stack.popOrNull() ?: return null
         while (stackNode === this) {
             stackNode = stack.popOrNull() ?: return null
@@ -355,7 +355,7 @@ class Rope(private val root: RopeNode) {
         return stackNode
     }
 
-    private fun defaultStack(): ArrayStack<IndexedRopeInternalNode> = ArrayStack(root.height)
+    private fun defaultStack(): ArrayStack<RopeInternalNodeIterator> = ArrayStack(root.height)
 
     internal interface RopeIteratorWithHistory {
         fun findParent(child: RopeNode): RopeInternalNode?
@@ -496,16 +496,16 @@ fun Rope.insert(index: Int, element: Char): Rope = insert(index, element.toStrin
 
 // btree utils
 
-internal fun RopeInternalNode.indexed(): IndexedRopeInternalNode {
-    return IndexedRopeInternalNode(weight, height, children)
+internal fun RopeInternalNode.indexed(): RopeInternalNodeIterator {
+    return RopeInternalNodeIterator(weight, height, children)
 }
 
-internal inline fun IndexedRopeInternalNode.nextChildOrElse(action: () -> RopeNode): RopeNode {
+internal inline fun RopeInternalNodeIterator.nextChildOrElse(action: () -> RopeNode): RopeNode {
     return nextChildOrNull ?: action()
 }
 
-private inline fun IndexedRopeInternalNode.nextChildAndKeepRefOrElse(
-    stack: ArrayStack<IndexedRopeInternalNode>,
+private inline fun RopeInternalNodeIterator.nextChildAndKeepRefOrElse(
+    stack: ArrayStack<RopeInternalNodeIterator>,
     action: () -> RopeNode
 ): RopeNode = nextChildOrNull.let {
     if (it == null) {
@@ -517,9 +517,9 @@ private inline fun IndexedRopeInternalNode.nextChildAndKeepRefOrElse(
 }
 
 /**
- * A helper class to iterate through an internal node's children, similarly to an iterator.
+ * A helper class to iterate through an internal node's children.
  */
-internal class IndexedRopeInternalNode(
+internal class RopeInternalNodeIterator(
     weight: Int,
     height: Int,
     children: List<RopeNode>,
@@ -527,14 +527,14 @@ internal class IndexedRopeInternalNode(
     var index = 0
         private set
 
-    val nextChildOrNull: RopeNode? get() = if (hasNextChild()) nextChild() else null
+    val nextChildOrNull: RopeNode? get() = if (hasNext()) next() else null
 
-    fun nextChild(): RopeNode {
+    operator fun next(): RopeNode {
         if (index >= children.size) throw NoSuchElementException()
         return children[index++]
     }
 
-    fun hasNextChild(): Boolean {
+    operator fun hasNext(): Boolean {
         return index < children.size
     }
 
