@@ -24,24 +24,7 @@ class Rope(private val root: RopeNode) {
         return Rope(newRope)
     }
 
-    val length: Int by lazy { if (root is LeafNode) root.weight else lenImpl(root) }
-
-    //TODO: research if we can avoid big tail-rec
-    private fun lenImpl(curNode: RopeNode): Int {
-        return when (curNode) {
-            is LeafNode -> curNode.weight
-            is InternalNode -> {
-                val children = curNode.children
-                var curLen = 0
-                curLen += curNode.weight
-                for (index in children.indices) {
-                    if (index == 0) continue
-                    curLen += lenImpl(children[index])
-                }
-                curLen
-            }
-        }
-    }
+    val length: Int by lazy { root.length() }
 
     /**
      * Returns the [Char] at the given [index] or `null` if the [index] is out of bounds of this rope.

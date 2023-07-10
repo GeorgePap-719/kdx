@@ -107,6 +107,23 @@ internal fun RopeLeafNode(input: String): RopeLeafNode =
 
 typealias RopeNode = BTreeNode<RopeLeaf>
 
+//TODO: research if we can avoid big rec
+fun RopeNode.length(): Int {
+    return when (this) {
+        is LeafNode -> this.weight
+        is InternalNode -> {
+            val children = this.children
+            var curLen = 0
+            curLen += this.weight
+            for (index in children.indices) {
+                if (index == 0) continue
+                curLen += children[index].length()
+            }
+            curLen
+        }
+    }
+}
+
 internal fun createParent(nodes: List<RopeNode>): RopeInternalNode = createParent(nodes)
 
 internal fun ropeNodeOf(input: String): RopeNode {
