@@ -11,25 +11,28 @@ fun Rope(value: String): Rope {
 
 fun emptyRope(): Rope = Rope(emptyRopeNode())
 
-class Rope(private val root: RopeNode) {
+open class Rope(private val root: RopeNode) {
     init {
         assert { root.isBalanced() }
     }
 
     //TODO: we can also improve this too keep the tree wide.
-    operator fun plus(other: Rope): Rope {
+    open operator fun plus(other: Rope): Rope {
+        // Avoid checking for length == 0, since it might have a cost.
+        // Either way, if one of the nodes is empty, createParent() will throw IllegalArgumentException.
+        if (other === EmptyRope) return this
         val left = root
         val right = other.root
         val newRope = createParent(left, right)
         return Rope(newRope)
     }
 
-    val length: Int by lazy { root.length() }
+    open val length: Int by lazy { root.length() }
 
     /**
      * Returns the [Char] at the given [index] or `null` if the [index] is out of bounds of this rope.
      */
-    operator fun get(index: Int): Char? =
+    open operator fun get(index: Int): Char? =
         getImpl(
             index = index,
             root = root,
@@ -37,7 +40,7 @@ class Rope(private val root: RopeNode) {
             onElementRetrieved = { _, _, element -> return element }
         )
 
-    fun indexOf(element: Char): Int {
+    open fun indexOf(element: Char): Int {
         var index = 0
         for (leaf in root) {
             for (c in leaf.value) {
@@ -48,6 +51,9 @@ class Rope(private val root: RopeNode) {
         return -1
     }
 
+    //TODO: maybe this function better return a sequence?
+    open fun collectLeaves(): List<RopeLeaf> = root.map { it.value }
+
     //TODO: make it extension fun
     fun subRope(range: IntRange): Rope = subRope(range.first, range.last + 1)
 
@@ -56,7 +62,7 @@ class Rope(private val root: RopeNode) {
 
     // `endIndex` is exclusive
     @Suppress("DuplicatedCode")
-    fun subRope(startIndex: Int, endIndex: Int): Rope {
+    open fun subRope(startIndex: Int, endIndex: Int): Rope {
         checkRangeIndexes(startIndex, endIndex)
         // Fast-path, root is a leaf,
         // call directly subStringLeaf() to retrieve subRope.
@@ -139,7 +145,7 @@ class Rope(private val root: RopeNode) {
     }
 
     // endIndex exclusive
-    fun removeRange(startIndex: Int, endIndex: Int): Rope {
+    open fun removeRange(startIndex: Int, endIndex: Int): Rope {
         if (startIndex == 0) return subRope(endIndex)
         val leftTree = subRope(0, startIndex)
         val rightTree = subRope(endIndex)
@@ -150,7 +156,7 @@ class Rope(private val root: RopeNode) {
         throw IndexOutOfBoundsException("startIndex:$startIndex, endIndex:$endIndex, length:$length")
     }
 
-    fun deleteAt(index: Int): Rope {
+    open fun deleteAt(index: Int): Rope {
         checkPositionIndex(index)
         val iterator = SingleElementRopeIterator(root, index)
         if (!iterator.hasNext()) throw IndexOutOfBoundsException("index:$index, length:$length")
@@ -194,7 +200,7 @@ class Rope(private val root: RopeNode) {
     // - rebuilding creates a new root and replaces old one.
     //TODO: One improvement would be to check for more parents up ahead if we can split them,
     // but at this point it is non-trivial and not worth it time-wise.
-    fun insert(index: Int, element: String): Rope {
+    open fun insert(index: Int, element: String): Rope {
         checkPositionIndex(index)
         val iterator = SingleElementRopeIterator(root, index)
         // Try to find the target `index`, since we need to locate
@@ -526,8 +532,39 @@ class Rope(private val root: RopeNode) {
     internal fun toStringDebug(): String = root.toStringDebug()
 }
 
-fun Rope.insert(index: Int, element: Char): Rope = insert(index, element.toString())
+internal object EmptyRope : Rope(emptyRopeNode()) {
+    override fun toString(): String = "Rope()"
+    override fun equals(other: Any?): Boolean = other is Rope && other.isEmpty()
 
+    override val length: Int = 0
+    override fun collectLeaves(): List<RopeLeaf> = emptyList()
+    override fun deleteAt(index: Int): Rope = throw IndexOutOfBoundsException("Rope is empty")
+    override fun indexOf(element: Char): Int = -1
+    override fun get(index: Int): Char? = null
+    override fun insert(index: Int, element: String): Rope {
+        if (index != 0) throw IndexOutOfBoundsException("index:$index, length:$length")
+        val ropeNode = ropeNodeOf(element)
+        return Rope(ropeNode)
+    }
+
+    override fun removeRange(startIndex: Int, endIndex: Int): Rope {
+        throw IndexOutOfBoundsException("Rope is empty")
+    }
+
+    override fun plus(other: Rope): Rope {
+        if (other.isEmpty()) return this
+        return other
+    }
+
+    override fun subRope(startIndex: Int, endIndex: Int): Rope {
+        if (startIndex == 0 && endIndex == 0) return this
+        throw IndexOutOfBoundsException("startIndex: $startIndex, endIndex:$endIndex")
+    }
+}
+
+
+fun Rope.insert(index: Int, element: Char): Rope = insert(index, element.toString())
+fun Rope.isEmpty(): Boolean = length == 0
 
 private fun RopeInternalNode.childrenIterator(): RopeInternalNodeChildrenIterator {
     return RopeInternalNodeChildrenIterator(weight, height, children)
