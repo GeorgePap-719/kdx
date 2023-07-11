@@ -23,8 +23,12 @@ open class Rope(private val root: RopeNode) {
         if (other === EmptyRope) return this
         val left = root
         val right = other.root
-        val newRope = createParent(left, right)
-        return Rope(newRope)
+        // Use unsafeCreateParent(), because one of the two nodes might be empty.
+        val newRope = unsafeCreateParent(left, right)
+        // Though, in the end, we still need to rebalance.
+        // Not sure if it's optimal, but we avoid upfront cost for the most common case,
+        // and pay a bigger cost in the worst case.
+        return Rope(newRope.rebalance())
     }
 
     open val length: Int by lazy { root.length() }
