@@ -366,8 +366,9 @@ class Rope(private val root: RopeNode) {
 
     /**
      * Moves forward in the specified [stack] until we find the first node that is not [this] node,
-     * or returns `null` if stack holds no more elements.
-     * This is needed because [stack] might hold up a reference to [this] node.
+     * or returns `null` if [stack] holds no more elements.
+     *
+     * We check if next node is the same one, because [stack] might hold up a reference to [this] node.
      */
     private fun RopeNode.moveStackForward(
         stack: ArrayStack<RopeInternalNodeChildrenIterator>
