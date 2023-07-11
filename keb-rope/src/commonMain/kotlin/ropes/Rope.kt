@@ -9,7 +9,7 @@ fun Rope(value: String): Rope {
     return Rope(root)
 }
 
-fun emptyRope(): Rope = Rope(emptyRopeNode())
+fun emptyRope(): Rope = EmptyRope
 
 open class Rope(private val root: RopeNode) {
     init {
@@ -76,13 +76,13 @@ open class Rope(private val root: RopeNode) {
         }
         // First, we retrieve left and right bounds (indexes).
         // Then, we subtract all leaves between left and right (exclusive) bounds.
-        val leftIterator = SingleElementRopeIterator(root, startIndex)
+        val leftIterator = SingleElementRopeIteratorWithHistory(root, startIndex)
         if (!leftIterator.hasNext()) throwIndexOutOfBoundsExceptionForStartAndEndIndex(startIndex, endIndex)
         val leftLeaf = leftIterator.currentLeaf // leaf where leftIndex is found
         val leftIndex = leftIterator.currentIndex // index in leaf
         // Since, we create the iterator with `endIndex` exclusive,
         // all other operations can safely include `rightIndex`.
-        val rightIterator = SingleElementRopeIterator(root, endIndex - 1)
+        val rightIterator = SingleElementRopeIteratorWithHistory(root, endIndex - 1)
         if (!rightIterator.hasNext()) throwIndexOutOfBoundsExceptionForStartAndEndIndex(startIndex, endIndex)
         val rightLeaf = rightIterator.currentLeaf // leaf where rightIndex is found
         val rightIndex = rightIterator.currentIndex // index in leaf
@@ -162,7 +162,7 @@ open class Rope(private val root: RopeNode) {
 
     open fun deleteAt(index: Int): Rope {
         checkPositionIndex(index)
-        val iterator = SingleElementRopeIterator(root, index)
+        val iterator = SingleElementRopeIteratorWithHistory(root, index)
         if (!iterator.hasNext()) throw IndexOutOfBoundsException("index:$index, length:$length")
         val leaf = iterator.currentLeaf // leaf where index is found
         val i = iterator.currentIndex // index in leaf
@@ -206,7 +206,7 @@ open class Rope(private val root: RopeNode) {
     // but at this point it is non-trivial and not worth it time-wise.
     open fun insert(index: Int, element: String): Rope {
         checkPositionIndex(index)
-        val iterator = SingleElementRopeIterator(root, index)
+        val iterator = SingleElementRopeIteratorWithHistory(root, index)
         // Try to find the target `index`, since we need to locate
         // it and start adding after that `index`.
         if (!iterator.hasNext()) { //TODO: what im doing here?
@@ -396,22 +396,41 @@ open class Rope(private val root: RopeNode) {
      */
     private fun defaultStack(): ArrayStack<RopeInternalNodeChildrenIterator> = ArrayStack(root.height)
 
-    fun iteratorWithIndex(startIndex: Int) = RopeIterator(root, startIndex)
+    fun iteratorWithIndex(startIndex: Int): RopeIterator = RopeIteratorWithHistory(root, startIndex)
 
-    operator fun iterator(): RopeIterator = RopeIterator(root, 0)
+    operator fun iterator(): RopeIterator = RopeIteratorWithHistory(root, 0)
 
-    internal interface RopeIteratorWithHistory {
-        fun findParent(child: RopeNode): RopeInternalNode?
-    }
-
-    open inner class RopeIterator(private val root: RopeNode, startIndex: Int) : RopeIteratorWithHistory {
+    /**
+     * The key idea is that the iterator is a special get type,
+     * which can be invoked continuously to move to next indexes.
+     *
+     * Roughly, [hasNext] is a [get] sibling, while [next] simply returns the already retrieved element.
+     * From the implementation side, [nextResult] stores the element retrieved by [hasNext]
+     * (or a special [ITERATOR_CLOSED] token if there are no more elements to retrieve).
+     *
+     * Additionally, the iterator keeps a history with all traversed nodes and links them with their parent nodes.
+     * This is used as by other operations where they need to move to node's parent.
+     *
+     * The iteration is performed lazily, similarly how a sequence works.
+     */
+    private open inner class RopeIteratorWithHistory(private val root: RopeNode, startIndex: Int) : RopeIterator {
         init {
             checkPositionIndex(startIndex)
             // This implementation has second `init`.
         }
 
+        /**
+         * Stores all traversed nodes, linked with their parents.
+         * Links are exposed through [findParent].
+         */
         private val links = mutableMapOf<RopeNode, RopeInternalNode>() // child || parent
+
+        /**
+         * We use a stack to store all passing leaves, so we can link them later with their parents.
+         */
         private val onNextStack = PeekableArrayStack<RopeNode>(root.height)
+
+        // Default stack to feed get() operation.
         private val parentNodesRef = defaultStack()
 
         init {
@@ -423,12 +442,18 @@ open class Rope(private val root: RopeNode) {
         private var nextIndex = curIndex
         private var curNode = root
 
-        val currentIndex get() = curIndex
+        /**
+         * TODO
+         */
+        val currentIndex: Int get() = curIndex
 
-        // - char -> value is found successfully.
-        // - null ->  indicates the absence of pre-received result.
-        // - CLOSED -> we are out of bounds and further `next()` calls are not allowed.
-        private var nextOrClosed: Any? = null // Char || null || CLOSED
+        /**
+         * Stores the element retrieved by [hasNext] or a special [ITERATOR_CLOSED] token if this iterator is closed.
+         * If [hasNext] has not been invoked yet, `null` is stored.
+         */
+        private var nextResult: Any? = null // Char || null || CLOSED
+
+        override val isClosed: Boolean get() = nextResult === ITERATOR_CLOSED
 
         /**
          * Stores the leaf retrieved by [hasNext] call.
@@ -438,31 +463,33 @@ open class Rope(private val root: RopeNode) {
         val currentLeaf: RopeLeafNode
             get() {
                 val leaf = curNode as? RopeLeafNode
-                check(nextOrClosed != null) { "`hasNext()` has not been invoked" }
+                check(nextResult != null) { "`hasNext()` has not been invoked" }
                 check(leaf != null) { "`hasNext()` has not retrieved a leaf" }
                 return leaf
             }
 
         // internal API
-        override fun findParent(child: RopeNode): RopeInternalNode? = links[child]
+        //TODO: refactor
+        fun findParent(child: RopeNode): RopeInternalNode? = links[child]
 
         // `hasNext()` is a special get() operation.
-        open operator fun hasNext(): Boolean {
-            if (nextOrClosed === CLOSED) return false
+        override operator fun hasNext(): Boolean {
+            if (nextResult === ITERATOR_CLOSED) return false
             return getImpl(
                 index = nextIndex,
                 root = curNode,
                 stack = parentNodesRef,
                 onOutOfBounds = { onOutOfBoundsHasNext() },
                 onElementRetrieved = { leaf, i, element ->
-                    onNextStack.push(leaf)
+                    onNextStack.push(leaf) //TODO: i think this can be removed.
+                    // Leafs are not used directly to find their parents.
                     curIndex = i
                     curNode = leaf
-                    nextOrClosed = element
+                    nextResult = element
                     nextIndex = curIndex + 1
                     true
                 },
-                //TODO: add comments
+                // Save each node, and try to link it with its parent.
                 onNextChild = {
                     onNextStack.push(it)
                     findParentInStackAndLink(it)
@@ -471,17 +498,17 @@ open class Rope(private val root: RopeNode) {
         }
 
         private fun onOutOfBoundsHasNext(): Boolean {
-            nextOrClosed = CLOSED
+            nextResult = ITERATOR_CLOSED
             return false
         }
 
-        open operator fun next(): Char {
+        override operator fun next(): Char {
             // Read the already received result or `null` if [hasNext] has not been invoked yet.
-            val result = nextOrClosed
+            val result = nextResult
             check(result != null) { "`hasNext()` has not been invoked" }
-            nextOrClosed = null
+            nextResult = null
             // Is this iterator closed?
-            if (nextOrClosed === CLOSED) throw NoSuchElementException(DEFAULT_CLOSED_MESSAGE)
+            if (nextResult === ITERATOR_CLOSED) throw NoSuchElementException(DEFAULT_CLOSED_MESSAGE)
             return result as Char
         }
 
@@ -489,7 +516,7 @@ open class Rope(private val root: RopeNode) {
          * Marks the iterator as closed and forbids any other subsequent [next] calls.
          */
         protected fun markClosed() {
-            nextOrClosed = CLOSED
+            nextResult = ITERATOR_CLOSED
         }
 
         private fun findParentInStackAndLink(child: RopeNode) {
@@ -503,7 +530,10 @@ open class Rope(private val root: RopeNode) {
         }
     }
 
-    inner class SingleElementRopeIterator(root: RopeNode, index: Int) : RopeIterator(root, index) {
+    private inner class SingleElementRopeIteratorWithHistory(
+        root: RopeNode,
+        index: Int
+    ) : RopeIteratorWithHistory(root, index) {
         private var invoked = false
 
         override fun hasNext(): Boolean {
@@ -534,6 +564,43 @@ open class Rope(private val root: RopeNode) {
     override fun toString(): String = root.toString()
 
     internal fun toStringDebug(): String = root.toStringDebug()
+}
+
+/**
+ * Iterator for [Rope]. Instances of this interface are *thread-safe* and can be used from coroutines.
+ */
+//TODO: actually needs research if this is thread-safe.
+// The underlying implementation is persistent though.
+// All reads should return the same.
+interface RopeIterator {
+    /**
+     * Returns `true` if iterator has more elements, or returns `false` if the iterator has no more elements.
+     *
+     * This function retrieves an element from this rope for the subsequent invocation of [next].
+     */
+    operator fun hasNext(): Boolean
+
+    /**
+     * Retrieves the element retrieved by a preceding call to [hasNext],
+     * or throws an [IllegalStateException] if [hasNext] was not invoked.
+     * This method should only be used in pair with [hasNext]:
+     * ```
+     * while (iterator.hasNext()) {
+     *     val char = iterator.next()
+     *     // ... handle element ..
+     * }
+     * ```
+     *
+     * This method throws [NoSuchElementException] if iterator [is closed][isClosed].
+     */
+    operator fun next(): Char
+
+    /**
+     * Indicates if the iterator is closed.
+     * The iterator closes after the first time [hasNext] returns false,
+     * in other words when there are no more elements to retrieve.
+     */
+    val isClosed: Boolean
 }
 
 internal object EmptyRope : Rope(emptyRopeNode()) {
@@ -621,6 +688,9 @@ internal class RopeInternalNodeChildrenIterator(
 
 
 // Internal result for [SingleIndexRopeIteratorWithHistory.nextOrClosed]
-private val CLOSED = keb.Symbol("CLOSED")
+// Typically means we are out of bounds for this iterator.
+private val ITERATOR_CLOSED = keb.Symbol("CLOSED")
+
+private const val NO_RECEIVED_INDEX = -1
 
 private const val DEFAULT_CLOSED_MESSAGE = "iterator was closed"
