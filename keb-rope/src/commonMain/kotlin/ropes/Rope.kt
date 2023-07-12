@@ -65,7 +65,6 @@ open class Rope(private val root: RopeNode) {
     fun subRope(startIndex: Int): Rope = subRope(startIndex, length)
 
     // `endIndex` is exclusive
-    @Suppress("DuplicatedCode")
     open fun subRope(startIndex: Int, endIndex: Int): Rope {
         checkRangeIndexes(startIndex, endIndex)
         // Fast-path, root is a leaf,
@@ -182,7 +181,7 @@ open class Rope(private val root: RopeNode) {
         while (true) {
             if (new?.isEmpty == true) new = null // mark empty nodes as null to clean them out
             if (new != null) return rebuildTree(old, new, iterator)
-            // for non-root nodes, findParent() should always return a parent.
+            // for non-root nodes, getParent() should always return a parent.
             val parent = iterator.getParent(old)
             val pos = parent.indexOf(old)
             assert { pos >= 0 } // position should always be positive.
@@ -538,7 +537,7 @@ open class Rope(private val root: RopeNode) {
             check(result != null) { "`hasNext()` has not been invoked" }
             nextResult = null
             // Is this iterator closed?
-            if (nextResult === ITERATOR_CLOSED) throw NoSuchElementException(DEFAULT_CLOSED_MESSAGE)
+            if (result === ITERATOR_CLOSED) throw NoSuchElementException(DEFAULT_CLOSED_MESSAGE)
             return result as Char
         }
 
@@ -723,10 +722,10 @@ internal class RopeInternalNodeChildrenIterator(
 }
 
 
-// Internal result for [SingleIndexRopeIteratorWithHistory.nextOrClosed]
+// Internal result for [RopeIteratorWithHistory.nextResult]
 // Typically means we are out of bounds for this iterator.
 private val ITERATOR_CLOSED = keb.Symbol("CLOSED")
 
-private const val NO_RECEIVED_INDEX = -1
-
+// Default error message when the iterator is closed,
+// and invoking [RopeIteratorWithHistory.next].
 private const val DEFAULT_CLOSED_MESSAGE = "iterator was closed"
