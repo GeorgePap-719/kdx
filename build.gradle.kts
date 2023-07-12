@@ -123,8 +123,3 @@ kotlin {
         val jsTest by getting
     }
 }
-
-//tasks.named<Copy>("jvmProcessResources") {
-//    val jsBrowserDistribution = tasks.named("jsBrowserDistribution")
-//    from(jsBrowserDistribution)
-//}
