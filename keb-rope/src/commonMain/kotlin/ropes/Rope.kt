@@ -142,8 +142,8 @@ open class Rope(private val root: RopeNode) {
         var leftNode: RopeNode = leftLeafNode
         var rightNode: RopeNode = rightLeafNode
         while (true) {
-            leftNode = leftIterator.findParent(leftNode) ?: error("unexpected")
-            rightNode = rightIterator.findParent(rightNode) ?: error("unexpected")
+            leftNode = leftIterator.getParent(leftNode)
+            rightNode = rightIterator.getParent(rightNode)
             if (leftNode === rightNode) return leftNode
         }
     }
@@ -183,7 +183,7 @@ open class Rope(private val root: RopeNode) {
             if (new?.isEmpty == true) new = null // mark empty nodes as null to clean them out
             if (new != null) return rebuildTree(old, new, iterator)
             // for non-root nodes, findParent() should always return a parent.
-            val parent = iterator.findParent(old) ?: error("unexpected")
+            val parent = iterator.getParent(old)
             val pos = parent.indexOf(old)
             assert { pos >= 0 } // position should always be positive.
             new = parent.deleteAt(pos)
@@ -232,7 +232,7 @@ open class Rope(private val root: RopeNode) {
         }
         // At this point, we should always find a parent, since we are in a leaf
         // and hasNext() returned `true`.
-        val parent = iterator.findParent(leaf) ?: error("unexpected")
+        val parent = iterator.getParent(leaf)
         val pos = parent.indexOf(leaf)
         // If there is space in the parent, add new leaf/s to keep the tree wide
         // as much as possible.
@@ -259,7 +259,7 @@ open class Rope(private val root: RopeNode) {
         var new = newNode
         while (true) {
             // for non-root nodes, findParent() should always return a parent.
-            val parent = iterator.findParent(old) ?: error("unexpected")
+            val parent = iterator.getParent(old)
             new = parent.replace(old, new)
             old = parent
             if (old === root) return new
@@ -421,29 +421,44 @@ open class Rope(private val root: RopeNode) {
 
         /**
          * Stores all traversed nodes, linked with their parents.
-         * Links are exposed through [findParent].
+         * Links are exposed through [getParent] API.
          */
         private val links = mutableMapOf<RopeNode, RopeInternalNode>() // child || parent
 
         /**
-         * We use a stack to store all passing leaves, so we can link them later with their parents.
+         * Stores traversed nodes, so we can link them later with their parents.
          */
         private val onNextStack = PeekableArrayStack<RopeNode>(root.height)
 
-        // Default stack to feed get() operation.
+        /**
+         * The stack to feed [Rope.getImpl] in [hasNext] on each iteration.
+         * By feeding [Rope.getImpl] the same stack allows it to climb the tree backwards,
+         * from the previous "checkpoint".
+         */
         private val parentNodesRef = defaultStack()
 
         init {
-            //TODO: add explanation
+            // We push root in stack, to mark it as "checkpoint",
+            // in case we need to move backwards in the tree.
             onNextStack.push(root)
         }
 
         private var curIndex = startIndex
+
+        // Tracks on each iteration the `nextIndex`.
+        // Basically, this is "curIndex + 1", after `curIndex` retrieves the first value.
         private var nextIndex = curIndex
+
+        // Feeds [getImpl] the node we iterate.
+        // This node at first is root, but then after the first successful iteration
+        // becomes the leaf we found.
+        // This means, unless `nextIndex` > curNode.weight is true,
+        // we apply a direct get() call on current leaf.
         private var curNode = root
 
         /**
-         * TODO
+         * Stores current leaf's `index`, where the target element was found.
+         * If this is invoked before the first invocation of [hasNext], it will return the "original" `startIndex`.
          */
         val currentIndex: Int get() = curIndex
 
@@ -469,8 +484,27 @@ open class Rope(private val root: RopeNode) {
             }
 
         // internal API
-        //TODO: refactor
+        @Deprecated("Bad naming", replaceWith = ReplaceWith("getParent(child)"))
         fun findParent(child: RopeNode): RopeInternalNode? = links[child]
+
+        /**
+         * A nullable variant of [getParent] API.
+         *
+         * **This is an internal API**.
+         */
+        fun getParentOrNull(child: RopeNode): RopeInternalNode? = links[child]
+
+        /**
+         * Returns the [child's][child] parent node.
+         * It is the responsibility of the caller to make sure there is a linked parent in stack.
+         * Throws [IllegalStateException] when there is no parent is stack,
+         * because semantically it should always be a parent in stack.
+         *
+         * **This is an internal API**.
+         */
+        fun getParent(child: RopeNode): RopeInternalNode =
+            getParentOrNull(child) ?: error("there is no linked parent for child:$child in map")
+
 
         // `hasNext()` is a special get() operation.
         override operator fun hasNext(): Boolean {
@@ -567,11 +601,14 @@ open class Rope(private val root: RopeNode) {
 }
 
 /**
- * Iterator for [Rope]. Instances of this interface are *thread-safe* and can be used from coroutines.
+ * Iterator for [Rope]. Each iteration is performed lazily, similarly how a sequence works.
  */
+// Note:Instances of this interface are *thread-safe* and can be used from coroutines.
 //TODO: actually needs research if this is thread-safe.
 // The underlying implementation is persistent though.
 // All reads should return the same.
+// On the other hand probably we are not thread-safe.
+// Since, we track non thread-safe states outside [getImpl].
 interface RopeIterator {
     /**
      * Returns `true` if iterator has more elements, or returns `false` if the iterator has no more elements.
