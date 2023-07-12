@@ -668,6 +668,9 @@ internal object EmptyRope : Rope(emptyRopeNode()) {
 
 
 fun Rope.insert(index: Int, element: Char): Rope = insert(index, element.toString())
+fun Rope.append(element: String): Rope = insert(length, element)
+fun Rope.prepend(element: String): Rope = insert(0, element)
+
 fun Rope.isEmpty(): Boolean = length == 0
 
 private fun RopeInternalNode.childrenIterator(): RopeInternalNodeChildrenIterator {
