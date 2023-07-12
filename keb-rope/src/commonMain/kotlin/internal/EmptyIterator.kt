@@ -1,4 +1,4 @@
-package keb.internal
+package keb.ropes.internal
 
 internal object EmptyIterator : Iterator<Nothing> {
     override fun hasNext(): Boolean = false

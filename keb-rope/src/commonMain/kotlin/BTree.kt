@@ -1,8 +1,5 @@
 package keb.ropes
 
-import keb.classSimpleName
-import keb.hexAddress
-
 interface LeafInfo { // better name : LeafInfo || LeafType --> ?
     val weight: Int
     val isLegal: Boolean

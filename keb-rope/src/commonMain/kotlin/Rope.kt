@@ -1,9 +1,8 @@
 package keb.ropes
 
-import keb.assert
-import keb.internal.ArrayStack
-import keb.internal.EmptyIterator
-import keb.internal.PeekableArrayStack
+import keb.ropes.internal.ArrayStack
+import keb.ropes.internal.EmptyIterator
+import keb.ropes.internal.PeekableArrayStack
 
 fun Rope(value: String): Rope {
     val root = ropeNodeOf(value)
@@ -953,7 +952,7 @@ internal const val MAX_SIZE_LEAF = 2048
 
 // Internal result for [RopeIteratorWithHistory.nextResult]
 // Typically means we are out of bounds for this iterator.
-private val ITERATOR_CLOSED = keb.Symbol("CLOSED")
+private val ITERATOR_CLOSED = Symbol("CLOSED")
 
 // Default error message when the iterator is closed,
 // and invoking [RopeIteratorWithHistory.next].

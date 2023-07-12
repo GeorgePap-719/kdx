@@ -1,4 +1,4 @@
-package keb
+package keb.ropes
 
 actual fun assert(value: () -> Boolean) {}
 
