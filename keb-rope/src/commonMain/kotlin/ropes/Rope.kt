@@ -483,10 +483,6 @@ open class Rope(private val root: RopeNode) {
                 return leaf
             }
 
-        // internal API
-        @Deprecated("Bad naming", replaceWith = ReplaceWith("getParent(child)"))
-        fun findParent(child: RopeNode): RopeInternalNode? = links[child]
-
         /**
          * A nullable variant of [getParent] API.
          *
