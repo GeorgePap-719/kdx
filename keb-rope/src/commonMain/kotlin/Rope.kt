@@ -26,7 +26,6 @@ open class Rope(private val root: RopeNode) {
     //TODO: we can also improve this too keep the tree wide.
     open operator fun plus(other: Rope): Rope {
         // Avoid checking for length == 0, since it might have a cost.
-        // Either way, if one of the nodes is empty, createParent() will throw IllegalArgumentException.
         if (other === EmptyRope) return this
         val left = root
         val right = other.root
