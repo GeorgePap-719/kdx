@@ -720,17 +720,17 @@ internal class RopeInternalNodeChildrenIterator(
 }
 
 //TODO: lineCount
-open class RopeLeaf(val charCount: String, val lineCount: Int) : LeafInfo, Iterable<Char>, CharSequence {
-    override val weight: Int = charCount.length
+open class RopeLeaf(val chars: String, val lineCount: Int) : LeafInfo, Iterable<Char>, CharSequence {
+    override val weight: Int = chars.length
 
     @Suppress("LeakingThis")
-    override val isLegal: Boolean = weight <= MAX_SIZE_LEAF && charCount.isNotEmpty()
+    override val isLegal: Boolean = weight <= MAX_SIZE_LEAF && chars.isNotEmpty()
 
     @Suppress("LeakingThis")
     override val length: Int = weight
-    override fun iterator(): Iterator<Char> = charCount.iterator()
-    override fun get(index: Int): Char = charCount[index]
-    override fun subSequence(startIndex: Int, endIndex: Int): CharSequence = charCount.subSequence(startIndex, endIndex)
+    override fun iterator(): Iterator<Char> = chars.iterator()
+    override fun get(index: Int): Char = chars[index]
+    override fun subSequence(startIndex: Int, endIndex: Int): CharSequence = chars.subSequence(startIndex, endIndex)
 
     fun add(index: Int, element: String): RopeLeaf {
         val newValue = buildString {
@@ -745,7 +745,7 @@ open class RopeLeaf(val charCount: String, val lineCount: Int) : LeafInfo, Itera
     }
 
     fun deleteAt(index: Int): RopeLeaf {
-        val newValue = charCount.deleteAt(index)
+        val newValue = chars.deleteAt(index)
         return if (newValue.isEmpty()) EmptyRopeLeaf else RopeLeaf(newValue)
     }
 
@@ -757,17 +757,17 @@ open class RopeLeaf(val charCount: String, val lineCount: Int) : LeafInfo, Itera
         }
     }
 
-    override fun toString(): String = "RopeLeaf($charCount,$lineCount)"
+    override fun toString(): String = "RopeLeaf($chars,$lineCount)"
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is RopeLeaf) return false
-        if (charCount != other.charCount) return false
+        if (chars != other.chars) return false
         return lineCount == other.lineCount
     }
 
     override fun hashCode(): Int {
-        var result = charCount.hashCode()
+        var result = chars.hashCode()
         result = 31 * result + lineCount
         return result
     }
@@ -892,7 +892,7 @@ internal fun RopeLeafNode.expandableAdd(index: Int, element: String): List<RopeL
     val newLen = value.length + element.length
     if (newLen <= MAX_SIZE_LEAF) return listOf(add(index, element))
     val newLeaf = value.add(index, element)
-    return splitIntoLeaves(newLeaf.charCount)
+    return splitIntoLeaves(newLeaf.chars)
 }
 
 internal fun RopeLeafNode.add(index: Int, element: Char): RopeLeafNode = add(index, element.toString())
@@ -907,8 +907,8 @@ internal fun RopeLeafNode.add(index: Int, element: String): RopeLeafNode {
     checkValueIndex(index, this.value)
     val newLen = value.length + element.length
     require(newLen <= MAX_SIZE_LEAF) { "max size of a leaf is:$MAX_SIZE_LEAF, but got:$newLen" }
-    if (index == 0) return RopeLeafNode(element + value.charCount)
-    if (index == value.charCount.lastIndex + 1) return RopeLeafNode(value.charCount + element)
+    if (index == 0) return RopeLeafNode(element + value.chars)
+    if (index == value.chars.lastIndex + 1) return RopeLeafNode(value.chars + element)
     val newValue = value.add(index, element)
     return RopeLeafNode(newValue)
 }
