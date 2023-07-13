@@ -12,6 +12,12 @@ fun Rope(value: String): Rope {
 
 fun emptyRope(): Rope = EmptyRope
 
+/**
+ * A [persistent](https://en.wikipedia.org/wiki/Persistent_data_structure) [rope](https://en.wikipedia.org/wiki/Rope_(data_structure)#See_also)
+ * data structure, backed by a [btree][BTreeNode].
+ *
+ * Most operations have path-copying semantics.
+ */
 open class Rope(private val root: RopeNode) {
     init {
         assert { root.isBalanced() }

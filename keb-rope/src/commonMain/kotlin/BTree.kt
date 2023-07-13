@@ -7,6 +7,9 @@ interface LeafInfo { // better name : LeafInfo || LeafType --> ?
 
 val LeafInfo.isEmpty: Boolean get() = weight == 0
 
+/**
+ * A persistent [btree](https://en.wikipedia.org/wiki/B-tree#Algorithms) node.
+ */
 sealed class BTreeNode<out T : LeafInfo> : Iterable<LeafNode<T>> {
     abstract val weight: Int
     abstract val height: Int

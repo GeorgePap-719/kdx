@@ -1,5 +1,13 @@
 package keb.ropes
 
+/**
+ * Builds a rope using a [RopeBuilder].
+ * It collects the strings through [RopeBuilder.add], and once it reaches 2048 characters, it creates a node.
+ * This way, it is able to effectively create a [rope][Rope] from the collected nodes.
+ *
+ * Inspired from [fleet's blog](https://blog.jetbrains.com/fleet/2022/02/fleet-below-deck-part-ii-breaking-down-the-editor/)
+ * on ropes.
+ */
 fun buildRope(action: RopeBuilder.() -> Unit): Rope {
     val builder = RopeBuilder()
     builder.action()
@@ -25,11 +33,13 @@ class RopeBuilder internal constructor() {
 
     private fun pushStringIntoLeaves() {
         val leafStr = currentString.toString()
+        if (leafStr.isEmpty()) return
         currentString.clear()
         leaves.add(RopeLeafNode(leafStr))
     }
 
     fun build(): Rope {
+        pushStringIntoLeaves() // Collect remain strings if any.
         val root = merge(leaves)
         return Rope(root)
     }
