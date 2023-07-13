@@ -3,6 +3,7 @@ package keb.ropes
 import keb.ropes.internal.ArrayStack
 import keb.ropes.internal.EmptyIterator
 import keb.ropes.internal.PeekableArrayStack
+import keb.ropes.internal.Symbol
 
 fun Rope(value: String): Rope {
     val root = ropeNodeOf(value)
