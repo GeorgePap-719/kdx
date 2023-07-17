@@ -727,12 +727,9 @@ internal class RopeInternalNodeChildrenIterator(
 //TODO: lineCount
 open class RopeLeaf(val chars: String, val lineCount: Int) : LeafInfo, Iterable<Char>, CharSequence {
     override val weight: Int = chars.length
+    override val isLegal: Boolean = chars.length <= MAX_SIZE_LEAF && chars.isNotEmpty()
 
-    @Suppress("LeakingThis")
-    override val isLegal: Boolean = weight <= MAX_SIZE_LEAF && chars.isNotEmpty()
-
-    @Suppress("LeakingThis")
-    override val length: Int = weight
+    override val length: Int = chars.length
     override fun iterator(): Iterator<Char> = chars.iterator()
     override fun get(index: Int): Char = chars[index]
     override fun subSequence(startIndex: Int, endIndex: Int): CharSequence = chars.subSequence(startIndex, endIndex)
