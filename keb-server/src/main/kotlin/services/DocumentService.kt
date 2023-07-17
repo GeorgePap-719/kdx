@@ -1,9 +1,9 @@
 package keb.server.services
 
 import keb.server.dto.Document
-import keb.server.dto.Text
 import keb.server.entities.toDocument
 import keb.server.entities.toEntity
+import keb.server.model.Text
 import keb.server.repositories.DocumentRepository
 import org.springframework.stereotype.Service
 

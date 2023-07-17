@@ -1,9 +1,9 @@
 package keb.server
 
 import keb.server.dto.Document
-import keb.server.dto.Text
 import keb.server.entities.DocumentEntity
 import keb.server.entities.toDocument
+import keb.server.model.Text
 import keb.server.repositories.DocumentRepository
 import keb.server.routers.ErrorInfo
 import kotlinx.coroutines.runBlocking

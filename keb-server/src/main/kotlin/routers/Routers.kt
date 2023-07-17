@@ -1,6 +1,6 @@
 package keb.server.routers
 
-import keb.server.dto.Text
+import keb.server.model.Text
 import keb.server.services.DocumentService
 import keb.server.utils.logger
 import kotlinx.serialization.Serializable

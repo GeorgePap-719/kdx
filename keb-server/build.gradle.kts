@@ -21,6 +21,7 @@ val junitJupiterVersion: String by project
 val junitPlatformVersion: String by project
 
 dependencies {
+    implementation(project(":keb-rope"))
     implementation("org.springframework.boot:spring-boot-starter-webflux")
     implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
     // database

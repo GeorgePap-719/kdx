@@ -2,7 +2,7 @@ package keb.server.entities
 
 import io.r2dbc.spi.Row
 import keb.server.dto.Document
-import keb.server.dto.Text
+import keb.server.model.Text
 import keb.server.utils.append
 import keb.server.utils.getColumn
 import org.springframework.core.convert.converter.Converter
@@ -36,15 +36,30 @@ import org.springframework.stereotype.Component
 //    val name: String
 //)
 
+@Table("documentFiles")
+data class DocumentFileEntity(
+    @Id
+    @Column("id")
+    val id: Int,
+
+    @Column("document")
+    val document: DocumentEntity,
+
+    @Column("fileAddress")
+    val fileAddress: FileAddress
+)
+
 @Table("documents")
 data class DocumentEntity(
     @Id
-    @Column("name")
-    val name: String,
+    @Column("id") // -> changes to id
+    val id: Int,
 
     @Column("text")
     val text: Text
 )
+
+data class FileAddress(val value: String)
 
 fun DocumentEntity.toDocument(): Document {
     return Document(name, text)
@@ -60,7 +75,7 @@ class DocumentToRowConverter : Converter<DocumentEntity, OutboundRow> {
     override fun convert(source: DocumentEntity): OutboundRow {
         return OutboundRow()
             .append("name", source.name)
-            .append("text", source.text.value)
+            .append("text", source.text.leaves)
     }
 }
 
@@ -79,7 +94,7 @@ class RowToDocumentConverter : Converter<Row, DocumentEntity> {
 @WritingConverter
 class TextToRowConverter : Converter<Text, String> {
     override fun convert(source: Text): String {
-        return source.value
+        return source.leaves
     }
 }
 
