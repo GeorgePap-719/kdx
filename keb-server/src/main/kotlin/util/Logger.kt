@@ -1,4 +1,4 @@
-package keb.server.utils
+package keb.server.util
 
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory

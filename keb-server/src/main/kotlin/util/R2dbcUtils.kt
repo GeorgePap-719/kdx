@@ -1,4 +1,4 @@
-package keb.server.utils
+package keb.server.util
 
 import io.r2dbc.spi.Row
 import org.springframework.data.r2dbc.mapping.OutboundRow

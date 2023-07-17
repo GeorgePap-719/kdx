@@ -1,6 +1,6 @@
 package keb.server
 
-import keb.server.utils.logger
+import keb.server.util.logger
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import kotlinx.coroutines.reactor.mono
 import org.springframework.core.annotation.Order

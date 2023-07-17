@@ -2,7 +2,7 @@ package keb.server.routers
 
 import keb.server.model.Text
 import keb.server.services.DocumentService
-import keb.server.utils.logger
+import keb.server.util.logger
 import kotlinx.serialization.Serializable
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration

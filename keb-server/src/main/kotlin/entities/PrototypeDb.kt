@@ -3,8 +3,8 @@ package keb.server.entities
 import io.r2dbc.spi.Row
 import keb.server.dto.Document
 import keb.server.model.Text
-import keb.server.utils.append
-import keb.server.utils.getColumn
+import keb.server.util.append
+import keb.server.util.getColumn
 import org.springframework.core.convert.converter.Converter
 import org.springframework.data.annotation.Id
 import org.springframework.data.convert.ReadingConverter
