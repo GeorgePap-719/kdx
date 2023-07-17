@@ -1,7 +1,7 @@
 package keb.server
 
-import keb.Document
-import keb.Text
+import keb.server.dto.Document
+import keb.server.dto.Text
 import keb.server.entities.DocumentEntity
 import keb.server.entities.toDocument
 import keb.server.repositories.DocumentRepository

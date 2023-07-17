@@ -1,10 +1,8 @@
 package keb.server.routers
 
-import keb.Text
+import keb.server.dto.Text
 import keb.server.services.DocumentService
 import keb.server.utils.logger
-import kotlinx.html.*
-import kotlinx.html.stream.createHTML
 import kotlinx.serialization.Serializable
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -22,24 +20,6 @@ class Routers(private val documentHandler: DocumentHandler) {
             GET("$documentApiPrefix/{$DocumentNamePathVariable}", documentHandler::read)
             POST("$documentApiPrefix/{$DocumentNamePathVariable}/append", documentHandler::append)
             POST("$documentApiPrefix/{$DocumentNamePathVariable}/remove", documentHandler::remove)
-        }
-    }
-
-    @Bean
-    fun indexRouter() = coRouter {
-        GET("/").invoke {
-            val html = createHTML().html {
-                head {
-                    title("kotlin web editor")
-                }
-                body {
-                    div {
-                        id = "root"
-                    }
-                    script(src = "/main.js") {}
-                }
-            }
-            ServerResponse.ok().bodyValueAndAwait(html)
         }
     }
 }

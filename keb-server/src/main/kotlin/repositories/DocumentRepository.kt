@@ -1,6 +1,6 @@
 package keb.server.repositories
 
-import keb.Text
+import keb.server.dto.Text
 import keb.server.entities.DocumentEntity
 import keb.server.utils.logger
 import org.springframework.data.r2dbc.core.*
