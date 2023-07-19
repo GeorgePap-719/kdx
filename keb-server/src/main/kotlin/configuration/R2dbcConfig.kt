@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement
 
 @Configuration
 @EnableTransactionManagement
-class R2dbcConfiguration(
+class R2dbcConfig(
     private val converters: List<Converter<*, *>>,
     @Value("\${spring.r2dbc.username}") private val username: String,
     @Value("\${spring.r2dbc.password}") private val password: String,

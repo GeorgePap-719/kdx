@@ -3,7 +3,7 @@ package keb.server.model
 import keb.ropes.RopeLeaf
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.builtins.SetSerializer
+import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.buildClassSerialDescriptor
 import kotlinx.serialization.descriptors.element
@@ -15,12 +15,12 @@ import kotlinx.serialization.encoding.Encoder
  * It stores a [rope's leaves][RopeLeaf] in a set.
  */
 @Serializable(with = TextSerializer::class)
-data class Text(val leaves: Set<RopeLeaf>) {
+data class Text(val leaves: List<RopeLeaf>) {
     val leavesSize = leaves.size
     val length: Int by lazy { leaves.sumOf { it.weight } }
 
     fun add(index: Int, element: RopeLeaf): Text {
-        val newLeaves = buildSet {
+        val newLeaves = buildList {
             val iterator = leaves.iterator()
             for (i in 0..<leavesSize) {
                 if (i == index) add(element)
@@ -36,8 +36,8 @@ data class Text(val leaves: Set<RopeLeaf>) {
     fun addFirst(element: RopeLeaf): Text = add(0, element)
 
     fun remove(index: Int): Text {
-        if (leavesSize == 1) return Text(emptySet())
-        val newLeaves = buildSet {
+        if (leavesSize == 1) return Text(emptyList())
+        val newLeaves = buildList {
             for (i in 0..<leavesSize) {
                 val iterator = leaves.iterator()
                 if (i == index) continue
@@ -49,7 +49,7 @@ data class Text(val leaves: Set<RopeLeaf>) {
 }
 
 object TextSerializer : KSerializer<Text> {
-    private val ropeLeafListSerializer = SetSerializer(RopeLeafSerializer)
+    private val ropeLeafListSerializer = ListSerializer(RopeLeafSerializer)
     override val descriptor: SerialDescriptor = ropeLeafListSerializer.descriptor
     override fun serialize(encoder: Encoder, value: Text) = ropeLeafListSerializer.serialize(encoder, value.leaves)
     override fun deserialize(decoder: Decoder): Text = Text(ropeLeafListSerializer.deserialize(decoder))
@@ -72,5 +72,3 @@ object RopeLeafSerializer : KSerializer<RopeLeaf> {
         return RopeLeaf(chars, lineCount)
     }
 }
-
-
