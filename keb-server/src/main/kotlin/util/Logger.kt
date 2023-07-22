@@ -20,26 +20,32 @@ fun Logger.metric(msg: String) {
 
 // lazy-factories
 
+@JvmName("Debug0")
 fun Logger.debug(message: () -> Any) {
     if (isDebugEnabled) debug(message.toString())
 }
 
+@JvmName("Debug1")
 fun Logger.debug(message: () -> String) {
-    if (isDebugEnabled) debug(message)
+    if (isDebugEnabled) debug(message())
 }
 
+@JvmName("Info0")
 fun Logger.info(message: () -> String) {
-    info(message)
+    this.info(message())
 }
 
+@JvmName("Info1")
 fun Logger.info(message: () -> Any) {
     info(message.toString())
 }
 
+@JvmName("Warn0")
 fun Logger.warn(message: () -> String) {
-    warn(message)
+    warn(message())
 }
 
+@JvmName("Warn1")
 fun Logger.warn(message: () -> Any) {
     warn(message.toString())
 }

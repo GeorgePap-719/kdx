@@ -4,18 +4,35 @@ import keb.server.entities.DocumentEntity
 import keb.server.entities.DocumentFileEntity
 import keb.server.entities.FileAddress
 import keb.server.util.Debugger
+import kotlinx.coroutines.flow.collect
 import org.springframework.r2dbc.core.DatabaseClient
+import org.springframework.r2dbc.core.flow
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
 
 suspend fun mapToDocumentFile(queryResult: DatabaseClient.GenericExecuteSpec): DocumentFileEntity? {
     return buildDocumentFile {
-        queryResult.map { row, metadata ->
-            check(metadata.columnMetadatas.size == 5) {
-                "size should be equal to all fields of DocumentFile plus Document"
+        var throwable: Throwable? = null
+        val fetchSpec = queryResult.map { row, metadata ->
+            try {
+                println("------------------------ row:$row,\n metadata:$metadata ------------------------ row:")
+                check(metadata.columnMetadatas.size == 5) {
+                    "size should be equal to all fields of DocumentFile plus Document"
+                }
+                println("row:$row,\n metadata:$metadata")
+                Debugger.debug { "row:$row,\n metadata:$metadata" }
+            } catch (e: Throwable) {
+                throwable = e
             }
-            Debugger.debug { "row:$row,\n metadata:$metadata" }
+        }
+        fetchSpec.flow().collect() // collect all rows
+        val throwableSC = throwable // otherwise, smartcast is impossible.
+        if (throwableSC != null) {
+            // Delegate error, since reactor operators suppress error
+            // and do not propagate exceptions like coroutines.
+            // Reactor operators usually omit the elements in case of an exception.
+            throw throwableSC
         }
     }
 }

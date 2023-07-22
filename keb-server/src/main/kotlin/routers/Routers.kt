@@ -1,31 +1,64 @@
 package keb.server.routers
 
+import keb.server.dto.CreateDocumentFile
+import keb.server.services.DocumentFileService
+import keb.server.util.info
+import keb.server.util.logger
 import kotlinx.serialization.Serializable
-import org.springframework.web.reactive.function.server.ServerRequest
-import org.springframework.web.reactive.function.server.awaitBodyOrNull
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+import org.springframework.http.MediaType
+import org.springframework.stereotype.Component
+import org.springframework.web.reactive.function.server.*
 
-//@Configuration
-//class Routers(private val documentHandler: DocumentHandler) {
-//    private val documentApiPrefix = API_PREFIX + "document"
-//
-//    @Bean
-//    fun documentRouter() = coRouter {
-//        accept(MediaType.APPLICATION_JSON).nest {
-//            GET("$documentApiPrefix/{$DocumentNamePathVariable}", documentHandler::read)
-//            POST("$documentApiPrefix/{$DocumentNamePathVariable}/append", documentHandler::append)
-//            POST("$documentApiPrefix/{$DocumentNamePathVariable}/remove", documentHandler::remove)
-//        }
-//    }
-//}
-//
-//const val API_PREFIX = "/api/"
-//
-//@Component
-//class DocumentHandler(private val documentService: DocumentService) {
-//    private val logger = logger()
-//
+@Configuration
+class Routers(private val documentFileHandler: DocumentFileHandler) {
+    @Bean
+    fun documentRouter() = coRouter {
+        accept(MediaType.APPLICATION_JSON).nest {
+            POST("$documentApiPrefix/create", documentFileHandler::create)
+            GET("$documentApiPrefix/{$DocumentIdPathVariable}", documentFileHandler::readFromId)
+//            POST("$documentApiPrefix/{$DocumentFileAddressPathVariable}/append", documentFileHandler::append)
+//            POST("$documentApiPrefix/{$DocumentFileAddressPathVariable}/remove", documentFileHandler::remove)
+        }
+    }
+}
+
+const val API_PREFIX = "/api/"
+
+private const val documentApiPrefix = API_PREFIX + "documentFile"
+
+@Component
+class DocumentFileHandler(private val documentFileService: DocumentFileService) {
+    private val logger = logger()
+
+    suspend fun create(request: ServerRequest): ServerResponse {
+        try {
+            logger.info { "request: $documentApiPrefix/create" }
+            //request.awaitBody<>() TODO: check spring's impl
+            val body = request.awaitAndRequireBody<CreateDocumentFile>()
+            val documentFile = documentFileService.create(body)
+            return ServerResponse.ok().bodyValueAndAwait(documentFile)
+        } catch (e: Throwable) {
+            logger.info { e.stackTraceToString() }
+            throw e
+        }
+    }
+
+    suspend fun readFromId(request: ServerRequest): ServerResponse {
+        logger.info { "request: $documentApiPrefix/{$DocumentIdPathVariable}" }
+        //TODO handle pathVariable()
+        val documentId = request.pathVariable(DocumentIdPathVariable).toLong()
+        val documentFile = documentFileService.read(documentId)
+        return if (documentFile == null) {
+            ServerResponse.notFound().buildAndAwait()
+        } else {
+            ServerResponse.ok().bodyValueAndAwait(documentFile)
+        }
+    }
+
 //    suspend fun read(request: ServerRequest): ServerResponse {
-//        val documentName = request.pathVariable(DocumentNamePathVariable)
+//        val documentName = request.pathVariable(DocumentFileAddressPathVariable)
 //        val document = documentService.read(documentName)
 //        logger.info("read document: $document")
 //        return if (document == null) {
@@ -36,7 +69,7 @@ import org.springframework.web.reactive.function.server.awaitBodyOrNull
 //    }
 //
 //    suspend fun append(request: ServerRequest): ServerResponse {
-//        val documentName = request.pathVariable(DocumentNamePathVariable)
+//        val documentName = request.pathVariable(DocumentFileAddressPathVariable)
 //        val body = request.awaitAndRequireBody<Text>()
 //        logger.info("preparing to update document: $documentName")
 //        val result = documentService.append(documentName, body)
@@ -48,7 +81,7 @@ import org.springframework.web.reactive.function.server.awaitBodyOrNull
 //    }
 //
 //    suspend fun remove(request: ServerRequest): ServerResponse {
-//        val documentName = request.pathVariable(DocumentNamePathVariable)
+//        val documentName = request.pathVariable(DocumentFileAddressPathVariable)
 //        val body = request.awaitAndRequireBody<Text>()
 //        logger.info("preparing to update document: $documentName")
 //        val result = documentService.removeText(documentName, body)
@@ -58,7 +91,7 @@ import org.springframework.web.reactive.function.server.awaitBodyOrNull
 //            ServerResponse.notFound().buildAndAwait()
 //        }
 //    }
-//}
+}
 
 suspend inline fun <reified T : Any> ServerRequest.awaitAndRequireBody(): T {
     val body = awaitBodyOrNull<T>()
@@ -66,7 +99,8 @@ suspend inline fun <reified T : Any> ServerRequest.awaitAndRequireBody(): T {
     return body
 }
 
-const val DocumentNamePathVariable = "name"
+const val DocumentFileAddressPathVariable = "file_address"
+const val DocumentIdPathVariable = "id"
 
 /**
  * A helper class to represent message in Json format for error responses.

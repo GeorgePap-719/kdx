@@ -21,25 +21,25 @@ data class DocumentEntity(
     @Column("id")
     val id: Long,
 
-    @Column("text")
+    @Column("text_json")
     val text: Text
 )
 
 @WritingConverter
 @Component
-class DocumentEntityToRowConverter : Converter<DocumentEntity, OutboundRow> {
+object DocumentEntityToRowConverter : Converter<DocumentEntity, OutboundRow> {
     override fun convert(source: DocumentEntity): OutboundRow = OutboundRow().apply {
         append("id", source.id)
         val serializedText = Json.encodeToString(source.text)
-        append("text", serializedText)
+        append("text_json", serializedText)
     }
 }
 
 @ReadingConverter
 @Component
-class RowToDocumentEntityConverter : Converter<Row, DocumentEntity> {
-    override fun convert(source: Row): DocumentEntity? {
-        val text = Json.decodeFromString<Text>(source.getColumn<String>("text"))
+object RowToDocumentEntityConverter : Converter<Row, DocumentEntity> {
+    override fun convert(source: Row): DocumentEntity {
+        val text = Json.decodeFromString<Text>(source.getColumn<String>("text_json"))
         return DocumentEntity(source.getColumn("id"), text)
     }
 }
