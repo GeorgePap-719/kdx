@@ -95,7 +95,7 @@ class DocumentFileHandler(private val documentFileService: DocumentFileService) 
 
 suspend inline fun <reified T : Any> ServerRequest.awaitAndRequireBody(): T {
     val body = awaitBodyOrNull<T>()
-    requireNotNull(body) { "body is expected to by type of ${T::class.simpleName}" }
+    requireNotNull(body) { "Body is expected to be type of ${T::class.simpleName}" }
     return body
 }
 
