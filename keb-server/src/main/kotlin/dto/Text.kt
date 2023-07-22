@@ -1,4 +1,4 @@
-package keb.server.model
+package keb.server.dto
 
 import keb.ropes.RopeLeaf
 import kotlinx.serialization.KSerializer

@@ -1,7 +1,7 @@
 package keb.server.repositories
 
 import keb.server.entities.DocumentEntity
-import keb.server.model.Text
+import keb.server.util.debug
 import keb.server.util.logger
 import org.springframework.data.r2dbc.core.*
 import org.springframework.data.relational.core.query.Criteria
@@ -11,53 +11,43 @@ import org.springframework.stereotype.Component
 
 interface DocumentRepository {
     suspend fun save(input: DocumentEntity): DocumentEntity
-    suspend fun append(target: DocumentEntity, input: Text): Int
-    suspend fun removeText(target: DocumentEntity, input: Text): Int
-    suspend fun findByName(target: String): DocumentEntity?
-    suspend fun remove(target: String): Int
-    suspend fun deleteAll(): Int
+    suspend fun update(input: DocumentEntity)
+    suspend fun findById(target: Long): DocumentEntity?
+    suspend fun deleteById(target: Long)
+    suspend fun deleteAll(): Long
 }
 
 @Component
-class DocumentRepositoryImpl(private val template: R2dbcEntityTemplate) : DocumentRepository {
+class DocumentRepositoryImpl(private val template: R2dbcEntityTemplate) : RepositoryBase(), DocumentRepository {
     private val logger = logger()
 
     override suspend fun save(input: DocumentEntity): DocumentEntity {
         return template.insert<DocumentEntity>().usingAndAwait(input)
     }
 
-    // naive impl for now
-    // required to check beforehand if document exists
-    override suspend fun append(target: DocumentEntity, input: Text): Int {
-        val updatedText = target.text + input
-        logger.info("preparing to update document with $updatedText")
-        return template.update<DocumentEntity>()
-            .matching(documentQueryMatch(target.name))
-            .applyAndAwait(Update.update("text", updatedText.value)).toInt()
+    override suspend fun update(input: DocumentEntity) {
+        logger.debug { "Update operation with:$input" }
+        runSingleUpdate {
+            template.update<DocumentEntity>()
+                .matching(idQueryMatch(input.id))
+                .applyAndAwait(Update.update("text", input.text))
+        }
     }
 
-    override suspend fun removeText(target: DocumentEntity, input: Text): Int {
-        val updatedText = target.text - input
-        logger.info("preparing to update document with:$updatedText")
-        return template.update<DocumentEntity>()
-            .matching(documentQueryMatch(target.name))
-            .applyAndAwait(Update.update("text", updatedText.value)).toInt()
+    override suspend fun findById(target: Long): DocumentEntity? {
+        return runSingleSelect { template.select<DocumentEntity>().matching(idQueryMatch(target)).awaitOneOrNull() }
     }
 
-    override suspend fun findByName(target: String): DocumentEntity? {
-        return template.select<DocumentEntity>().matching(documentQueryMatch(target)).awaitFirstOrNull()
+    override suspend fun deleteById(target: Long) {
+        logger.debug { "Delete operation for target:$target" }
+        runSingleDelete { template.delete<DocumentEntity>().matching(idQueryMatch(target)).allAndAwait() }
     }
 
-    override suspend fun remove(target: String): Int {
-        return template.delete<DocumentEntity>().matching(documentQueryMatch(target)).allAndAwait().toInt()
+    override suspend fun deleteAll(): Long {
+        return template.delete<DocumentEntity>().allAndAwait()
     }
 
-    override suspend fun deleteAll(): Int {
-        return template.delete<DocumentEntity>().allAndAwait().toInt()
-    }
-
-    private fun documentQueryMatch(target: String): Query {
-        return Query.query(Criteria.where("name").`is`(target))
+    private fun idQueryMatch(target: Long): Query {
+        return Query.query(Criteria.where("id").`is`(target))
     }
 }
-

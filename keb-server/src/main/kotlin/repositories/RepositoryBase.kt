@@ -6,7 +6,7 @@ abstract class RepositoryBase {
         try {
             return selectAction()
         } catch (e: Throwable) {
-            ifNeedMapToIllegalStateExceptionOrThrow(e)
+            ifNeedWrapToIllegalStateExceptionOrThrow(e)
         }
     }
 
@@ -15,7 +15,7 @@ abstract class RepositoryBase {
             val affectedRows = updateAction()
             if (affectedRows != 1L) error("update operation affected:$affectedRows rows")
         } catch (e: Throwable) {
-            ifNeedMapToIllegalStateExceptionOrThrow(e)
+            ifNeedWrapToIllegalStateExceptionOrThrow(e)
         }
     }
 
@@ -24,11 +24,11 @@ abstract class RepositoryBase {
             val affectedRows = deleteAction()
             if (affectedRows != 1L) error("delete operation affected:$affectedRows rows")
         } catch (e: Throwable) {
-            ifNeedMapToIllegalStateExceptionOrThrow(e)
+            ifNeedWrapToIllegalStateExceptionOrThrow(e)
         }
     }
 
-    private fun ifNeedMapToIllegalStateExceptionOrThrow(e: Throwable): Nothing {
+    private fun ifNeedWrapToIllegalStateExceptionOrThrow(e: Throwable): Nothing {
         if (e is IllegalArgumentException || e is NoSuchElementException) {
             throw IllegalStateException(e)
         } else {
