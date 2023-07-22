@@ -17,3 +17,29 @@ inline fun <reified T> T.logger(): Logger =
 fun Logger.metric(msg: String) {
     this.info(MarkerFactory.getMarker("METRIC"), msg)
 }
+
+// lazy-factories
+
+fun Logger.debug(message: () -> Any) {
+    if (isDebugEnabled) debug(message.toString())
+}
+
+fun Logger.debug(message: () -> String) {
+    if (isDebugEnabled) debug(message)
+}
+
+fun Logger.info(message: () -> String) {
+    info(message)
+}
+
+fun Logger.info(message: () -> Any) {
+    info(message.toString())
+}
+
+fun Logger.warn(message: () -> String) {
+    warn(message)
+}
+
+fun Logger.warn(message: () -> Any) {
+    warn(message.toString())
+}
