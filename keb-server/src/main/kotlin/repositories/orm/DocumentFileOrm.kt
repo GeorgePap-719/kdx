@@ -50,7 +50,7 @@ private class DocumentFileEntityBuilder {
     var document: DocumentEntity? = null
     var fileAddress: FileAddress? = null
 
-    var isEmpty = true
+    val isEmpty: Boolean get() = id == null && document == null && fileAddress == null
 
     fun build(): DocumentFileEntity? {
         if (isEmpty) return null
