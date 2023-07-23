@@ -49,3 +49,13 @@ fun Logger.warn(message: () -> String) {
 fun Logger.warn(message: () -> Any) {
     warn(message.toString())
 }
+
+@JvmName("Error0")
+fun Logger.error(message: () -> String) {
+    error(message())
+}
+
+@JvmName("Error1")
+fun Logger.error(message: () -> Any) {
+    error(message.toString())
+}

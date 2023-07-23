@@ -7,6 +7,7 @@ import keb.server.dto.DocumentFile
 import keb.server.dto.Text
 import keb.server.entities.FileAddress
 import keb.server.repositories.DocumentFileRepository
+import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
@@ -18,6 +19,7 @@ import org.springframework.http.MediaType
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
 import org.springframework.web.reactive.function.client.awaitExchange
+import org.springframework.web.reactive.function.client.body
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -42,11 +44,13 @@ class DocumentFileRouterTest(
             CreateDocument(Text(listOf(RopeLeaf("hi server", 1)))),
             FileAddress("~/helloWorld.txt")
         )
+        val stream = listOf(newDocumentFile, newDocumentFile, newDocumentFile).asFlow()
         val response = webClient
             .post()
             .uri("$documentFileUrl/create")
             .accept(MediaType.APPLICATION_JSON)
-            .bodyValue(newDocumentFile)
+            .body(stream)
+        //.bodyValue()
 
         response.awaitExchange {
             println(it.statusCode().value())

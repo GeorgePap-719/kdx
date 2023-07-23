@@ -33,16 +33,14 @@ class DocumentFileHandler(private val documentFileService: DocumentFileService) 
     private val logger = logger()
 
     suspend fun create(request: ServerRequest): ServerResponse {
-        try {
-            logger.info { "request: $documentApiPrefix/create" }
-            //request.awaitBody<>() TODO: check spring's impl
-            val body = request.awaitAndRequireBody<CreateDocumentFile>()
-            val documentFile = documentFileService.create(body)
-            return ServerResponse.ok().bodyValueAndAwait(documentFile)
-        } catch (e: Throwable) {
-            logger.info { e.stackTraceToString() }
-            throw e
-        }
+        logger.info { "request: $documentApiPrefix/create" }
+        val awaitBody = request.awaitAndRequireBody<CreateDocumentFile>()
+        logger.info { awaitBody.toString() }
+//            //request.awaitBody<>() TODO: check spring's impl
+//            request.awaitBody<CreateDocumentFile>()
+//            val body = request.awaitAndRequireBody<CreateDocumentFile>()
+//            val documentFile = documentFileService.create(body)
+        return ServerResponse.ok().buildAndAwait()
     }
 
     suspend fun readFromId(request: ServerRequest): ServerResponse {
@@ -94,19 +92,26 @@ class DocumentFileHandler(private val documentFileService: DocumentFileService) 
 }
 
 suspend inline fun <reified T : Any> ServerRequest.awaitAndRequireBody(): T {
-    val body = awaitBodyOrNull<T>()
-    requireNotNull(body) { "Body is expected to be type of ${T::class.simpleName}" }
+    val body = try {
+        awaitBodyOrNull<T>()
+    } catch (e: IllegalArgumentException) { // serialization error
+        throw IllegalArgumentException(bodyTypeErrorMessage<T>())
+    }
+    requireNotNull(body) { bodyTypeErrorMessage<T>() }
     return body
+}
+
+inline fun <reified T : Any> bodyTypeErrorMessage(): String {
+    return "Body is expected to be type of ${T::class.simpleName}"
+}
+
+fun ServerRequest.pathVariableOrNull(name: String): String? {
+    val vars = pathVariables()
+    return vars[name]
 }
 
 const val DocumentFileAddressPathVariable = "file_address"
 const val DocumentIdPathVariable = "id"
-
-/**
- * A helper class to represent message in Json format for error responses.
- */
-@Serializable
-data class ErrorInfo(val error: String)
 
 
 /**
