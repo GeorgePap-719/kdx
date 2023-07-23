@@ -1,6 +1,7 @@
 package keb.server.routers
 
 import keb.server.dto.CreateDocumentFile
+import keb.server.routers.util.awaitAndRequireBody
 import keb.server.services.DocumentFileService
 import keb.server.util.info
 import keb.server.util.logger
@@ -89,25 +90,6 @@ class DocumentFileHandler(private val documentFileService: DocumentFileService) 
 //            ServerResponse.notFound().buildAndAwait()
 //        }
 //    }
-}
-
-suspend inline fun <reified T : Any> ServerRequest.awaitAndRequireBody(): T {
-    val body = try {
-        awaitBodyOrNull<T>()
-    } catch (e: IllegalArgumentException) { // serialization error
-        throw IllegalArgumentException(bodyTypeErrorMessage<T>())
-    }
-    requireNotNull(body) { bodyTypeErrorMessage<T>() }
-    return body
-}
-
-inline fun <reified T : Any> bodyTypeErrorMessage(): String {
-    return "Body is expected to be type of ${T::class.simpleName}"
-}
-
-fun ServerRequest.pathVariableOrNull(name: String): String? {
-    val vars = pathVariables()
-    return vars[name]
 }
 
 const val DocumentFileAddressPathVariable = "file_address"
