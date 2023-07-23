@@ -1,7 +1,7 @@
 package keb.server.routers
 
 import keb.server.dto.CreateDocumentFile
-import keb.server.routers.util.awaitAndRequireBody
+import keb.server.routers.request.awaitAndReceive
 import keb.server.services.DocumentFileService
 import keb.server.util.info
 import keb.server.util.logger
@@ -35,7 +35,7 @@ class DocumentFileHandler(private val documentFileService: DocumentFileService) 
 
     suspend fun create(request: ServerRequest): ServerResponse {
         logger.info { "request: $documentApiPrefix/create" }
-        val awaitBody = request.awaitAndRequireBody<CreateDocumentFile>()
+        val awaitBody = request.awaitAndReceive<CreateDocumentFile>()
         logger.info { awaitBody.toString() }
 //            //request.awaitBody<>() TODO: check spring's impl
 //            request.awaitBody<CreateDocumentFile>()
