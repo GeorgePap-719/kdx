@@ -15,8 +15,13 @@ import org.springframework.web.server.ServerWebExchange
 import org.springframework.web.server.WebExceptionHandler
 import reactor.core.publisher.Mono
 
-@Component
+/*
+ * The DefaultErrorWebExceptionHandler provided by Spring Boot for error handling is ordered at -1.
+ * The ResponseStatusExceptionHandler provided by Spring Framework is ordered at 0.
+ * So we add @Order(-2) on this exception handling component, to order it before the existing ones.
+ */
 @Order(-2)
+@Component
 class TopLevelExceptionHandler : WebExceptionHandler {
     private val logger = logger()
 
