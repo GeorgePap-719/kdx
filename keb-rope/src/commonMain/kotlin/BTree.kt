@@ -1,6 +1,9 @@
 package keb.ropes
 
-interface LeafInfo { // better name : LeafInfo || LeafType --> ?
+/**
+ * The properties of a [LeafNode].
+ */
+interface LeafInfo {
     val weight: Int
     val isLegal: Boolean
 }

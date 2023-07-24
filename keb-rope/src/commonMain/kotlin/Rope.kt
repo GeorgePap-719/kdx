@@ -725,14 +725,17 @@ internal class RopeInternalNodeChildrenIterator(
 }
 
 //TODO: lineCount
-open class RopeLeaf(val chars: String, val lineCount: Int) : LeafInfo, Iterable<Char>, CharSequence {
+open class RopeLeaf(val chars: String, val lineCount: Int) : LeafInfo, Iterable<Char> {
     override val weight: Int = chars.length
     override val isLegal: Boolean = chars.length <= MAX_SIZE_LEAF && chars.isNotEmpty()
 
-    override val length: Int = chars.length
+    open val length: Int = chars.length
+    open operator fun get(index: Int): Char = chars[index]
+    open fun subSequence(startIndex: Int, endIndex: Int): CharSequence = chars.subSequence(startIndex, endIndex)
+
+    val isEmpty: Boolean = chars.isEmpty()
+
     override fun iterator(): Iterator<Char> = chars.iterator()
-    override fun get(index: Int): Char = chars[index]
-    override fun subSequence(startIndex: Int, endIndex: Int): CharSequence = chars.subSequence(startIndex, endIndex)
 
     fun add(index: Int, element: String): RopeLeaf {
         val newValue = buildString {
@@ -775,6 +778,19 @@ open class RopeLeaf(val chars: String, val lineCount: Int) : LeafInfo, Iterable<
     }
 }
 
+fun RopeLeaf.substring(startIndex: Int, endIndex: Int = length): String = subSequence(startIndex, endIndex).toString()
+fun RopeLeaf.substring(range: IntRange): String = substring(range.first, range.last + 1)
+
+/**
+ * Returns the range of valid character indices for this [RopeLeaf].
+ */
+val RopeLeaf.indices: IntRange get() = 0..<length
+
+/**
+ * Returns the last index for this [RopeLeaf].
+ */
+val RopeLeaf.lastIndex: Int get() = length - 1
+
 fun RopeLeaf.removeRange(startIndex: Int, endIndex: Int): RopeLeaf {
     val newValue = (this as CharSequence).removeRange(startIndex, endIndex).toString()
     return RopeLeaf(newValue)
@@ -800,7 +816,7 @@ internal object EmptyRopeLeaf : RopeLeaf("", 0) {
     override val isLegal: Boolean = false
     override val length: Int = 0
 
-    override fun get(index: Int): Char =
+    override operator fun get(index: Int): Char =
         throw IndexOutOfBoundsException("Empty leaf doesn't contain element at index:$index")
 
     override fun toString(): String = "RopeLeaf(\"\", 0)"
@@ -809,10 +825,11 @@ internal object EmptyRopeLeaf : RopeLeaf("", 0) {
 
     override fun iterator(): Iterator<Char> = EmptyIterator
     override fun subSequence(startIndex: Int, endIndex: Int): CharSequence {
-        if (startIndex == 0 && endIndex == 0) return this
+        if (startIndex == 0 && endIndex == 0) return this.chars
         throw IndexOutOfBoundsException("Empty leaf doesn't contain element at startIndex:$startIndex, and endIndex:$endIndex")
     }
 }
+
 
 fun RopeLeaf(charCount: String): RopeLeaf = RopeLeaf(charCount, 0)
 
@@ -920,7 +937,7 @@ internal fun RopeLeafNode.add(index: Int, element: String): RopeLeafNode {
 internal inline fun RopeLeafNode.deleteAtAndIfEmpty(index: Int, onEmpty: () -> RopeLeafNode): RopeLeafNode {
     checkElementIndex(index, this.value)
     val newValue = value.deleteAt(index)
-    if (newValue.isEmpty()) return onEmpty()
+    if (newValue.isEmpty) return onEmpty()
     return RopeLeafNode(newValue)
 }
 
