@@ -35,13 +35,9 @@ class DocumentFileHandler(private val documentFileService: DocumentFileService) 
 
     suspend fun create(request: ServerRequest): ServerResponse {
         logger.info { "request: $documentApiPrefix/create" }
-        val awaitBody = request.awaitAndReceive<CreateDocumentFile>()
-        logger.info { awaitBody.toString() }
-//            //request.awaitBody<>() TODO: check spring's impl
-//            request.awaitBody<CreateDocumentFile>()
-//            val body = request.awaitAndRequireBody<CreateDocumentFile>()
-//            val documentFile = documentFileService.create(body)
-        return ServerResponse.ok().buildAndAwait()
+        val body = request.awaitAndReceive<CreateDocumentFile>()
+        val documentFile = documentFileService.create(body)
+        return ServerResponse.ok().bodyValueAndAwait(documentFile)
     }
 
     suspend fun readFromId(request: ServerRequest): ServerResponse {

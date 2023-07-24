@@ -38,7 +38,7 @@ class DocumentFileRepositoryImpl(private val template: R2dbcEntityTemplate) : Re
             """.trimIndent()
         }
             .bind<String>("textJson", Json.encodeToString(input.document.text))
-            .bind<String>("fileAddress", input.fileAddress.value)
+            .bind<FileAddress>("fileAddress", input.fileAddress)
         return mapToDocumentFile(result)!!
     }
 
