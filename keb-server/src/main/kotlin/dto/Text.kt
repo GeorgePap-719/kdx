@@ -17,7 +17,7 @@ import kotlinx.serialization.encoding.Encoder
 @Serializable(with = TextSerializer::class)
 data class Text(val leaves: List<RopeLeaf>) {
     val leavesSize = leaves.size
-    val length: Int by lazy { leaves.sumOf { it.weight } }
+    val length: Int by lazy { leaves.sumOf { it.length } }
 
     fun add(index: Int, element: RopeLeaf): Text {
         val newLeaves = buildList {

@@ -4,11 +4,20 @@ package keb.ropes
  * The properties of a [LeafNode].
  */
 interface LeafInfo {
-    val weight: Int
+    /**
+     * Returns the length of this leaf.
+     */
+    val length: Int
+
+    /**
+     * Returns whether this leaf is legal or not.
+     * Generally, this mostly depends on the leaf's implementation,
+     * but can be used to decide if the tree needs rebalancing or not.
+     */
     val isLegal: Boolean
 }
 
-val LeafInfo.isEmpty: Boolean get() = weight == 0
+val LeafInfo.isEmpty: Boolean get() = length == 0
 
 /**
  * A persistent [btree](https://en.wikipedia.org/wiki/B-tree#Algorithms) node.
@@ -32,7 +41,7 @@ fun <T : LeafInfo> BTreeNode<T>.isBalanced(): Boolean {
 }
 
 /**
- * Checks if tree needs rebalancing and rebuilds it from the bottom-up.
+ * Checks if the tree needs rebalancing and rebuilds it from the bottom-up.
  * In case it is balanced, then it returns the same tree.
  *
  * @throws IllegalArgumentException if a child node is not legal ([BTreeNode.isLegal]).
@@ -47,7 +56,7 @@ fun <T : LeafInfo> BTreeNode<T>.rebalance(): BTreeNode<T> {
 fun <T : LeafInfo> BTreeNode<T>.collectLeaves(): List<LeafNode<T>> = toList()
 
 class LeafNode<out T : LeafInfo>(val value: T) : BTreeNode<T>() {
-    override val weight: Int = value.weight
+    override val weight: Int = value.length
     override val height: Int = 0
     override val isEmpty: Boolean = value.isEmpty
     override val isLegal: Boolean = value.isLegal

@@ -726,10 +726,9 @@ internal class RopeInternalNodeChildrenIterator(
 
 //TODO: lineCount
 open class RopeLeaf(val chars: String, val lineCount: Int) : LeafInfo, Iterable<Char> {
-    override val weight: Int = chars.length
+    override val length: Int = chars.length
     override val isLegal: Boolean = chars.length <= MAX_SIZE_LEAF && chars.isNotEmpty()
 
-    open val length: Int = chars.length
     open operator fun get(index: Int): Char = chars[index]
     open fun subSequence(startIndex: Int, endIndex: Int): CharSequence = chars.subSequence(startIndex, endIndex)
 
@@ -812,9 +811,8 @@ fun RopeLeaf.subStringLeaf(range: IntRange): RopeLeaf {
 }
 
 internal object EmptyRopeLeaf : RopeLeaf("", 0) {
-    override val weight: Int = 0
-    override val isLegal: Boolean = false
     override val length: Int = 0
+    override val isLegal: Boolean = false
 
     override operator fun get(index: Int): Char =
         throw IndexOutOfBoundsException("Empty leaf doesn't contain element at index:$index")
@@ -955,13 +953,13 @@ private fun checkValueIndex(index: Int, leafNode: RopeLeaf) {
 
 private fun checkElementIndex(index: Int, leafNode: RopeLeaf) {
     if (index < 0 || index > leafNode.lastIndex) {
-        throw IndexOutOfBoundsException("index:$index, leaf-length:${leafNode.weight}")
+        throw IndexOutOfBoundsException("index:$index, leaf-length:${leafNode.length}")
     }
 }
 
 private fun RopeLeaf.checkRangeIndexes(startIndex: Int, endIndex: Int) {
     if (startIndex < 0 || endIndex > lastIndex) {
-        throw IndexOutOfBoundsException("startIndex:$startIndex, endIndex:$endIndex, leaf-length:${weight}")
+        throw IndexOutOfBoundsException("startIndex:$startIndex, endIndex:$endIndex, leaf-length:${length}")
     }
     if (endIndex < startIndex) {
         throw IndexOutOfBoundsException("End index ($endIndex) is less than start index ($startIndex).")
