@@ -5,7 +5,8 @@ package keb.ropes
  */
 interface LeafInfo {
     /**
-     * Returns the length of this leaf.
+     * Returns the measurement of this leaf in units.
+     * The type of unit is specified by the implementation.
      */
     val length: Int
 

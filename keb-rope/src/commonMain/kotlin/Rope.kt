@@ -319,8 +319,9 @@ open class Rope(private val root: RopeNode) {
                     // Iterate the next child and keep `self` reference in stack, since we
                     // need to allow a child to find its parent in stack in the case of "failure".
                     curNode = parent.nextChildAndKeepRefOrElse(stack) {
-                        // If neither `parent` nor stack has a node to give back, then there are no more
-                        // nodes to traverse. Technically, returning `null` here means we are in rightmost subtree.
+                        // If neither `parent` nor stack has a node to give back,
+                        // then there are no more nodes to traverse.
+                        // Technically, returning onOutOfBounds() here means we are in rightmost subtree.
                         stack.popOrNull() ?: return onOutOfBounds()
                     }
                     onNextChild(curNode)
