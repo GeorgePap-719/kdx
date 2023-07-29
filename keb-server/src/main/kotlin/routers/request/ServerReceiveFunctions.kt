@@ -2,12 +2,21 @@ package keb.server.routers.request
 
 import keb.server.serialization.Json
 import org.springframework.web.reactive.function.server.ServerRequest
-import org.springframework.web.reactive.function.server.awaitBodyOrNull
+import org.springframework.web.reactive.function.server.awaitBody
 
 suspend inline fun <reified T : Any> ServerRequest.awaitAndReceive(): T {
-    val body = awaitBodyOrNull<String>()
-    requireNotNull(body) { bodyTypeErrorMessage<T>() }
-    return deserializeBody(body)
+    val body = try {
+        awaitBody<T>()
+    } catch (e: Throwable) {
+        // We catch only exceptions related to `coroutines` bridge await.single()
+        // and to serialization exceptions.
+        if (e is IllegalArgumentException || e is NoSuchElementException) {
+            throw IllegalArgumentException(bodyTypeErrorMessage<T>())
+        }
+        // Anything else we propagate it top top-level handler.
+        throw e
+    }
+    return body
 }
 
 // private API
