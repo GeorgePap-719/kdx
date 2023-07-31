@@ -93,11 +93,27 @@ class ZipIterator(
     private val rightIterator = rightSubset.segments.iterator()
 
     override operator fun hasNext(): Boolean {
-        if (leftIterator.hasNext() && rightIterator.hasNext()) return true
+        val leftHasNext = leftIterator.hasNext()
+        val rightHasNext = rightIterator.hasNext()
+        when {
+            leftHasNext && rightHasNext -> return true
+            !leftHasNext && !rightHasNext -> return false
+            leftHasNext && !rightHasNext || !leftHasNext && rightHasNext -> {
+                error("Can't zip Subsets of different base lengths.")
+            }
+        }
+        error("unexpected")
     }
 
     override operator fun next(): ZipSegment {
-
+        val left = leftIterator.next()
+        val right = rightIterator.next()
+        when ((left.length + leftConsumed).compareTo(right.length + rightConsumed)) {
+            0 -> {}
+            1 -> {}
+            -1 -> {}
+            else -> error("unexpected")
+        }
     }
 }
 
