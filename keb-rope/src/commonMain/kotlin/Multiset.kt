@@ -1,10 +1,10 @@
 package keb.ropes
 
 /**
- * Creates an empty [Subset] of a string with [length].
+ * Creates an "empty" [Subset] of a string with [length].
  */
 fun Subset(length: Int): Subset {
-    return buildSubset { paddingToLength(length) }
+    return Subset(listOf(Segment(length, 0)))
 }
 
 /**
@@ -13,8 +13,8 @@ fun Subset(length: Int): Subset {
  */
 class Subset(val segments: List<Segment>) {
     init {
-        /// Invariant, maintained by `SubsetBuilder`: all `Segment`s have non-zero
-        /// length, and no `Segment` has the same count as the one before it.
+        // Invariant, maintained by `SubsetBuilder`: all `Segment`s have non-zero
+        // length, and no `Segment` has the same count as the one before it.
         assert {
             checkForInvariants()
             true // workaround to use assert{}
@@ -63,56 +63,47 @@ class Subset(val segments: List<Segment>) {
      */
     fun isEmpty(): Boolean = segments.isEmpty() || (segments.size == 1 && segments.first().count == 0)
 
-    fun union(): Subset {
-        TODO()
+    /**
+     * Computes the union of two [subsets][Subset].
+     * The count of an element in the result is the sum of the counts in the inputs.
+     */
+    fun union(other: Subset): Subset = buildSubset {
+        for (zseg in zip(other)) add(zseg.length, zseg.leftCount + zseg.rightCount)
     }
 
-    fun zip() {
-        TODO()
-    }
-}
-
-class ZipSegment(length: Int, leftCount: Int, rightCount: Int)
-
-class ZipIterator(
-    private val leftSubset: Subset,
-    private val rightSubset: Subset,
-    private val leftIndex: Int,
-    private val rightIndex: Int,
-    private var leftConsumed: Int,
-    private var rightConsumed: Int,
-    var consumed: Int
-) : Iterator<ZipSegment> {
-    init {
-        require(leftSubset.segments.size == rightSubset.segments.size) {
-            "Both segments must have equal size."
-        }
+    fun zip(other: Subset): ZipIterator {
+        return ZipIterator(this, other)
     }
 
-    private val leftIterator = leftSubset.segments.iterator()
-    private val rightIterator = rightSubset.segments.iterator()
-
-    override operator fun hasNext(): Boolean {
-        val leftHasNext = leftIterator.hasNext()
-        val rightHasNext = rightIterator.hasNext()
-        when {
-            leftHasNext && rightHasNext -> return true
-            !leftHasNext && !rightHasNext -> return false
-            leftHasNext && !rightHasNext || !leftHasNext && rightHasNext -> {
-                error("Can't zip Subsets of different base lengths.")
+    /// Map the contents of `self` into the 0-regions of `other`.
+    /// Precondition: `self.count(CountMatcher::All) == other.count(CountMatcher::Zero)`
+    fun transform(other: Subset, union: Boolean): Subset {
+        return buildSubset {
+            val iterator = segments.iterator()
+            var curSeg = Segment(0, 0)
+            for (otherSeg in other.segments) {
+                if (otherSeg.count > 0) {
+                    add(otherSeg.length, if (union) otherSeg.count else 0)
+                } else {
+                    // Fill 0-region with segments from `this`.
+                    var consumable = otherSeg.length
+                    while (consumable > 0) {
+                        if (curSeg.length == 0) {
+                            // `iterator.next()` should not throw `NoSuchElementException`,
+                            // because this must cover all 0-regions of `other`.
+                            curSeg = iterator.next()
+                        }
+                        val consumed = minOf(curSeg.length, consumable)
+                        add(consumed, curSeg.count)
+                        consumable -= consumed
+                        curSeg = Segment(curSeg.length - consumed, curSeg.count)
+                    }
+                }
             }
-        }
-        error("unexpected")
-    }
-
-    override operator fun next(): ZipSegment {
-        val left = leftIterator.next()
-        val right = rightIterator.next()
-        when ((left.length + leftConsumed).compareTo(right.length + rightConsumed)) {
-            0 -> {}
-            1 -> {}
-            -1 -> {}
-            else -> error("unexpected")
+            // The 0-regions of `other` must be the size of `this`.
+            assert { curSeg.length == 0 }
+            // The 0-regions of `other` must be the size of `this`.
+            assert { !iterator.hasNext() }
         }
     }
 }
@@ -126,6 +117,65 @@ enum class CountMatcher {
         ZERO -> segment.count == 0
         NON_ZERO -> segment.count != 0
         ALL -> true
+    }
+}
+
+class ZipSegment(val length: Int, val leftCount: Int, val rightCount: Int)
+
+class ZipIterator(
+    leftSubset: Subset,
+    rightSubset: Subset,
+    private var leftI: Int = 0,
+    private var rightI: Int = 0,
+    private var leftConsumed: Int = 0,
+    private var rightConsumed: Int = 0,
+    private var consumed: Int = 0
+) : Iterator<ZipSegment> {
+    init {
+        require(leftSubset.segments.size == rightSubset.segments.size) {
+            "Cannot zip Subsets with different lengths."
+        }
+    }
+
+    private val leftSegments = leftSubset.segments
+    private val rightSegments = rightSubset.segments
+
+    override operator fun hasNext(): Boolean {
+        if (leftSegments.getOrNull(leftI) != null && rightSegments.getOrNull(rightI) != null) return true
+        if (leftSegments.getOrNull(leftI) == null && rightSegments.getOrNull(rightI) == null) return false
+        error("Cannot zip Subsets with different lengths.")
+    }
+
+    //TODO: research this.
+    override operator fun next(): ZipSegment {
+        val left = leftSegments[leftI]
+        val right = rightSegments[rightI]
+        val result = (left.length + leftConsumed).compareTo(right.length + rightConsumed)
+        val length = when {
+            result == 0 -> {
+                leftConsumed += left.length
+                leftI++
+                rightConsumed += right.length
+                rightI++
+                leftConsumed - consumed
+            }
+
+            result > 0 -> {
+                leftConsumed += left.length
+                leftI++
+                leftConsumed - consumed
+            }
+
+            result < 0 -> {
+                rightConsumed += right.length
+                rightI++
+                rightConsumed - consumed
+            }
+
+            else -> error("unexpected")
+        }
+        consumed += length
+        return ZipSegment(length, left.count, right.count)
     }
 }
 
@@ -175,6 +225,10 @@ class SubsetBuilder {
 
 
     fun build(): Subset = Subset(segments)
+}
+
+fun SubsetBuilder.add(length: Int, count: Int) {
+    add(Segment(length, count))
 }
 
 fun buildSubset(action: SubsetBuilder.() -> Unit): Subset {
