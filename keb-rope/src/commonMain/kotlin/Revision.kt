@@ -40,6 +40,14 @@ class Undo(
 ) : Content()
 
 /**
+ * Returns the hash of this [RevId].
+ */
+/// Returns a u64 that will be equal for equivalent revision IDs and
+/// should be as unlikely to collide as two random u64s.
+//TODO: research about kotlin's hashCode() collision rate.
+fun RevId.token(): RevToken = hashCode().toLong()
+
+/**
  * An unique identifier for a [Revision].
  */
 class RevId(
@@ -54,8 +62,32 @@ class RevId(
      */
     // There will probably never be a document with more than 4 billion edits
     // in a single session.
-    val counter: Int = 0
-)
+    val count: Int = 0
+) {
+    val sessionId: SessionId = SessionId(session1, session2)
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as RevId
+
+        if (session1 != other.session1) return false
+        if (session2 != other.session2) return false
+        if (count != other.count) return false
+        if (sessionId != other.sessionId) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = session1.hashCode()
+        result = 31 * result + session2
+        result = 31 * result + count
+        result = 31 * result + sessionId.hashCode()
+        return result
+    }
+}
 
 /// Valid within a session. If there's a collision the most recent matching
 /// Revision will be used, which means only the (small) set of concurrent edits
