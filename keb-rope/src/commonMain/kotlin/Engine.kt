@@ -40,5 +40,10 @@ interface Engine {
     val history: List<Revision>
 }
 
+// for nicer API?
+val Engine.head get() = text
+
 /// the session ID component of a `RevId`
 typealias SessionId = Pair<Long, Int>
+
+//TODO: EmptyEngine
