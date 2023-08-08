@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component
 import org.springframework.web.server.ServerWebExchange
 import org.springframework.web.server.WebExceptionHandler
 import reactor.core.publisher.Mono
+import reactor.kotlin.core.publisher.toMono
 
 /*
  * The DefaultErrorWebExceptionHandler provided by Spring Boot for error handling is ordered at -1.
@@ -34,10 +35,10 @@ class TopLevelExceptionHandler : WebExceptionHandler {
                     it.headers.contentType = MediaType.APPLICATION_JSON
                     val exMessage = ex.message
                     if (exMessage == null) {
-                        it.writeWith { sub -> sub.onComplete() }
+                        it.writeWith(Mono.empty())
                     } else {
                         val response = it.bufferFactory().wrap(errorMessage(exMessage))
-                        it.writeWith { sub -> sub.onNext(response) }
+                        it.writeWith(response.toMono())
                     }
                 }
             }
@@ -48,7 +49,7 @@ class TopLevelExceptionHandler : WebExceptionHandler {
                     it.statusCode = HttpStatus.INTERNAL_SERVER_ERROR
                     it.headers.contentType = MediaType.APPLICATION_JSON
                     val response = it.bufferFactory().wrap(internalServerError)
-                    it.writeWith { sub -> sub.onNext(response) }
+                    it.writeWith(response.toMono())
                 }
             }
         }
