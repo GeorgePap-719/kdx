@@ -25,8 +25,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-webflux")
     implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
     // database
-    implementation("dev.miku:r2dbc-mysql:$r2dbcMysqlDriver")
-    implementation("mysql:mysql-connector-java:8.0.28")
+    implementation("io.asyncer:r2dbc-mysql:$r2dbcMysqlDriver")
+    implementation("com.mysql:mysql-connector-j:8.1.0")
     // kotlin
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinxCoroutinesVersion")
