@@ -33,12 +33,12 @@ class DocumentFileRepositoryImpl(private val template: R2dbcEntityTemplate) : Re
         }
         val result = template.databaseClient.sql {
             //language=MySQL
-            """ INSERT INTO keb.document values (text_json =:textJson);
-                INSERT INTO keb.document_file values (document_id=LAST_INSERT_ID() ,file_address =:fileAddress)
+            """ INSERT INTO keb.document values (0,text_json =:textJson);
+                INSERT INTO keb.document_file values (0,document_id=LAST_INSERT_ID() ,file_address =:fileAddress)
             """.trimIndent()
         }
             .bind<String>("textJson", Json.encodeToString(input.document.text))
-            .bind<FileAddress>("fileAddress", input.fileAddress)
+            .bind<String>("fileAddress", input.fileAddress.value)
         return mapToDocumentFile(result)!!
     }
 

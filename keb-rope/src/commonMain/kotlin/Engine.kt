@@ -43,6 +43,18 @@ interface Engine {
 // for nicer API?
 val Engine.head get() = text
 
+val Engine.headRevId: RevId get() = history.last().id
+
+fun Engine.nextRevId(): RevId = RevId(sessionId.first, sessionId.second, revIdCount)
+
+fun Engine(initial: Rope): Engine {
+    TODO()
+}
+
+fun emptyEngine(): Engine {
+    TODO()
+}
+
 /// the session ID component of a `RevId`
 typealias SessionId = Pair<Long, Int>
 
