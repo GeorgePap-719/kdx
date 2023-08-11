@@ -242,6 +242,12 @@ fun Subset.xor(other: Subset): Subset = buildSubset {
     for (zseg in zip(other)) add(zseg.length, zseg.leftCount.xor(zseg.rightCount))
 }
 
+/**
+ * Returns an "empty" [Subset].
+ */
+//TODO: delete if not used
+//internal fun emptySubset(): Subset = Subset(listOf())
+
 enum class CountMatcher {
     ZERO,
     NON_ZERO,

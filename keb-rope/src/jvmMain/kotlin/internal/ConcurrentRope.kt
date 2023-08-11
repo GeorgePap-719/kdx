@@ -1,6 +1,7 @@
 package keb.ropes.internal
 
 import keb.ropes.Rope
+import keb.ropes.RopeIterator
 import kotlinx.atomicfu.atomic
 
 internal class ConcurrentRope(text: Rope) {
@@ -33,4 +34,6 @@ internal class ConcurrentRope(text: Rope) {
             if (_text.compareAndSet(cur, value)) break
         }
     }
+
+    operator fun iterator(): RopeIterator = value.iterator()
 }
