@@ -110,5 +110,5 @@ internal class ConcurrentLinkedList<T : Any>(initialLength: Int) : AbstractMutab
 }
 
 internal fun <T : Any> List<T>.toConcurrentLinkedList(): MutableList<T> {
-    return ConcurrentLinkedList<T>().also { it.addAll(this) }
+    return ConcurrentLinkedList<T>(this.size).also { it.addAll(this) }
 }
