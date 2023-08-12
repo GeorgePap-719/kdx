@@ -58,10 +58,6 @@ class Subset internal constructor(private val segments: List<Segment>) {
      */
     fun isEmpty(): Boolean = segments.isEmpty() || (segments.size == 1 && segments.first().count == 0)
 
-    fun zip(other: Subset): Iterator<ZipSegment> {
-        return ZipIterator(this, other)
-    }
-
     /**
      * Maps the contents of [this][Subset] into the 0-regions of [other].
      * By extension, it is a precondition that the 0-regions of [other] to be of equal size with [this][Subset].
@@ -108,6 +104,8 @@ class Subset internal constructor(private val segments: List<Segment>) {
             assert { !iterator.hasNext() }
         }
     }
+
+    fun zip(other: Subset): Iterator<ZipSegment> = ZipIterator(this, other)
 
     private inner class ZipIterator(
         leftSubset: Subset,
@@ -163,6 +161,111 @@ class Subset internal constructor(private val segments: List<Segment>) {
             }
             consumed += length
             return ZipSegment(length, left.count, right.count)
+        }
+    }
+
+    /**
+     * Returns the complement of this [Subset].
+     * Every 0-count element will have a count of 1
+     * and every non-zero element will have a count of 0.
+     */
+    fun complement(): Subset = buildSubset {
+        for (seg in segments) {
+            if (seg.count == 0) {
+                add(seg.length, 1)
+            } else {
+                add(seg.length, 0)
+            }
+        }
+    }
+
+    fun rangeIterator(matcher: CountMatcher): RangeIterator {
+        return RangeIterator(
+            segments.iterator(),
+            matcher,
+            0
+        )
+    }
+}
+
+// Returns a `Mapper`
+// that can be used to map coordinates in the document to coordinates in this `Subset`,
+// but only in non-decreasing order
+// for performance reasons.
+fun Subset.mapper(matcher: CountMatcher): Mapper {
+    return Mapper(
+        rangeIterator(matcher),
+        0,
+        0 to 0,
+        0
+    )
+}
+
+fun Subset.complementIterator(): RangeIterator = rangeIterator(CountMatcher.ZERO)
+
+private typealias Range = Pair<Int, Int>
+
+class RangeIterator(
+    private val segIterator: Iterator<Segment>,
+    private val matcher: CountMatcher,
+    consumed: Int
+) {
+    var consumed: Int = consumed
+        private set
+
+    operator fun next(): Range? {
+        for (seg in segIterator) {
+            consumed += seg.length
+            if (matcher.matches(seg)) return consumed - seg.length to consumed
+        }
+        return null
+    }
+}
+
+class Mapper(
+    private val rangeIterator: RangeIterator,
+    private var lastIndex: Int,
+    private var curRange: Range,
+    subsetAmountConsumed: Int
+) {
+    var subsetAmountConsumed: Int = subsetAmountConsumed
+        private set
+
+    /// Map a coordinate in the document this subset corresponds to, to a
+    /// coordinate in the subset matched by the `CountMatcher`. For example,
+    /// if the Subset is a set of deletions and the matcher is
+    /// `CountMatcher::NonZero`, this would map indices in the union string to
+    /// indices in the tombstones string.
+    ///
+    /// Will return the closest coordinate in the subset if the index is not
+    /// in the subset. If the coordinate is past the end of the subset it will
+    /// return one more than the largest index in the subset (i.e the length).
+    /// This behaviour is suitable for mapping closed-open intervals in a
+    /// string to intervals in a subset of the string.
+    ///
+    /// In order to guarantee good performance, this method must be called
+    /// with `i` values in non-decreasing order or it will panic. This allows
+    /// the total cost to be O(n) where `n = max(calls,ranges)` over all times
+    /// called on a single `Mapper`
+    fun docIndexToSubset(index: Int): Int {
+        require(index >= lastIndex) {
+            "index must be in non-decreasing order, but got:$index, with lastIndex:$lastIndex"
+        }
+        lastIndex = index
+        while (index >= curRange.second) {
+            subsetAmountConsumed += curRange.second - curRange.first
+            val nextRange = rangeIterator.next()
+            if (nextRange == null) {
+                curRange = Int.MAX_VALUE to Int.MAX_VALUE
+                return subsetAmountConsumed
+            }
+            curRange = nextRange
+        }
+        return if (index >= curRange.first) {
+            val distanceInRange = index - curRange.first
+            distanceInRange + subsetAmountConsumed
+        } else {
+            subsetAmountConsumed
         }
     }
 }
