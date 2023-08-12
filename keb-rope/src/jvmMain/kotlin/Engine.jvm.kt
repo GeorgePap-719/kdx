@@ -1,6 +1,8 @@
 package keb.ropes
 
 import keb.ropes.internal.ConcurrentRope
+import keb.ropes.internal.toConcurrentLinkedList
+import keb.ropes.internal.toConcurrentSet
 import kotlinx.atomicfu.atomic
 
 // Notes:
@@ -20,8 +22,8 @@ class JvmEngine(
     private val _text = ConcurrentRope(text)
     private val _tombstones = ConcurrentRope(tombstones)
     private val _deletesFromUnion = atomic(deletesFromUnion)
-    private val _undoneGroups = undoneGroups.toMutableSet()
-    private val _history = history.toMutableList()
+    private val _undoneGroups = undoneGroups.toConcurrentSet()
+    private val _history = history.toConcurrentLinkedList()
 
 
     override val sessionId: SessionId get() = _sessionId.value
