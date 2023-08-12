@@ -2,8 +2,7 @@ package keb.ropes.internal
 
 import kotlinx.atomicfu.locks.synchronized
 
-@Suppress("FunctionName")
-internal fun <T : Any> ConcurrentLinkedList(): MutableList<T> = object : MutableList<T> {
+class ConcurrentLinkedList<T : Any> : AbstractMutableList<T>() {
     // Not the proper structure for this,
     // as we have to synchronize everything on write.
     //TODO: add a better atomic array structure if there is time.
@@ -48,7 +47,17 @@ internal fun <T : Any> ConcurrentLinkedList(): MutableList<T> = object : Mutable
         return true
     }
 
-    override fun get(index: Int): T = array[index] ?: throw NoSuchElementException()
+    // for nullable variant see [getOrNull].
+    override fun get(index: Int): T {
+        checkElementIndex(index)
+        return array[index] ?: throw NoSuchElementException()
+    }
+
+    fun getOrNull(index: Int): T? {
+        checkElementIndex(index)
+        return array[index]
+    }
+
 
     override fun isEmpty(): Boolean {
         val curArray = array // volatile read
@@ -79,7 +88,11 @@ internal fun <T : Any> ConcurrentLinkedList(): MutableList<T> = object : Mutable
     }
 
     override fun subList(fromIndex: Int, toIndex: Int): MutableList<T> {
-        TODO("Not yet implemented")
+        val curArray = array
+        if ()
+            for (i in fromIndex..<toIndex) {
+
+            }
     }
 
     override fun set(index: Int, element: T): T {
@@ -113,9 +126,30 @@ internal fun <T : Any> ConcurrentLinkedList(): MutableList<T> = object : Mutable
     override fun contains(element: T): Boolean {
         TODO("Not yet implemented")
     }
+
+    private fun checkElementIndex(index: Int) {
+        if (index < 0 || index >= size) {
+            throw IndexOutOfBoundsException("index: $index, size: $size")
+        }
+    }
+
+    internal fun checkPositionIndex(index: Int) {
+        if (index < 0 || index > size) {
+            throw IndexOutOfBoundsException("index: $index, size: $size")
+        }
+    }
+
+    private fun checkRangeIndexes(fromIndex: Int, toIndex: Int) {
+        if (fromIndex < 0 || toIndex > size) {
+            throw IndexOutOfBoundsException("fromIndex: $fromIndex, toIndex: $toIndex, size: $size")
+        }
+        if (fromIndex > toIndex) {
+            throw IllegalArgumentException("fromIndex: $fromIndex > toIndex: $toIndex")
+        }
+    }
 }
 
 
 internal fun <T> List<T>.toConcurrentLinkedList(): MutableList<T> {
-    return ConcurrentLinkedList<T>().also { it.addAll(this) }
+//    return ConcurrentLinkedList<T>().also { it.addAll(this) }
 }
