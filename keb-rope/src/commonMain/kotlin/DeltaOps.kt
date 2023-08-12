@@ -50,6 +50,20 @@ fun <T : NodeInfo> synthesize(
     val baseLen = fromDeletes.lengthAfterDelete()
     val changes = mutableListOf<DeltaElement<T>>()
     var x = 0
-    //TODO: complementIter
-    TODO()
+    val oldRanges = fromDeletes.complementIterator()
+    val lastOld = oldRanges.next()
+    val mapper = fromDeletes.mapper(CountMatcher.ZERO)
+
+    val toDelsIterator = toDeletes.complementIterator()
+    // For each segment of the new text.
+    while (toDelsIterator.hasNext()) {
+        val (b, e) = toDelsIterator.next() ?: continue
+        // Fill the whole segment.
+        var beg = b
+        while (beg < e) {
+            // im starting to write oti nane..
+            //
+            TODO()
+        }
+    }
 }

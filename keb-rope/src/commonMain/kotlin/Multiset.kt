@@ -209,11 +209,13 @@ class RangeIterator(
     private val segIterator: Iterator<Segment>,
     private val matcher: CountMatcher,
     consumed: Int
-) {
+) : Iterator<Range?> {
     var consumed: Int = consumed
         private set
 
-    operator fun next(): Range? {
+    override operator fun hasNext(): Boolean = segIterator.hasNext()
+
+    override operator fun next(): Range? {
         for (seg in segIterator) {
             consumed += seg.length
             if (matcher.matches(seg)) return consumed - seg.length to consumed
