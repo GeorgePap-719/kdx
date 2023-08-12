@@ -5,13 +5,6 @@ import keb.ropes.internal.EmptyIterator
 import keb.ropes.internal.PeekableArrayStack
 import keb.ropes.internal.Symbol
 
-fun Rope(value: String): Rope {
-    val root = ropeNodeOf(value)
-    return Rope(root)
-}
-
-fun emptyRope(): Rope = EmptyRope
-
 /**
  * A [persistent](https://en.wikipedia.org/wiki/Persistent_data_structure) [rope](https://en.wikipedia.org/wiki/Rope_(data_structure)#See_also)
  * data structure, backed by a [btree][BTreeNode].
@@ -596,6 +589,12 @@ open class Rope(private val root: RopeNode) {
     internal fun toStringDebug(): String = root.toStringDebug()
 }
 
+fun Rope(value: String): Rope {
+    val root = ropeNodeOf(value)
+    return Rope(root)
+}
+
+
 /**
  * Iterator for [Rope]. Each iteration is performed lazily, similarly how a sequence works.
  */
@@ -636,6 +635,8 @@ interface RopeIterator {
     val isClosed: Boolean
 }
 
+fun emptyRope(): Rope = EmptyRope
+
 internal object EmptyRope : Rope(emptyRopeNode()) {
     override fun toString(): String = "Rope()"
     override fun equals(other: Any?): Boolean = other is Rope && other.isEmpty()
@@ -665,7 +666,6 @@ internal object EmptyRope : Rope(emptyRopeNode()) {
         throw IndexOutOfBoundsException("startIndex: $startIndex, endIndex:$endIndex")
     }
 }
-
 
 fun Rope.insert(index: Int, element: Char): Rope = insert(index, element.toString())
 fun Rope.append(element: String): Rope = insert(length, element)
