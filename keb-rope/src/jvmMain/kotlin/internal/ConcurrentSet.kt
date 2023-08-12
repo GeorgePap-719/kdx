@@ -45,6 +45,6 @@ internal fun <Key : Any> ConcurrentSet(): MutableSet<Key> = object : MutableSet<
     override fun remove(element: Key): Boolean = delegate.remove(element) != null
 }
 
-internal fun <K : Any> MutableSet<K>.toConcurrentSet(): MutableSet<K> {
-    return ConcurrentSet<K>().also { addAll(this) }
+internal fun <K : Any> Set<K>.toConcurrentSet(): MutableSet<K> {
+    return ConcurrentSet<K>().also { it.addAll(this) }
 }
