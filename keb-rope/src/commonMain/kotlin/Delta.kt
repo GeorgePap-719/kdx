@@ -1,6 +1,6 @@
 package keb.ropes
 
-private typealias NodeInfo = LeafInfo
+internal typealias NodeInfo = LeafInfo
 
 /**
  * Represents changes to a document by describing the new document as a sequence of sections copied from the old document and of new inserted text.
@@ -13,7 +13,6 @@ private typealias NodeInfo = LeafInfo
  */
 //TODO: improve kdoc
 interface Delta<T : NodeInfo> {
-
     val changes: List<DeltaElement<T>>
 
     // The total length of the base document,
@@ -76,8 +75,6 @@ class DeltaBuilder<T : LeafInfo> internal constructor(baseLen: Int) {
     }
 }
 
-
 private typealias DeltaRopeNode = Delta<RopeLeaf>
 
 class DeltaRope(override val changes: List<DeltaElement<RopeLeaf>>, override val baseLen: Int) : DeltaRopeNode
-
