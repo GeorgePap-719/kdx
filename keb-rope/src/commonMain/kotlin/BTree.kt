@@ -16,6 +16,17 @@ interface LeafInfo {
      * but can be used to decide if the tree needs rebalancing or not.
      */
     val isLegal: Boolean
+
+    /**
+     * Do not use this API for now.
+     * It is created as a block for [subsequnce].
+     */
+    fun expandableAdd(other: LeafInfo, range: IntRange): LeafInfo
+
+    //TODO: add kdoc, it is a bit weird operation,
+    // with few use cases.
+    //TODO: research better name.
+    fun subsequnce(range: IntRange): LeafInfo
 }
 
 val LeafInfo.isEmpty: Boolean get() = length == 0
