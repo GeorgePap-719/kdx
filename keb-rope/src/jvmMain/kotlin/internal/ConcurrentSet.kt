@@ -8,7 +8,10 @@ import java.util.concurrent.ConcurrentHashMap
  */
 @Suppress("FunctionName")
 internal fun <Key : Any> ConcurrentSet(): MutableSet<Key> = object : MutableSet<Key> {
-    private val delegate = ConcurrentHashMap<Key, Unit>()
+    // Note: `ConcurrentHashMap` specifies
+    // functions should not depend on its ordering.
+    // Though, we support mostly on its key's view.
+    private val delegate = ConcurrentHashMap<Key, Unit>() // alternative TreeSet
 
     override fun add(element: Key): Boolean {
         if (delegate.containsKey(element)) return false
