@@ -40,6 +40,8 @@ sealed class BTreeNode<out T : LeafInfo> : Iterable<LeafNode<T>> {
     abstract val height: Int
     abstract val isLegal: Boolean
     abstract val isEmpty: Boolean
+
+    abstract fun subSequence(range: IntRange): BTreeNode<T>
 }
 
 /**
@@ -68,10 +70,29 @@ fun <T : LeafInfo> BTreeNode<T>.rebalance(): BTreeNode<T> {
 // for more readable API
 fun <T : LeafInfo> BTreeNode<T>.collectLeaves(): List<LeafNode<T>> = toList()
 
+// -------------------------------------
+
+fun <T : LeafInfo> BTreeNode<T>.subsequence(range: IntRange): BTreeNode<T> {
+    val len = weight
+    val newRange = range.first..<len
+    TODO()
+}
+
+fun <T : LeafInfo> BTreeNode<T>.add(other: BTreeNode<T>, range: IntRange): BTreeNode<T> {
+    TODO()
+}
+
 class LeafNode<out T : LeafInfo>(val value: T) : BTreeNode<T>() {
     override val weight: Int = value.length
     override val height: Int = 0
     override val isEmpty: Boolean = value.isEmpty
+
+    override fun subSequence(range: IntRange): LeafNode<T> {
+        val newSequence = value.subsequnce(range)
+        @Suppress("UNCHECKED_CAST")
+        return LeafNode(newSequence) as LeafNode<T>
+    }
+
     override val isLegal: Boolean = value.isLegal
 
     override fun iterator(): Iterator<LeafNode<T>> {
@@ -113,6 +134,7 @@ open class InternalNode<out T : LeafInfo>(
     val children: List<BTreeNode<T>>
 ) : BTreeNode<T>() {
     override val isEmpty: Boolean = children.isEmpty()
+
     override val isLegal: Boolean
         get() {
             //TODO:
@@ -126,6 +148,20 @@ open class InternalNode<out T : LeafInfo>(
             for (node in children) if (node.height >= rootHeight) return false
             return true
         }
+
+    //TODO: bad impl, when there is time fix it.
+    override fun subSequence(range: IntRange): BTreeNode<T> {
+        val leaves = collectLeaves()
+        return buildBTree<T> {
+            for (leaf in leaves) {
+                when {
+                    //TODO: add other branches
+                    leaf.weight in range -> add(leaf)
+                    else -> TODO()
+                }
+            }
+        }
+    }
 
     override fun iterator(): Iterator<LeafNode<T>> {
         return BTreeNodeIterator(this)
@@ -273,12 +309,6 @@ internal object EmptyInternalNode : InternalNode<Nothing>(0, 0, emptyList()) {
 //TODO: check if this pulls its weight
 fun <T : LeafInfo> emptyBTreeNode(): BTreeNode<T> = EmptyInternalNode
 fun <T : LeafInfo> emptyInternalNode(): InternalNode<T> = EmptyInternalNode
-
-//internal fun <T : LeafInfo> InternalNode<T>.mutate(mutator: BTreeNodeBuilder<T>.() -> Unit): BTreeNode<T> {
-//    val builder = BTreeNodeBuilder(this)
-//    builder.mutator()
-//    return builder.build()
-//}
 
 internal fun <T : LeafInfo> BTreeNode<T>.toStringDebug(): String = when (this) {
     is LeafNode -> this.toStringDebug()

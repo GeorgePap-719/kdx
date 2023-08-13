@@ -740,8 +740,8 @@ open class RopeLeaf(val chars: String, val lineCount: Int) : LeafInfo, Iterable<
     }
 
     override fun subsequnce(range: IntRange): RopeLeaf {
-        val empty = EmptyRopeLeaf
-        return empty.expandableAdd(this, range)
+        val newValue = substring(range.first, range.last)
+        return RopeLeaf(newValue)
     }
 
     open operator fun get(index: Int): Char = chars[index]
