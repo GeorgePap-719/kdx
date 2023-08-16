@@ -1,5 +1,6 @@
-package keb.ropes
+package keb.ropes.operations
 
+import keb.ropes.*
 import kotlin.math.min
 
 fun <T : NodeInfo> simpleEdit(
@@ -23,8 +24,10 @@ fun <T : NodeInfo> simpleEdit(
 ///
 /// Since only the deleted portions of the union string are necessary,
 /// instead of requiring a union string the function takes a `tombstones`
-/// rope which contains the deleted portions of the union string. The
-/// `from_dels` subset must be the interleaving of `tombstones` into the
+/// rope which contains the deleted portions of the union string.
+
+// /// Notes: this assumption could be an assertion?
+/// The `from_dels` subset must be the interleaving of `tombstones` into the
 /// union string.
 ///
 /// ```no_run

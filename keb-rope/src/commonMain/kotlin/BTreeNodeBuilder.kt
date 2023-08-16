@@ -16,6 +16,12 @@ internal class BTreeNodeBuilder<T : LeafInfo> {
         leaves.add(element)
     }
 
+    fun add(element: BTreeNode<T>, range: IntRange) {
+        //TODO: should check if its working
+        // as intended.
+        leaves.add(element.subSequence(range))
+    }
+
     fun addAll(elements: List<BTreeNode<T>>) {
         leaves.addAll(elements)
     }
