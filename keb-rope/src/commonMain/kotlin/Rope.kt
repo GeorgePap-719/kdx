@@ -730,15 +730,6 @@ open class RopeLeaf(val chars: String, val lineCount: Int) : LeafInfo, Iterable<
     override val length: Int = chars.length
     override val isLegal: Boolean = chars.length <= MAX_SIZE_LEAF && chars.isNotEmpty()
 
-    override fun expandableAdd(other: LeafInfo, range: IntRange): RopeLeaf {
-        check(other is RopeLeaf) //TODO: research this problem.
-        val substring = other.substring(range)
-        // This leaf might be illegal.
-        val newLeaf = add(length, substring)
-        check(newLeaf.isLegal)
-        return newLeaf
-    }
-
     override fun subsequnce(range: IntRange): RopeLeaf {
         val newValue = substring(range.first, range.last)
         return RopeLeaf(newValue)

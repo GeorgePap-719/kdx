@@ -18,14 +18,8 @@ interface LeafInfo {
     val isLegal: Boolean
 
     /**
-     * Do not use this API for now.
-     * It is created as a block for [subsequnce].
+     * Returns a subSequence of this leaf specified by the given [range] of indices.
      */
-    fun expandableAdd(other: LeafInfo, range: IntRange): LeafInfo
-
-    //TODO: add kdoc, it is a bit weird operation,
-    // with few use cases.
-    //TODO: research better name.
     fun subsequnce(range: IntRange): LeafInfo
 }
 
@@ -69,18 +63,6 @@ fun <T : LeafInfo> BTreeNode<T>.rebalance(): BTreeNode<T> {
 
 // for more readable API
 fun <T : LeafInfo> BTreeNode<T>.collectLeaves(): List<LeafNode<T>> = toList()
-
-// -------------------------------------
-
-fun <T : LeafInfo> BTreeNode<T>.subsequence(range: IntRange): BTreeNode<T> {
-    val len = weight
-    val newRange = range.first..<len
-    TODO()
-}
-
-fun <T : LeafInfo> BTreeNode<T>.add(other: BTreeNode<T>, range: IntRange): BTreeNode<T> {
-    TODO()
-}
 
 class LeafNode<out T : LeafInfo>(val value: T) : BTreeNode<T>() {
     override val weight: Int = value.length
@@ -149,16 +131,14 @@ open class InternalNode<out T : LeafInfo>(
             return true
         }
 
-    //TODO: bad impl, when there is time fix it.
+    //TODO: This op, can be improved,
+    // similarly how Rope.subRope() is implemented.
+    // Refine if there when there is time.
     override fun subSequence(range: IntRange): BTreeNode<T> {
         val leaves = collectLeaves()
-        return buildBTree<T> {
+        return buildBTree {
             for (leaf in leaves) {
-                when {
-                    //TODO: add other branches
-                    leaf.weight in range -> add(leaf)
-                    else -> TODO()
-                }
+                if (leaf.weight in range) add(leaf)
             }
         }
     }
