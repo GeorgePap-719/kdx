@@ -41,8 +41,7 @@ fun <T : NodeInfo> simpleEdit(
 ///     assert_eq!(String::from(d2.apply(r)), String::from(d.apply(r)));
 /// }
 /// ```
-// For if last_old.is_some() && last_old.unwrap().0 <= beg {. Clippy complaints
-// about not using if-let, but that'd change the meaning of the conditional.
+// For if last_old.is_some() && last_old.unwrap().0 <= beg
 //TODO: research the usage of this fun.
 fun <T : NodeInfo> synthesize(
     tombstones: BTreeNode<T>,
@@ -100,11 +99,9 @@ fun <T : NodeInfo> synthesize(
                 // but not sure of the win.
                 // Use the mapper to insert the corresponding section of the tombstones rope.
                 val range = mapper.docIndexToSubset(beg)..<mapper.docIndexToSubset(end)
-                //TODO: tombstones.subseq(interval))
-                tombstones
-                changes.add(Insert(tombstones))
+                val node = tombstones.subSequence(range)
+                changes.add(Insert(node))
                 beg = end
-                TODO()
             }
         }
     }
@@ -119,6 +116,3 @@ private fun <T> MutableList<T>.replace(new: T, old: T) {
     removeAt(index)
     add(index, new)
 }
-
-
-
