@@ -21,6 +21,21 @@ interface Delta<T : NodeInfo> {
 }
 
 /**
+ * Returns `true` if applying this [Delta] will cause no change.
+ */
+val <T : NodeInfo> Delta<T>.isIdentity: Boolean
+    get() {
+        val len = changes.size
+        // Case 1: Everything from beginning to end is getting copied.
+        if (len == 1) {
+            val element = changes.first() as? Copy
+            element?.let { return element.startIndex == 0 && element.endIndex == baseLen }
+        }
+        // Case 2: The rope is empty and the entire rope is getting deleted.
+        return len == 0 && baseLen == 0
+    }
+
+/**
  * Apply this [Delta] to the given [node].
  *
  * Note: May not work well if the length of the node
