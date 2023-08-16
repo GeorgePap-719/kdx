@@ -113,6 +113,15 @@ class LeafNode<out T : LeafInfo>(val value: T) : BTreeNode<T>() {
 open class InternalNode<out T : LeafInfo>(
     override val weight: Int,
     override val height: Int,
+    // Future design notes:
+    // This should re-implemented with a linkedList implementation,
+    // which has pointers to both prev and next nodes.
+    // This way,
+    // we can expose a simpler API
+    // to manipulate the `children`.
+    // This could have 2 great impacts:
+    // - improve performance (this perf might actually be space perf rather than speed) when searching for children.
+    // - reduce a lot of boilerplate code to handle children with `COW` semantics.
     val children: List<BTreeNode<T>>
 ) : BTreeNode<T>() {
     override val isEmpty: Boolean = children.isEmpty()
