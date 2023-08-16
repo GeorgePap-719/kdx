@@ -31,7 +31,8 @@ val <T : NodeInfo> Delta<T>.isIdentity: Boolean
             val element = changes.first() as? Copy
             element?.let { return element.startIndex == 0 && element.endIndex == baseLen }
         }
-        // Case 2: The rope is empty and the entire rope is getting deleted.
+        // Case 2: The rope is empty
+        // and the entire rope is getting deleted.
         return len == 0 && baseLen == 0
     }
 
