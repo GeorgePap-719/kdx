@@ -39,7 +39,7 @@ class JvmEngine(
 
 fun JvmEngine(initialContent: Rope): JvmEngine {
     val engine = emptyJvmEngine()
-    if (initialContent.isEmpty()) {
+    if (!initialContent.isEmpty()) {
         engine.headRevId.token()
         //let first_rev = engine.get_head_rev_id().token();
         //let delta = Delta::simple_edit(Interval::new(0, 0), initial_contents, 0);
