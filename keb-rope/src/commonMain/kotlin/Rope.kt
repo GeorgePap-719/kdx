@@ -11,7 +11,14 @@ import keb.ropes.internal.Symbol
  *
  * Most operations have path-copying semantics.
  */
-open class Rope(private val root: RopeNode) {
+open class Rope(
+    // Due to bad initial design,
+    // we are forced to expose this as internal.
+    // To expose/enable operations on BTreeNode<T>.
+    // This leads to a somewhat leaky abstraction,
+    // since it is supposed to be an implementation detail.
+    internal val root: RopeNode
+) {
     init {
         assert { root.isBalanced() }
     }

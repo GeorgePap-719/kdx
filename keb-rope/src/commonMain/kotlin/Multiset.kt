@@ -348,6 +348,19 @@ fun Subset.xor(other: Subset): Subset = buildSubset {
 }
 
 /**
+ * Computes the difference of two subsets.
+ *
+ * The `count` of an element in the result is the subtraction of the counts of `other` from `this`.
+ */
+fun Subset.subtract(other: Subset): Subset = buildSubset {
+    for (zseg in zip(other)) {
+        // Otherwise, it cannot subtract from `other`.
+        assert { zseg.leftCount >= zseg.rightCount }
+        add(zseg.length, zseg.leftCount - zseg.rightCount)
+    }
+}
+
+/**
  * Returns an "empty" [Subset].
  */
 //TODO: delete if not used

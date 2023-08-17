@@ -15,3 +15,6 @@ internal fun IntRange.translateNeg(amount: Int): IntRange {
     assert { first >= amount }
     return IntRange(first - amount, last - amount)
 }
+
+@Suppress("EmptyRange")
+internal fun emptyClosedOpenRange(): IntRange = 0..<0

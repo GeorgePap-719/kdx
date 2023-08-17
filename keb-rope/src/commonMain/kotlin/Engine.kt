@@ -1,5 +1,8 @@
 package keb.ropes
 
+import keb.ropes.internal.emptyClosedOpenRange
+import keb.ropes.operations.simpleEdit
+
 /**
  * Represents the current state of a document and all of its history.
  */
@@ -38,6 +41,18 @@ interface Engine {
      * The revision history of the document.
      */
     val history: List<Revision>
+
+    // TODO: have `base_rev` be an index so that it can be used maximally
+    // efficiently with the head revision, a token or a revision ID.
+    // Efficiency loss of token is negligible but unfortunate.
+    /// Attempts to apply a new edit based on the [`Revision`] specified by `base_rev`,
+    /// Returning an [`Error`] if the `Revision` cannot be found.
+    fun tryEditHistory(
+        priority: Int,
+        undoGroup: Int,
+        baseRevToken: RevToken,
+        delta: DeltaRope
+    ): Boolean // maybe here we need EngineResult
 }
 
 // for nicer API?
@@ -45,17 +60,115 @@ val Engine.head get() = text
 
 val Engine.headRevId: RevId get() = history.last().id
 
-fun Engine.nextRevId(): RevId = RevId(sessionId.first, sessionId.second, revIdCount)
+val Engine.nextRevId: RevId get() = RevId(sessionId.first, sessionId.second, revIdCount)
 
-fun Engine(initial: Rope): Engine {
-    TODO()
+fun Engine.findRevision(id: RevId): Int? {
+    val indexOfRev = history
+        .asReversed()
+        .indexOfFirst { it.id == id }
+    return if (indexOfRev == -1) null else indexOfRev
 }
 
-fun emptyEngine(): Engine {
-    TODO()
+fun Engine.findRevToken(token: RevToken): Int? {
+    val indexOfToken = history
+        .asReversed() // lookup in recent ones first
+        .indexOfFirst { it.id.token() == token }
+    return if (indexOfToken == -1) null else indexOfToken
+}
+
+/// Garbage collection means undo can sometimes need to replay the very first
+/// revision, and so needs a way to get the deletion set before then.
+fun Engine.deletesFromUnionBeforeIndex(revIndex: Int, insertUndos: Boolean): Subset {
+    var deletesFromUnion = deletesFromUnion
+    val undoneGroups = undoneGroups.toMutableSet()
+    // Invert the changes to deletesFromUnion
+    // starting in the present and working backwards.
+    val revisions = history.subList(revIndex, history.size).asReversed()
+    for (revision in revisions) {
+        when (val content = revision.edit) {
+            is Edit -> {
+                if (undoneGroups.contains(content.undoGroup)) {
+                    // No need to un-delete undone inserts
+                    // since we'll just shrink them out
+                    return deletesFromUnion.transformShrink(content.inserts)
+                }
+                deletesFromUnion //TODO: subtract()
+            }
+
+            is Undo -> TODO()
+        }
+    }
+}
+
+
+/**
+ * TODO
+ */
+fun Engine(initialContent: Rope): Engine {
+    val engine = emptyEngine()
+    if (!initialContent.isEmpty()) {
+        val firstRev = engine.headRevId.token()
+        val delta = simpleEdit(emptyClosedOpenRange(), initialContent.root, 0)
+        //TODO: engine.edit_rev()
+    }
+    return engine
+}
+
+internal fun emptyEngine(): Engine {
+    val deletesFromUnion = Subset(0)
+    val revId = RevId(0, 0, 0)
+    val content = Undo(
+        emptySet(),
+        Subset(0)
+    )
+    val rev = Revision(revId, 0, content)
+    return EngineImpl(
+        defaultSession,
+        1,
+        emptyRope(),
+        emptyRope(),
+        deletesFromUnion,
+        emptySet(),
+        listOf(rev)
+    )
 }
 
 /// the session ID component of a `RevId`
 typealias SessionId = Pair<Long, Int>
 
-//TODO: EmptyEngine
+private val defaultSession = SessionId(1, 0)
+
+// Revision 0 is always an `Undo` of the empty set of groups.
+private const val initialRevisionCounter = 1
+
+internal class EngineImpl(
+    sessionId: SessionId,
+    revIdCount: Int,
+    text: Rope,
+    tombstones: Rope,
+    deletesFromUnion: Subset,
+    undoneGroups: Set<Int>,
+    history: List<Revision>
+) : Engine {
+    private var _sessionId = sessionId
+    private var _revIdCount = revIdCount
+    private var _text = text
+    private var _tombstones = tombstones
+    private var _deletesFromUnion = deletesFromUnion
+    private var _undoneGroups = undoneGroups.toMutableSet()
+    private var _history = history.toMutableList()
+
+    override val sessionId: SessionId get() = _sessionId
+    override val revIdCount: Int get() = _revIdCount
+    override val text: Rope
+        get() = _text
+    override val tombstones: Rope get() = _tombstones
+    override val deletesFromUnion: Subset get() = _deletesFromUnion
+    override val undoneGroups: Set<Int> get() = _undoneGroups
+    override val history: List<Revision> get() = _history
+
+    override fun tryEditHistory(priority: Int, undoGroup: Int, baseRevToken: RevToken, delta: DeltaRope): Boolean {
+        //TODO: mk_new_rev
+        TODO("Not yet implemented")
+    }
+}
