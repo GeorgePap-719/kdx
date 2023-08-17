@@ -92,7 +92,8 @@ fun Engine.deletesFromUnionBeforeIndex(revIndex: Int, insertUndos: Boolean): Sub
                     // since we'll just shrink them out
                     return deletesFromUnion.transformShrink(content.inserts)
                 }
-                deletesFromUnion //TODO: subtract()
+                val undeleted = deletesFromUnion.subtract(content.deletes)
+                return undeleted.transformShrink(content.inserts)
             }
 
             is Undo -> TODO()
