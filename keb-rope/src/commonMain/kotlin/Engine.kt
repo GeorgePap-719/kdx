@@ -3,6 +3,7 @@ package keb.ropes
 import keb.ropes.internal.emptyClosedOpenRange
 import keb.ropes.internal.symmetricDifference
 import keb.ropes.operations.simpleEdit
+import keb.ropes.operations.synthesize
 
 /**
  * Represents the current state of a document and all of its history.
@@ -41,7 +42,7 @@ interface Engine {
     /**
      * The revision history of the document.
      */
-    val history: List<Revision>
+    val revisions: List<Revision>
 
     // TODO: have `base_rev` be an index so that it can be used maximally
     // efficiently with the head revision, a token or a revision ID.
@@ -59,22 +60,30 @@ interface Engine {
 // for nicer API?
 val Engine.head get() = text
 
-val Engine.headRevId: RevId get() = history.last().id
+val Engine.headRevId: RevId get() = revisions.last().id
 
 val Engine.nextRevId: RevId get() = RevId(sessionId.first, sessionId.second, revIdCount)
 
 fun Engine.findRevision(id: RevId): Int? {
-    val indexOfRev = history
+    val indexOfRev = revisions
         .asReversed()
         .indexOfFirst { it.id == id }
     return if (indexOfRev == -1) null else indexOfRev
 }
 
 fun Engine.findRevToken(token: RevToken): Int? {
-    val indexOfToken = history
+    val indexOfToken = revisions
         .asReversed() // lookup in recent ones first
         .indexOfFirst { it.id.token() == token }
     return if (indexOfToken == -1) null else indexOfToken
+}
+
+/**
+ * Returns the [Engine.deletesFromUnion] at the time of given [revIndex].
+ * In other words, the `deletes` from the "union string" at that time.
+ */
+fun Engine.deletesFromUnionForIndex(revIndex: Int): Subset {
+    return deletesFromUnionBeforeIndex(revIndex + 1, true)
 }
 
 /// Garbage collection means undo can sometimes need to replay the very first
@@ -83,15 +92,16 @@ fun Engine.deletesFromUnionBeforeIndex(revIndex: Int, insertUndos: Boolean): Sub
     // These two are supposed to be implemented via `Cow` operations.
     var deletesFromUnion = deletesFromUnion
     var undoneGroups = undoneGroups
-    // Invert the changes to deletesFromUnion
-    // starting in the present and working backwards.
-    val revisions = history.subList(revIndex, history.size).asReversed()
+    // Invert the changes to [deletesFromUnion]
+    // starting in the present
+    // and working backwards.
+    val revisions = revisions.subList(revIndex, revisions.size).asReversed()
     for (revision in revisions) {
         deletesFromUnion = when (val content = revision.edit) {
             is Edit -> {
                 if (undoneGroups.contains(content.undoGroup)) {
                     // No need to un-delete undone inserts
-                    // since we'll just shrink them out
+                    // since we'll just shrink them out.
                     deletesFromUnion.transformShrink(content.inserts)
                 }
                 val undeleted = deletesFromUnion.subtract(content.deletes)
@@ -113,6 +123,15 @@ fun Engine.deletesFromUnionBeforeIndex(revIndex: Int, insertUndos: Boolean): Sub
     return deletesFromUnion
 }
 
+/**
+ * Returns the contents of the document at the given [revIndex].
+ */
+fun Engine.getRevContentForIndex(revIndex: Int): Rope {
+    val oldDeletesFromUnion = deletesFromUnionForIndex(revIndex)
+    val delta = synthesize(tombstones.root, deletesFromUnion, oldDeletesFromUnion)
+    val newRoot = delta.applyTo(text.root)
+    return Rope(newRoot)
+}
 
 /**
  * TODO
@@ -178,7 +197,7 @@ internal class EngineImpl(
     override val tombstones: Rope get() = _tombstones
     override val deletesFromUnion: Subset get() = _deletesFromUnion
     override val undoneGroups: Set<Int> get() = _undoneGroups
-    override val history: List<Revision> get() = _history
+    override val revisions: List<Revision> get() = _history
 
     override fun tryEditHistory(priority: Int, undoGroup: Int, baseRevToken: RevToken, delta: DeltaRope): Boolean {
         //TODO: mk_new_rev

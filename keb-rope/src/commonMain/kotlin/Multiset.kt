@@ -166,7 +166,7 @@ class Subset internal constructor(private val segments: List<Segment>) {
 
     /**
      * Returns the complement of this [Subset].
-     * Every 0-count element will have a count of 1
+     * Every 0-count element will have a count of one
      * and every non-zero element will have a count of 0.
      */
     fun complement(): Subset = buildSubset {
