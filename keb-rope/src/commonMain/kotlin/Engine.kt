@@ -1,6 +1,7 @@
 package keb.ropes
 
 import keb.ropes.internal.emptyClosedOpenRange
+import keb.ropes.internal.symmetricDifference
 import keb.ropes.operations.simpleEdit
 
 /**
@@ -79,32 +80,37 @@ fun Engine.findRevToken(token: RevToken): Int? {
 /// Garbage collection means undo can sometimes need to replay the very first
 /// revision, and so needs a way to get the deletion set before then.
 fun Engine.deletesFromUnionBeforeIndex(revIndex: Int, insertUndos: Boolean): Subset {
+    // These two are supposed to be implemented via `Cow` operations.
     var deletesFromUnion = deletesFromUnion
-    val undoneGroups = undoneGroups.toMutableSet()
+    var undoneGroups = undoneGroups
     // Invert the changes to deletesFromUnion
     // starting in the present and working backwards.
     val revisions = history.subList(revIndex, history.size).asReversed()
     for (revision in revisions) {
-        when (val content = revision.edit) {
+        deletesFromUnion = when (val content = revision.edit) {
             is Edit -> {
                 if (undoneGroups.contains(content.undoGroup)) {
                     // No need to un-delete undone inserts
                     // since we'll just shrink them out
-                    return deletesFromUnion.transformShrink(content.inserts)
+                    deletesFromUnion.transformShrink(content.inserts)
                 }
                 val undeleted = deletesFromUnion.subtract(content.deletes)
-                return undeleted.transformShrink(content.inserts)
+                undeleted.transformShrink(content.inserts)
             }
 
             is Undo -> {
                 if (insertUndos) {
-                    //TODO: symmetricDiff()
-                    val newUndone = undoneGroups
+                    val symmetricDifference = undoneGroups.symmetricDifference(content.toggledGroups)
+                    val newUndone = symmetricDifference.toSet()
+                    undoneGroups = newUndone
+                    deletesFromUnion.xor(content.deletesBitXor)
+                } else {
+                    deletesFromUnion
                 }
             }
         }
     }
-    TODO()
+    return deletesFromUnion
 }
 
 

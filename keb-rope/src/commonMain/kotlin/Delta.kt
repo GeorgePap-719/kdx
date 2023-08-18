@@ -128,14 +128,14 @@ class DeltaBuilder<T : LeafInfo> internal constructor(baseLen: Int) {
     fun delete(range: IntRange) {
         val start = range.first
         val end = delta.baseLen
-        // intervals not properly sorted
+        // Intervals are not properly sorted.
         assert { start >= lastOffset }
         if (start > lastOffset) addIntoDeltaElements(Copy(lastOffset, start))
         lastOffset = end
     }
 
     // A bit of weird signature,
-    // even though everything is `T`
+    // even though everything is `T`,
     // here we acknowledge the fact that t is a [Rope].
     // Fix: cannot work like it was,
     // cause of generics doing their work properly.
