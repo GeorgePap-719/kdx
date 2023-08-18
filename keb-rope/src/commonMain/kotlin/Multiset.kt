@@ -203,6 +203,8 @@ fun Subset.mapper(matcher: CountMatcher): Mapper {
 
 fun Subset.complementIterator(): RangeIterator = rangeIterator(CountMatcher.ZERO)
 
+fun Subset.isNotEmpty(): Boolean = !isEmpty()
+
 private typealias Range = Pair<Int, Int>
 
 class RangeIterator(

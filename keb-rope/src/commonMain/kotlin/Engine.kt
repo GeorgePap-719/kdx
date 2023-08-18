@@ -57,9 +57,17 @@ interface Engine {
     ): Boolean // maybe here we need EngineResult
 }
 
-// for nicer API?
+/**
+ * Returns the [text][Rope] of head [Revision].
+ * This is an alias for [Engine.text].
+ */
 val Engine.head get() = text
 
+/**
+ * Returns [RevId] of head revision.
+ *
+ * @throws NoSuchElementException if [Engine.revisions] are empty.
+ */
 val Engine.headRevId: RevId get() = revisions.last().id
 
 val Engine.nextRevId: RevId get() = RevId(sessionId.first, sessionId.second, revIdCount)
@@ -71,6 +79,12 @@ fun Engine.findRevision(id: RevId): Int? {
     return if (indexOfRev == -1) null else indexOfRev
 }
 
+/**
+ * Tries to find an [id][RevId] with the specified [token],
+ * returning the index of it.
+ */
+//TODO: better name findRevIndex() ?
+// or indexOfRevToken()
 fun Engine.findRevToken(token: RevToken): Int? {
     val indexOfToken = revisions
         .asReversed() // lookup in recent ones first
@@ -82,21 +96,21 @@ fun Engine.findRevToken(token: RevToken): Int? {
  * Returns the [Engine.deletesFromUnion] at the time of given [revIndex].
  * In other words, the `deletes` from the "union string" at that time.
  */
-fun Engine.deletesFromUnionForIndex(revIndex: Int): Subset {
-    return deletesFromUnionBeforeIndex(revIndex + 1, true)
+fun Engine.getDeletesFromUnionForIndex(revIndex: Int): Subset {
+    return getDeletesFromUnionBeforeIndex(revIndex + 1, true)
 }
 
 /// Garbage collection means undo can sometimes need to replay the very first
 /// revision, and so needs a way to get the deletion set before then.
-fun Engine.deletesFromUnionBeforeIndex(revIndex: Int, insertUndos: Boolean): Subset {
+fun Engine.getDeletesFromUnionBeforeIndex(revIndex: Int, insertUndos: Boolean): Subset {
     // These two are supposed to be implemented via `Cow` operations.
     var deletesFromUnion = deletesFromUnion
     var undoneGroups = undoneGroups
     // Invert the changes to [deletesFromUnion]
     // starting in the present
     // and working backwards.
-    val revisions = revisions.subList(revIndex, revisions.size).asReversed()
-    for (revision in revisions) {
+    val revView = revisions.subList(revIndex, revisions.size).asReversed()
+    for (revision in revView) {
         deletesFromUnion = when (val content = revision.edit) {
             is Edit -> {
                 if (undoneGroups.contains(content.undoGroup)) {
@@ -127,10 +141,42 @@ fun Engine.deletesFromUnionBeforeIndex(revIndex: Int, insertUndos: Boolean): Sub
  * Returns the contents of the document at the given [revIndex].
  */
 fun Engine.getRevContentForIndex(revIndex: Int): Rope {
-    val oldDeletesFromUnion = deletesFromUnionForIndex(revIndex)
-    val delta = synthesize(tombstones.root, deletesFromUnion, oldDeletesFromUnion)
+    val oldDeletesFromCurUnion = getDeletesFromCurUnionForIndex(revIndex)
+    val delta = synthesize(tombstones.root, deletesFromUnion, oldDeletesFromCurUnion)
     val newRoot = delta.applyTo(text.root)
     return Rope(newRoot)
+}
+
+/**
+ * Returns the [Subset] to delete from the current "union string"
+ * in order to obtain a revision's content.
+ */
+fun Engine.getDeletesFromCurUnionForIndex(revIndex: Int): Subset {
+    var deletesFromUnion = getDeletesFromUnionForIndex(revIndex)
+    val revView = revisions.subList(revIndex + 1, revisions.size)
+    for (revision in revView) {
+        val content = revision.edit
+        if (content is Edit) {
+            if (content.inserts.isEmpty()) continue
+            deletesFromUnion = deletesFromUnion.transformUnion(content.inserts)
+        }
+    }
+    return deletesFromUnion
+}
+
+/**
+ * Returns the largest undo-group-id used so far.
+ *
+ * @throws NoSuchElementException if [Engine.revisions] are empty.
+ */
+val Engine.maxUndoGroupId: Int get() = revisions.last().maxUndoSoFar
+
+/**
+ * Tries to find a [Revision] with the specified [revToken].
+ */
+fun Engine.findRevision(revToken: RevToken): Rope? {
+    val token = findRevToken(revToken) ?: return null
+    return getRevContentForIndex(token)
 }
 
 /**
