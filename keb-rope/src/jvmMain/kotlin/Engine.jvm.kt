@@ -32,7 +32,7 @@ class JvmEngine(
     override val tombstones: Rope get() = _tombstones.value
     override val deletesFromUnion: Subset get() = _deletesFromUnion.value
     override val undoneGroups: Set<Int> get() = _undoneGroups
-    override val history: List<Revision> get() = _history
+    override val revisions: List<Revision> get() = _history
     override fun tryEditHistory(priority: Int, undoGroup: Int, baseRevToken: RevToken, delta: DeltaRope): Boolean {
         TODO("Not yet implemented")
     }
