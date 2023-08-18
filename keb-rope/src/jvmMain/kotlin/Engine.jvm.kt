@@ -33,6 +33,9 @@ class JvmEngine(
     override val deletesFromUnion: Subset get() = _deletesFromUnion.value
     override val undoneGroups: Set<Int> get() = _undoneGroups
     override val history: List<Revision> get() = _history
+    override fun tryEditHistory(priority: Int, undoGroup: Int, baseRevToken: RevToken, delta: DeltaRope): Boolean {
+        TODO("Not yet implemented")
+    }
     //
 
 }
@@ -69,24 +72,3 @@ private fun emptyJvmEngine(): JvmEngine {
 }
 
 private val defaultSession = SessionId(1, 0)
-
-// pub fn empty() -> Engine {
-//        let deletes_from_union = Subset::new(0);
-//        let rev = Revision {
-//            rev_id: RevId { session1: 0, session2: 0, num: 0 },
-//            edit: Undo {
-//                toggled_groups: BTreeSet::new(),
-//                deletes_bitxor: deletes_from_union.clone(),
-//            },
-//            max_undo_so_far: 0,
-//        };
-//        Engine {
-//            session: default_session(),
-//            rev_id_counter: 1,
-//            text: Rope::default(),
-//            tombstones: Rope::default(),
-//            deletes_from_union,
-//            undone_groups: BTreeSet::new(),
-//            revs: vec![rev],
-//        }
-//    }
