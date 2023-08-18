@@ -96,9 +96,15 @@ fun Engine.deletesFromUnionBeforeIndex(revIndex: Int, insertUndos: Boolean): Sub
                 return undeleted.transformShrink(content.inserts)
             }
 
-            is Undo -> TODO()
+            is Undo -> {
+                if (insertUndos) {
+                    //TODO: symmetricDiff()
+                    val newUndone = undoneGroups
+                }
+            }
         }
     }
+    TODO()
 }
 
 
