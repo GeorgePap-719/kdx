@@ -34,6 +34,7 @@ fun computeDeltas(
             is Undo -> error("Merge undo is not supported yet")
         }
     }
+    ops.reverse()
     return ops
 }
 
