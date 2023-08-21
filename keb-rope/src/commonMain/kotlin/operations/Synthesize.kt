@@ -3,18 +3,6 @@ package keb.ropes.operations
 import keb.ropes.*
 import kotlin.math.min
 
-fun <T : NodeInfo> simpleEdit(
-    range: IntRange,
-    node: BTreeNode<T>,
-    baseLen: Int
-): Delta<T> = buildDelta(baseLen) {
-    if (node.isEmpty) {
-        delete(range)
-    } else {
-        replace(range, node)
-    }
-}
-
 /// Synthesize a delta from a "union string" and two subsets: an old set
 /// of deletions and a new set of deletions from the union. The Delta is
 /// from text to text, not union to union; anything in both subsets will
