@@ -223,7 +223,34 @@ private val defaultSession = SessionId(1, 0)
 // Revision 0 is always an `Undo` of the empty set of groups.
 private const val initialRevisionCounter = 1
 
-class FullPriority(val priority: Int, sessionId: SessionId)
+class FullPriority(val priority: Int, val sessionId: SessionId) : Comparable<FullPriority> {
+    /**
+     * It compares based on [Lexicographic](https://en.wikipedia.org/wiki/Lexicographic_order) ordering.
+     *
+     * Properties:
+     * * Two sequences are compared element by element.
+     * * The first mismatching element defines which sequence is lexicographically less or greater than the other.
+     * * If one sequence is a prefix of another, the shorter sequence is lexicographically less than the other.
+     * * If two sequences have equivalent elements and are of the same length,
+     * then the sequences are lexicographically equal.
+     * * An empty sequence is lexicographically less than any non-empty sequence.
+     * * Two empty sequences are lexicographically equal.
+     *
+     * Adapted from rust's [ordering trait](https://doc.rust-lang.org/std/cmp/trait.Ord.html#lexicographical-comparison).
+     */
+    //TODO: this needs testing and more research about its correctness.
+    override fun compareTo(other: FullPriority): Int {
+        val priority = priority.compareTo(other.priority)
+        if (priority != 0) return priority
+        return sessionId.compareTo(other.sessionId)
+    }
+
+    private fun SessionId.compareTo(other: SessionId): Int {
+        val firstComp = first.compareTo(other.first)
+        if (firstComp != 0) return firstComp
+        return second.compareTo(other.second)
+    }
+}
 
 internal class EngineImpl(
     sessionId: SessionId,

@@ -12,7 +12,7 @@ import keb.ropes.*
 /// patterns. Any large runs of typing in the same place by the same user (e.g
 /// typing a paragraph) will be combined into a single segment in a transform
 /// as opposed to thousands of revisions.
-fun computeTransforms(revisions: List<Revision>): List<Pair<FullPriority, Subset>> = buildList {
+fun computeTransforms(revisions: List<Revision>): SeriesOfPropsAndTrans = buildList {
     var lastPriority: Int? = null
     for (revision in revisions) {
         when (val content = revision.edit) {
@@ -33,3 +33,5 @@ fun computeTransforms(revisions: List<Revision>): List<Pair<FullPriority, Subset
         }
     }
 }
+
+internal typealias SeriesOfPropsAndTrans = List<Pair<FullPriority, Subset>>
