@@ -102,6 +102,25 @@ fun <T : NodeInfo> Delta<T>.factor(): Pair<InsertDelta<T>, Subset> {
 class InsertDelta<T : NodeInfo>(val value: Delta<T>) : Delta<T> {
     override val changes: List<DeltaElement<T>> = value.changes
     override val baseLen: Int = value.baseLen
+
+    /// Do a coordinate transformation on an insert-only delta. The `after` parameter
+    /// controls whether the insertions in `this` come after those specific in the
+    /// coordinate transform.
+    fun transformExpand(xform: Subset, after: Boolean): Insert<T> {
+        val curChanges = changes
+        val changes = mutableListOf<DeltaElement<T>>()
+        var x = 0 // coordinate within self
+        var y = 0 // coordinate within xform
+        var i = 0 // index into `curChanges`
+        var b1 = 0
+        var xformRanges = xform.complementIterator()
+        var lastXform = xformRanges.next()
+        val len = xform.length()
+        while (y < len || i < curChanges.size) {
+            TODO()
+        }
+        TODO()
+    }
 }
 
 sealed class DeltaElement<out T : NodeInfo>

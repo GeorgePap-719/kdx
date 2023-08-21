@@ -1,9 +1,6 @@
 package keb.ropes.operations
 
-import keb.ropes.FullPriority
-import keb.ropes.Revision
-import keb.ropes.Rope
-import keb.ropes.Subset
+import keb.ropes.*
 
 /// Rebase `b_new` on top of `expand_by` and return revision contents that can be appended as new
 /// revisions on top of the revisions represented by `expand_by`.
@@ -20,11 +17,15 @@ fun rebase(
     for (op in ops) {
         val fullPriority = FullPriority(op.priority, op.id.sessionId)
         for ((transformPriority, transformInsert) in expandBy) {
-            fullPriority
+            // Should never be ==
+            assert { fullPriority.compareTo(transformPriority) != 0 }
             val after = fullPriority >= transformPriority
+            // d-expand by other
+            val inserts = op.inserts
+            TODO()
         }
     }
-
+    TODO()
 }
 
 class Rebaseable(
