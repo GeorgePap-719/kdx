@@ -223,6 +223,8 @@ private val defaultSession = SessionId(1, 0)
 // Revision 0 is always an `Undo` of the empty set of groups.
 private const val initialRevisionCounter = 1
 
+class FullPriority(val priority: Int, sessionId: SessionId)
+
 internal class EngineImpl(
     sessionId: SessionId,
     revIdCount: Int,
