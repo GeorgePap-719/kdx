@@ -159,6 +159,6 @@ class DeltaBuilder<T : LeafInfo> internal constructor(baseLen: Int) {
     }
 }
 
-private typealias DeltaRopeNode = Delta<RopeLeaf>
+internal typealias DeltaRopeNode = Delta<RopeLeaf>
 
 class DeltaRope(override val changes: List<DeltaElement<RopeLeaf>>, override val baseLen: Int) : DeltaRopeNode

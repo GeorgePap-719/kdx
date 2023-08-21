@@ -72,24 +72,22 @@ val Engine.headRevId: RevId get() = revisions.last().id
 
 val Engine.nextRevId: RevId get() = RevId(sessionId.first, sessionId.second, revIdCount)
 
-fun Engine.findRevision(id: RevId): Int? {
-    val indexOfRev = revisions
-        .asReversed()
+/**
+ * Returns the index of revision the specified [id], or -1 if it does exist.
+ */
+fun Engine.indexOfRev(id: RevId): Int {
+    return revisions
+        .asReversed() // lookup in recent ones first
         .indexOfFirst { it.id == id }
-    return if (indexOfRev == -1) null else indexOfRev
 }
 
 /**
- * Tries to find an [id][RevId] with the specified [token],
- * returning the index of it.
+ * Returns the index of revision with the specified [token], or -1 if it does exist.
  */
-//TODO: better name findRevIndex() ?
-// or indexOfRevToken()
-fun Engine.findRevToken(token: RevToken): Int? {
-    val indexOfToken = revisions
+fun Engine.indexOfRev(token: RevToken): Int {
+    return revisions
         .asReversed() // lookup in recent ones first
         .indexOfFirst { it.id.token() == token }
-    return if (indexOfToken == -1) null else indexOfToken
 }
 
 /**
@@ -175,8 +173,9 @@ val Engine.maxUndoGroupId: Int get() = revisions.last().maxUndoSoFar
  * Tries to find a [Revision] with the specified [revToken].
  */
 fun Engine.findRevision(revToken: RevToken): Rope? {
-    val token = findRevToken(revToken) ?: return null
-    return getRevContentForIndex(token)
+    val revIndex = indexOfRev(revToken)
+    if (revIndex == -1) return null
+    return getRevContentForIndex(revIndex)
 }
 
 /**
@@ -211,6 +210,11 @@ internal fun emptyEngine(): Engine {
     )
 }
 
+fun DeltaRopeNode.applyTo(rope: Rope): Rope {
+    val newRoot = applyTo(rope.root)
+    return Rope(newRoot)
+}
+
 /// the session ID component of a `RevId`
 typealias SessionId = Pair<Long, Int>
 
@@ -238,8 +242,7 @@ internal class EngineImpl(
 
     override val sessionId: SessionId get() = _sessionId
     override val revIdCount: Int get() = _revIdCount
-    override val text: Rope
-        get() = _text
+    override val text: Rope get() = _text
     override val tombstones: Rope get() = _tombstones
     override val deletesFromUnion: Subset get() = _deletesFromUnion
     override val undoneGroups: Set<Int> get() = _undoneGroups
