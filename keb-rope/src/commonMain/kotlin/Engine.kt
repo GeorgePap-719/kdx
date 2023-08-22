@@ -37,6 +37,12 @@ interface Engine {
     /// `deletes_from_union` by splicing a segment of `tombstones` into `text`
     /// wherever there's a non-zero-count segment in `deletes_from_union`.
     val deletesFromUnion: Subset
+
+    //TODO: `Set` under the hood is implemented by linkedHashSet,
+    // which is an ordered implementation.
+    // In our case, `order` is not just a simple implementation detail,
+    // but a contract.
+    // Should we use concrete impl?
     val undoneGroups: Set<Int> // set of undo_group id's
 
     /**
