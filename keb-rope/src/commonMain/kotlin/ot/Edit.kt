@@ -1,4 +1,4 @@
-package keb.ropes.operations
+package keb.ropes.ot
 
 import keb.ropes.BTreeNode
 import keb.ropes.Delta
