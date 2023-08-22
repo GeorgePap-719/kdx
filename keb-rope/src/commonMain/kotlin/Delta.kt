@@ -106,20 +106,45 @@ class InsertDelta<T : NodeInfo>(val value: Delta<T>) : Delta<T> {
     /// Do a coordinate transformation on an insert-only delta. The `after` parameter
     /// controls whether the insertions in `this` come after those specific in the
     /// coordinate transform.
-    fun transformExpand(xform: Subset, after: Boolean): Insert<T> {
+    fun transformExpand(xform: Subset, after: Boolean): InsertDelta<T> {
         val curChanges = changes
         val changes = mutableListOf<DeltaElement<T>>()
         var x = 0 // coordinate within self
         var y = 0 // coordinate within xform
         var i = 0 // index into `curChanges`
         var b1 = 0
-        var xformRanges = xform.complementIterator()
+        val xformRanges = xform.complementIterator()
         var lastXform = xformRanges.next()
         val len = xform.length()
         while (y < len || i < curChanges.size) {
-            TODO()
+            val nextIvBeg = lastXform?.first ?: len
+            if (after && y < nextIvBeg) y = nextIvBeg
+            while (i < curChanges.size) {
+                when (val content = curChanges[i]) {
+                    is Copy -> {
+                        if (y >= nextIvBeg) {
+                            var nextY = content.endIndex + y - x
+                            lastXform?.second?.let { nextY = minOf(nextY, it) }
+                            x += nextY - y
+                            y = nextY
+                            if (x == content.endIndex) i++
+                            lastXform?.second?.let { if (y == it) lastXform = xformRanges.next() }
+                        }
+                        break
+                    }
+
+                    is Insert -> {
+                        if (y > b1) changes.add(Copy(b1, y))
+                        b1 = y
+                        changes.add(Insert(content.input))
+                        i++
+                    }
+                }
+            }
+            if (!after && y < nextIvBeg) y = nextIvBeg
         }
-        TODO()
+        if (y > b1) changes.add(Copy(b1, y))
+        return InsertDelta(DeltaSupport(changes, len))
     }
 }
 
