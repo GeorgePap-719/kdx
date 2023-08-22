@@ -3,14 +3,16 @@ package keb.ropes.ot
 import keb.ropes.*
 import keb.ropes.internal.replaceAll
 
-/// Rebase `b_new` on top of `expand_by` and return revision contents that can be appended as new
-/// revisions on top of the revisions represented by `expand_by`.
+/**
+ * Rebase [ops] on top of [expandBy],
+ * and return revision contents that can be appended as new revisions on top of revisions represented by [expandBy].
+ */
 fun MutableEngine.rebase(
     expandBy: MutableList<Pair<FullPriority, Subset>>,
     ops: List<DeltaOp>,
     maxUndoSoFar: MaxUndoSoFarRef
 ): Rebaseable {
-    val revisions: MutableList<Revision> = ArrayList(ops.size)
+    val appRevisions: MutableList<Revision> = ArrayList(ops.size)
     var nextExpandBy: MutableList<Pair<FullPriority, Subset>> = ArrayList(expandBy.size)
     for (op in ops) {
         var inserts: InsertDelta<RopeLeaf>? = null
@@ -53,11 +55,11 @@ fun MutableEngine.rebase(
         tryUpdateDeletesFromUnion(newDeletesFromUnion)
 
         maxUndoSoFar.value = maxOf(maxUndoSoFar.value, op.undoGroup)
-        revisions.add(Revision(op.id, maxUndoSoFar.value, Edit(op.priority, op.undoGroup, deletes, inserted)))
+        appRevisions.add(Revision(op.id, maxUndoSoFar.value, Edit(op.priority, op.undoGroup, deletes, inserted)))
         expandBy.replaceAll(nextExpandBy)
         nextExpandBy = ArrayList(expandBy.size)
     }
-    return Rebaseable(revisions, text, tombstones, deletesFromUnion)
+    return Rebaseable(appRevisions, text, tombstones, deletesFromUnion)
 }
 
 class Rebaseable(
