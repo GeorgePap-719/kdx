@@ -1,6 +1,5 @@
-package ropes.internal
+package keb.ropes.internal
 
-import keb.ropes.internal.symmetricDifference
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith

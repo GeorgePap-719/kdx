@@ -1,8 +1,5 @@
-package ropes
+package keb.ropes
 
-import keb.ropes.Rope
-import keb.ropes.assert
-import keb.ropes.insert
 import kotlin.random.Random
 import kotlin.random.nextInt
 import kotlin.test.Test
