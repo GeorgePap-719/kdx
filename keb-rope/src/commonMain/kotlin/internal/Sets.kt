@@ -11,17 +11,28 @@ internal fun <T> Set<T>.intersection(other: Set<T>): Intersection<T> {
 }
 
 internal class Intersection<T>(
-    private val thisIterator: Iterator<T>,
-    private val otherIterator: Iterator<T>,
+    private val leftIterator: Iterator<T>,
+    private val rightIterator: Iterator<T>,
 ) : Iterable<T> {
     override fun iterator(): Iterator<T> {
         return object : Iterator<T> {
+            private val left get() = leftIterator.next()
+            private val right get() = rightIterator.next()
+            private var leftIndex = 0
+            private var rightIndex = 0
+
+            private var next: T? = null
+
             override fun hasNext(): Boolean {
-                TODO("Not yet implemented")
+                while (true) {
+                    leftIterator
+                }
             }
 
             override fun next(): T {
-                TODO("Not yet implemented")
+                val value = next ?: throw NoSuchElementException()
+                next = null
+                return value
             }
         }
     }
@@ -57,7 +68,7 @@ internal class SymmetricDifference<T>(
                 return cur
             }
 
-            override fun hasNext(): Boolean = thisIterator.hasNext()
+            override fun hasNext(): Boolean = thisIterator.hasNext() && otherIterator.hasNext()
 
             override fun next(): T = when (getIndexAndIncrease()) {
                 0 -> {

@@ -15,7 +15,6 @@ class JvmEngine(
     deletesFromUnion: Subset,
     undoneGroups: Set<Int>,
     history: List<Revision>
-
 ) : Engine {
     private val _sessionId = atomic(sessionId)
     private val _revIdCount = atomic(revIdCount)
@@ -33,11 +32,7 @@ class JvmEngine(
     override val deletesFromUnion: Subset get() = _deletesFromUnion.value
     override val undoneGroups: Set<Int> get() = _undoneGroups
     override val revisions: List<Revision> get() = _history
-    override fun tryEditHistory(priority: Int, undoGroup: Int, baseRevToken: RevToken, delta: DeltaRope): Boolean {
-        TODO("Not yet implemented")
-    }
     //
-
 }
 
 fun JvmEngine(initialContent: Rope): JvmEngine {
