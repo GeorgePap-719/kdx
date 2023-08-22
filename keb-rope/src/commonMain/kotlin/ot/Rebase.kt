@@ -16,13 +16,15 @@ fun rebase(
     val nextExpandBy: MutableList<Pair<FullPriority, Subset>> = ArrayList(expandBy.size)
     for (op in ops) {
         val fullPriority = FullPriority(op.priority, op.id.sessionId)
-        for ((transformPriority, transformInsert) in expandBy) {
+        for ((transformPriority, transformInserts) in expandBy) {
             // Should never be ==
             assert { fullPriority.compareTo(transformPriority) != 0 }
             val after = fullPriority >= transformPriority
             // d-expand by other
-            val inserts = op.inserts
-            TODO()
+            val inserts = op.inserts.transformExpand(transformInserts, after)
+            // trans-expand other by expanded so they have the same context
+            val inserted = inserts// TODO insertedSubset()
+
         }
     }
     TODO()
