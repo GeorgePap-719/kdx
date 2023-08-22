@@ -2,8 +2,8 @@ package keb.ropes
 
 import keb.ropes.internal.emptyClosedOpenRange
 import keb.ropes.internal.symmetricDifference
-import keb.ropes.operations.simpleEdit
-import keb.ropes.operations.synthesize
+import keb.ropes.ot.simpleEdit
+import keb.ropes.ot.synthesize
 
 /**
  * Represents the current state of a document and all of its history.
@@ -43,7 +43,9 @@ interface Engine {
      * The revision history of the document.
      */
     val revisions: List<Revision>
+}
 
+interface MutableEngine : Engine {
     // TODO: have `base_rev` be an index so that it can be used maximally
     // efficiently with the head revision, a token or a revision ID.
     // Efficiency loss of token is negligible but unfortunate.
@@ -55,6 +57,12 @@ interface Engine {
         baseRevToken: RevToken,
         delta: DeltaRope
     ): Boolean // maybe here we need EngineResult
+
+    fun tryUpdateText(newText: Rope): Boolean
+
+    fun tryUpdateTombstones(newTombstones: Rope): Boolean
+
+    fun tryUpdateDeletesFromUnion(transform: Subset): Boolean
 }
 
 /**
@@ -260,7 +268,7 @@ internal class EngineImpl(
     deletesFromUnion: Subset,
     undoneGroups: Set<Int>,
     history: List<Revision>
-) : Engine {
+) : MutableEngine {
     private var _sessionId = sessionId
     private var _revIdCount = revIdCount
     private var _text = text
@@ -279,6 +287,18 @@ internal class EngineImpl(
 
     override fun tryEditHistory(priority: Int, undoGroup: Int, baseRevToken: RevToken, delta: DeltaRope): Boolean {
         //TODO: mk_new_rev
+        TODO("Not yet implemented")
+    }
+
+    override fun tryUpdateText(newText: Rope): Boolean {
+        TODO("Not yet implemented")
+    }
+
+    override fun tryUpdateTombstones(newTombstones: Rope): Boolean {
+        TODO("Not yet implemented")
+    }
+
+    override fun tryUpdateDeletesFromUnion(transform: Subset): Boolean {
         TODO("Not yet implemented")
     }
 }
