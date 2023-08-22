@@ -93,6 +93,79 @@ fun <T : NodeInfo> Delta<T>.factor(): Pair<InsertDelta<T>, Subset> {
     return InsertDelta(DeltaSupport(insertions, baseLen)) to subset
 }
 
+/// Do a coordinate transformation on an insert-only delta. The `after` parameter
+/// controls whether the insertions in `this` come after those specific in the
+/// coordinate transform.
+fun <T : NodeInfo> InsertDelta<T>.transformExpand(xform: Subset, after: Boolean): InsertDelta<T> {
+    val curChanges = changes
+    val changes = mutableListOf<DeltaElement<T>>()
+    var x = 0 // coordinate within self
+    var y = 0 // coordinate within xform
+    var i = 0 // index into `curChanges`
+    var b1 = 0
+    val xformRanges = xform.complementIterator()
+    var lastXform = xformRanges.next()
+    val len = xform.length()
+    while (y < len || i < curChanges.size) {
+        val nextIvBeg = lastXform?.first ?: len
+        if (after && y < nextIvBeg) y = nextIvBeg
+        while (i < curChanges.size) {
+            when (val content = curChanges[i]) {
+                is Copy -> {
+                    if (y >= nextIvBeg) {
+                        var nextY = content.endIndex + y - x
+                        lastXform?.second?.let { nextY = minOf(nextY, it) }
+                        x += nextY - y
+                        y = nextY
+                        if (x == content.endIndex) i++
+                        lastXform?.second?.let { if (y == it) lastXform = xformRanges.next() }
+                    }
+                    break
+                }
+
+                is Insert -> {
+                    if (y > b1) changes.add(Copy(b1, y))
+                    b1 = y
+                    changes.add(Insert(content.input))
+                    i++
+                }
+            }
+        }
+        if (!after && y < nextIvBeg) y = nextIvBeg
+    }
+    if (y > b1) changes.add(Copy(b1, y))
+    return InsertDelta(DeltaSupport(changes, len))
+}
+
+
+/// Shrink a delta through a deletion of some of its copied regions with
+/// the same base. For example, if `self` applies to a union string, and
+/// `xform` is the deletions from that union, the resulting Delta will
+/// apply to the text.
+fun <T : NodeInfo> InsertDelta<T>.transformShrink(xform: Subset): InsertDelta<T> {
+    val mapper = xform.mapper(CountMatcher.ZERO)
+    val changes = changes.map {
+        when (val content = it) {
+            is Copy -> Copy(mapper.docIndexToSubset(content.startIndex), mapper.docIndexToSubset(content.endIndex))
+            is Insert -> Insert(content.input)
+        }
+    }
+    return InsertDelta(DeltaSupport(changes, xform.lengthAfterDelete()))
+}
+
+/**
+ * Returns a [Subset] containing the inserted ranges.
+ */
+// `d.inserted_subset().delete_from_string(d.apply_to_string(s)) == s`
+fun <T : NodeInfo> InsertDelta<T>.getInsertedSubset(): Subset = buildSubset {
+    for (change in changes) {
+        when (change) {
+            is Copy -> add(change.endIndex - change.startIndex, 0)
+            is Insert -> add(change.input.weight, 1)
+        }
+    }
+}
+
 /**
  * Represents a [Delta] that contains only insertions.
  * That is, it copies all of the `old` document in the same order.
@@ -102,50 +175,6 @@ fun <T : NodeInfo> Delta<T>.factor(): Pair<InsertDelta<T>, Subset> {
 class InsertDelta<T : NodeInfo>(val value: Delta<T>) : Delta<T> {
     override val changes: List<DeltaElement<T>> = value.changes
     override val baseLen: Int = value.baseLen
-
-    /// Do a coordinate transformation on an insert-only delta. The `after` parameter
-    /// controls whether the insertions in `this` come after those specific in the
-    /// coordinate transform.
-    fun transformExpand(xform: Subset, after: Boolean): InsertDelta<T> {
-        val curChanges = changes
-        val changes = mutableListOf<DeltaElement<T>>()
-        var x = 0 // coordinate within self
-        var y = 0 // coordinate within xform
-        var i = 0 // index into `curChanges`
-        var b1 = 0
-        val xformRanges = xform.complementIterator()
-        var lastXform = xformRanges.next()
-        val len = xform.length()
-        while (y < len || i < curChanges.size) {
-            val nextIvBeg = lastXform?.first ?: len
-            if (after && y < nextIvBeg) y = nextIvBeg
-            while (i < curChanges.size) {
-                when (val content = curChanges[i]) {
-                    is Copy -> {
-                        if (y >= nextIvBeg) {
-                            var nextY = content.endIndex + y - x
-                            lastXform?.second?.let { nextY = minOf(nextY, it) }
-                            x += nextY - y
-                            y = nextY
-                            if (x == content.endIndex) i++
-                            lastXform?.second?.let { if (y == it) lastXform = xformRanges.next() }
-                        }
-                        break
-                    }
-
-                    is Insert -> {
-                        if (y > b1) changes.add(Copy(b1, y))
-                        b1 = y
-                        changes.add(Insert(content.input))
-                        i++
-                    }
-                }
-            }
-            if (!after && y < nextIvBeg) y = nextIvBeg
-        }
-        if (y > b1) changes.add(Copy(b1, y))
-        return InsertDelta(DeltaSupport(changes, len))
-    }
 }
 
 sealed class DeltaElement<out T : NodeInfo>
