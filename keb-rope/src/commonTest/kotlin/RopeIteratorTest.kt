@@ -1,6 +1,5 @@
-package ropes
+package keb.ropes
 
-import keb.ropes.Rope
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
