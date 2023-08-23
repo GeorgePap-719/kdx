@@ -57,6 +57,16 @@ interface Engine {
 }
 
 interface MutableEngine : Engine {
+
+    /// Attempts to apply a new edit based on the [`Revision`] specified by `base_rev`,
+    /// Returning an [`Error`] if the `Revision` cannot be found.
+    fun tryEditRev(
+        priority: Int,
+        undoGroup: Int,
+        baseRev: RevToken,
+        delta: DeltaRopeNode
+    ): EngineResult<Unit>
+
     // TODO: have `base_rev` be an index so that it can be used maximally
     // efficiently with the head revision, a token or a revision ID.
     // Efficiency loss of token is negligible but unfortunate.
@@ -351,6 +361,14 @@ internal class EngineImpl(
     override val deletesFromUnion: Subset get() = _deletesFromUnion
     override val undoneGroups: Set<Int> get() = _undoneGroups
     override val revisions: List<Revision> get() = _history
+    override fun tryEditRev(
+        priority: Int,
+        undoGroup: Int,
+        baseRev: RevToken,
+        delta: DeltaRopeNode
+    ): EngineResult<Unit> {
+        TODO("Not yet implemented")
+    }
 
     override fun tryEditHistory(priority: Int, undoGroup: Int, baseRevToken: RevToken, delta: DeltaRope): Boolean {
         //TODO: mk_new_rev

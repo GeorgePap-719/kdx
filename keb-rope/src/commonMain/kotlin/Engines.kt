@@ -6,11 +6,33 @@ import keb.ropes.ot.shuffle
 import keb.ropes.ot.shuffleTombstones
 import keb.ropes.ot.synthesize
 
+// since undo and gc replay history with transforms, we need an empty set
+// of the union string length *before* the first revision.
+fun Engine.emptySubsetBeforeFirstRev(): Subset {
+    val first = revisions.first()
+    // It will be immediately transform_expanded by inserts
+    // if it is an `Edit`,
+    // so length must be before.
+    val len = when (val content = first.edit) {
+        is Edit -> content.inserts.count(CountMatcher.ZERO)
+        is Undo -> content.deletesBitXor.count(CountMatcher.ALL)
+    }
+    return Subset(len)
+}
+
+fun MutableEngine.editRev(
+    priority: Int,
+    undoGroup: Int,
+    baseRev: RevToken,
+    delta: DeltaRopeNode
+) =
+    tryEditRev(priority, undoGroup, baseRev, delta).getOrNull() ?: error("panic!") //TODO: research better handling
+
 fun Engine.mkNewRev(
     newPriority: Int,
     undoGroup: Int,
     baseRevision: RevToken,
-    delta: Delta<RopeLeaf>
+    delta: DeltaRopeNode
 ): EngineResult<EditResult> {
     val index = indexOfRev(baseRevision)
     if (index == -1) return EngineResult.failure(MissingRevision(baseRevision))
