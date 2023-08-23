@@ -16,20 +16,45 @@ internal class Intersection<T>(
 ) : Iterable<T> {
     override fun iterator(): Iterator<T> {
         return object : Iterator<T> {
-            private val left get() = leftIterator.next()
-            private val right get() = rightIterator.next()
-            private var leftIndex = 0
-            private var rightIndex = 0
+            private val leftOrNull get() = if (leftIterator.hasNext()) leftIterator.next() else null
+            private val rightOrNull get() = if (rightIterator.hasNext()) rightIterator.next() else null
+            private val map = mutableMapOf<T, Int>()
 
             private var next: T? = null
 
+            private var calledHasNext = false
+
             override fun hasNext(): Boolean {
+                calledHasNext = true
                 while (true) {
-                    leftIterator
+                    val curLeft = leftOrNull
+                    curLeft?.let { if (put(it)) return true }
+                    val curRight = rightOrNull
+                    curRight?.let { if (put(it)) return true }
+                    if (curLeft == null && curRight == null) return false
+                }
+            }
+
+            private fun put(value: T): Boolean {
+                val occ = map[value]
+                return when (occ) {
+                    null -> {
+                        map[value] = 1
+                        false
+                    }
+
+                    1 -> {
+                        map.remove(value)
+                        next = value
+                        true
+                    }
+
+                    else -> error("unexpected")
                 }
             }
 
             override fun next(): T {
+                if (!calledHasNext) hasNext() // in case next() is called before hasNext()
                 val value = next ?: throw NoSuchElementException()
                 next = null
                 return value
@@ -87,44 +112,4 @@ internal class SymmetricDifference<T>(
             }
         }
     }
-}
-
-private class MergedIterators<T>(
-    private val leftIterator: Iterator<T>,
-    private val rightIterator: Iterator<T>,
-    private val comparator: BooleanComparator<T>
-) : Iterable<T> {
-    override fun iterator(): Iterator<T> {
-        return object : Iterator<T> {
-            private val left get() = leftIterator.next()
-            private val right get() = rightIterator.next()
-
-            override fun hasNext(): Boolean {
-                return leftIterator.hasNext() || rightIterator.hasNext()
-            }
-
-            override fun next(): T {
-                val leftPeek = leftIterator.hasNext()
-                val rightPeek = rightIterator.hasNext()
-                return when {
-                    leftPeek && rightPeek -> if (comparator.compare(left, right)) left else right
-                    leftPeek && !rightPeek -> left
-                    !leftPeek && rightPeek -> right
-                    else -> error("unexpected")
-                }
-            }
-        }
-    }
-}
-
-/**
- * Provides a comparison function similar to [Comparator], but returning a [Boolean].
- */
-private fun interface BooleanComparator<T> {
-    /**
-     * Compares its two arguments for order.
-     * Returns `true` if the first argument is greater than the second,
-     * or `false` if the first argument is less than the second.
-     */
-    fun compare(a: T, b: T): Boolean
 }
