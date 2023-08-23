@@ -4,6 +4,8 @@ import keb.ropes.internal.emptyClosedOpenRange
 import keb.ropes.internal.symmetricDifference
 import keb.ropes.ot.simpleEdit
 import keb.ropes.ot.synthesize
+import kotlin.jvm.JvmField
+import kotlin.jvm.JvmInline
 
 /**
  * Represents the current state of a document and all of its history.
@@ -69,6 +71,53 @@ interface MutableEngine : Engine {
     fun tryUpdateTombstones(newTombstones: Rope): Boolean
 
     fun tryUpdateDeletesFromUnion(transform: Subset): Boolean
+}
+
+@JvmInline
+value class EngineResult<out T> internal constructor(internal val value: Any?) {
+
+    @Suppress("UNCHECKED_CAST")
+    fun getOrNull(): T? = if (value !is Failed) value as T else null
+
+    fun errorOrNull(): Failed? = if (value is Failed) value else null
+
+    sealed interface Failed
+
+    // An edit specified a revision that did not exist.
+    // The revision may have been GC'd,
+    // or it may have been specified incorrectly.
+    class MissingRevision(@JvmField val value: RevToken) : Failed {
+        override fun equals(other: Any?): Boolean = other is MissingRevision && value == other.value
+        override fun hashCode(): Int = value.hashCode()
+        override fun toString(): String = "MissingRevision($value)"
+    }
+
+    /// A delta was applied which had a `base_len`
+    // that did not match the length of the revision it was applied to.
+    class MalformedDelta(@JvmField val revisionLen: Int, @JvmField val deltaLen: Int) : Failed {
+        override fun equals(other: Any?): Boolean =
+            other is MalformedDelta && revisionLen == other.revisionLen && deltaLen == other.deltaLen
+
+        override fun hashCode(): Int {
+            var result = revisionLen
+            result = 31 * result + deltaLen
+            return result
+        }
+
+        override fun toString(): String = "MalformedDelta($revisionLen,$deltaLen)"
+    }
+
+    companion object {
+        fun <E> success(value: E): EngineResult<E> = EngineResult(value)
+        fun <E> failure(cause: Failed): EngineResult<E> = EngineResult(cause)
+    }
+
+    override fun toString(): String {
+        return when (value) {
+            is Failed -> value.toString()
+            else -> "Value($value)"
+        }
+    }
 }
 
 /**

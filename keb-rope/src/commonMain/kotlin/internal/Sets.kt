@@ -4,6 +4,7 @@ package keb.ropes.internal
  * Returns an [Iterable] that visits the elements representing the intersection,
  * i.e., the elements that are both in `this` and `other`, in ascending order.
  */
+//TODO: delete if not used
 internal fun <T> Set<T>.intersection(other: Set<T>): Intersection<T> {
     val thisIterator = this.iterator()
     val otherIterator = other.iterator()
