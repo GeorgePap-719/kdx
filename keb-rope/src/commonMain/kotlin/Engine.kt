@@ -4,6 +4,9 @@ import keb.ropes.internal.emptyClosedOpenRange
 import keb.ropes.internal.symmetricDifference
 import keb.ropes.ot.simpleEdit
 import keb.ropes.ot.synthesize
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.InvocationKind
+import kotlin.contracts.contract
 import kotlin.jvm.JvmField
 import kotlin.jvm.JvmInline
 
@@ -74,7 +77,7 @@ interface MutableEngine : Engine {
 }
 
 @JvmInline
-value class EngineResult<out T> internal constructor(internal val value: Any?) {
+value class EngineResult<out T> internal constructor(@PublishedApi internal val value: Any?) {
 
     @Suppress("UNCHECKED_CAST")
     fun getOrNull(): T? = if (value !is Failed) value as T else null
@@ -118,6 +121,15 @@ value class EngineResult<out T> internal constructor(internal val value: Any?) {
             else -> "Value($value)"
         }
     }
+}
+
+@OptIn(ExperimentalContracts::class)
+inline fun <T> EngineResult<T>.getOrElse(onFailure: (failure: EngineResult.Failed) -> T): T {
+    contract {
+        callsInPlace(onFailure, InvocationKind.AT_MOST_ONCE)
+    }
+    @Suppress("UNCHECKED_CAST")
+    return if (value is EngineResult.Failed) onFailure(value) else value as T
 }
 
 /**
