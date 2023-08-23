@@ -11,9 +11,11 @@ fun List<Revision>.findBaseIndex(other: List<Revision>): Int {
     return 1
 }
 
-/// Find a set of revisions common to both lists
+/**
+ * Returns a [Set] containing all [revision-ids][RevId] that are contained by both this [List] and the specified [List].
+ */
 fun List<Revision>.findCommon(other: List<Revision>): Set<RevId> {
     val thisIds = this.map { it.id }
     val otherIds = other.map { it.id }
-    TODO("intersection()")
+    return thisIds intersect otherIds.toSet() // optimization: toSet()
 }
