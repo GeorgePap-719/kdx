@@ -58,6 +58,10 @@ interface Engine {
 
 interface MutableEngine : Engine {
 
+    // Undo works conceptually by rewinding to the earliest point in history that a toggled undo group appears,
+    // and replaying history from there but with revisions in the new undone_groups not applied.
+    fun undo() {}
+
     /// Attempts to apply a new edit based on the [`Revision`] specified by `base_rev`,
     /// Returning an [`Error`] if the `Revision` cannot be found.
     fun tryEditRev(
