@@ -6,6 +6,24 @@ import keb.ropes.ot.shuffle
 import keb.ropes.ot.shuffleTombstones
 import keb.ropes.ot.synthesize
 
+
+/**
+ * Returns the first [Revision] that could be affected by toggling a set of undo groups.
+ */
+fun Engine.findFirstUndoCandidateIndex(toggledGroups: Set<Int>): Int {
+    // There are no toggled groups,
+    // return past-end.
+    if (toggledGroups.isEmpty()) return revisions.size
+    // Find the lowest toggled undo group number.
+    val lowest = toggledGroups.first()
+    for ((i, revision) in revisions.withIndex().reversed()) {
+        if (revision.maxUndoSoFar < lowest) return i + 1 // +1 since we know the one we just found doesn't have it
+    }
+    // If not found in iteration,
+    // then the first index is candidate.
+    return 0
+}
+
 // since undo and gc replay history with transforms, we need an empty set
 // of the union string length *before* the first revision.
 fun Engine.emptySubsetBeforeFirstRev(): Subset {
