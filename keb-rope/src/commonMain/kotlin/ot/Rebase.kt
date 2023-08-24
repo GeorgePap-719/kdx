@@ -64,7 +64,7 @@ fun MutableEngine.rebase(
 }
 
 class Rebaseable(
-    val revisions: List<Revision>,
+    val newRevisions: List<Revision>,
     val text: Rope,
     val tombstones: Rope,
     val deletesFromUnion: Subset

@@ -419,8 +419,13 @@ internal class EngineImpl(
         val otherDelta = computeDeltas(otherNew, other.text, other.tombstones, other.deletesFromUnion)
         val expandBy = computeTransforms(thisNew)
 
-        val maxUndo = maxUndoGroupId
-        rebase(expandBy, otherDelta, MaxUndoSoFarRef(maxUndo))
+        val maxUndo = MaxUndoSoFarRef(maxUndoGroupId) //TODO: This will not be updated
+        val rebased = rebase(expandBy, otherDelta, maxUndo)
+
+        tryUpdateText(rebased.text)
+        tryUpdateTombstones(rebased.tombstones)
+        tryUpdateDeletesFromUnion(rebased.deletesFromUnion)
+        _revisions.addAll(rebased.newRevisions)
     }
 
     override fun gc(gcGroups: Set<Int>) {
