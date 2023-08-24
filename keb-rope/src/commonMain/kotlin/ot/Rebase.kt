@@ -7,6 +7,7 @@ import keb.ropes.internal.replaceAll
  * Rebase [ops] on top of [expandBy],
  * and return revision contents that can be appended as new revisions on top of revisions represented by [expandBy].
  */
+//TODO: revisit this impl
 fun MutableEngine.rebase(
     expandBy: MutableList<Pair<FullPriority, Subset>>,
     ops: List<DeltaOp>,

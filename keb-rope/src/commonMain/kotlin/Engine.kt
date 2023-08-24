@@ -2,8 +2,7 @@ package keb.ropes
 
 import keb.ropes.internal.emptyClosedOpenRange
 import keb.ropes.internal.symmetricDifference
-import keb.ropes.ot.simpleEdit
-import keb.ropes.ot.synthesize
+import keb.ropes.ot.*
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
@@ -58,9 +57,22 @@ interface Engine {
 
 interface MutableEngine : Engine {
 
+    /// Merge the new content from another Engine into this one with a CRDT merge.
+    fun merge(other: Engine)
+
+    // Note: this function would need some work to handle retaining arbitrary revisions,
+    // partly because the reachability calculation would become more complicated (a
+    // revision might hold content from an undo group that would otherwise be gc'ed),
+    // and partly because you need to retain more undo history, to supply input to the
+    // reachability calculation.
+    //
+    // Thus, it's easiest to defer gc to when all plugins quiesce, but it's certainly
+    // possible to fix it so that's not necessary.
+    fun gc(gcGroups: Set<Int>)
+
     // Undo works conceptually by rewinding to the earliest point in history that a toggled undo group appears,
     // and replaying history from there but with revisions in the new undone_groups not applied.
-    fun undo() {}
+    fun undo(groups: Set<Int>)
 
     /// Attempts to apply a new edit based on the [`Revision`] specified by `base_rev`,
     /// Returning an [`Error`] if the `Revision` cannot be found.
@@ -87,7 +99,7 @@ interface MutableEngine : Engine {
 
     fun tryUpdateTombstones(newTombstones: Rope): Boolean
 
-    fun tryUpdateDeletesFromUnion(transform: Subset): Boolean
+    fun tryUpdateDeletesFromUnion(newDeletesFromUnion: Subset): Boolean
 }
 
 @JvmInline
@@ -342,6 +354,45 @@ class FullPriority(val priority: Int, val sessionId: SessionId) : Comparable<Ful
     }
 }
 
+abstract class AbstractEngine : Engine {
+    fun RevId.equalsInternal(other: RevId): Boolean {
+        val baseIndex = indexOfRev(this)
+        if (baseIndex == -1) return false
+        val baseSubset = getDeletesFromCurUnionForIndex(baseIndex)
+        val otherIndex = indexOfRev(other)
+        if (otherIndex == -1) return false
+        val otherSubset = getDeletesFromCurUnionForIndex(otherIndex)
+        return baseSubset == otherSubset
+    }
+
+    // This computes undo all the way from the beginning.
+    protected fun MutableEngine.undoImpl(groups: Set<Int>): Pair<Revision, Subset> {
+        val toggledGroups = undoneGroups.symmetricDifference(groups).toSet()
+        val firstCandidate = findFirstUndoCandidateIndex(toggledGroups)
+        // About `false` below:
+        // don't invert undos
+        // since our `firstCandidate`
+        // is based on the current undo set,
+        // not past.
+        var deletesFromUnion = getDeletesFromUnionBeforeIndex(firstCandidate, false)
+        val revView = revisions.subList(firstCandidate, revisions.size)
+        for (revision in revView) {
+            val content = revision.edit
+            if (content !is Edit) continue
+            if (groups.contains(content.undoGroup)) {
+                if (content.inserts.isNotEmpty()) deletesFromUnion = deletesFromUnion.transformUnion(content.inserts)
+            } else {
+                if (content.inserts.isNotEmpty()) deletesFromUnion = deletesFromUnion.transformExpand(content.inserts)
+                if (content.deletes.isNotEmpty()) deletesFromUnion = deletesFromUnion.union(content.deletes)
+            }
+        }
+        val deletesXor = deletesFromUnion.xor(deletesFromUnion)
+        val maxUndoSoFar = revisions.last().maxUndoSoFar
+        val newRev = Revision(nextRevId, maxUndoSoFar, Undo(toggledGroups, deletesXor))
+        return newRev to deletesFromUnion
+    }
+}
+
 internal class EngineImpl(
     sessionId: SessionId,
     revIdCount: Int,
@@ -350,14 +401,14 @@ internal class EngineImpl(
     deletesFromUnion: Subset,
     undoneGroups: Set<Int>,
     history: List<Revision>
-) : MutableEngine {
+) : AbstractEngine(), MutableEngine {
     private var _sessionId = sessionId
     private var _revIdCount = revIdCount
     private var _text = text
     private var _tombstones = tombstones
     private var _deletesFromUnion = deletesFromUnion
     private var _undoneGroups = undoneGroups.toMutableSet()
-    private var _history = history.toMutableList()
+    private var _revisions = history.toMutableList()
 
     override val sessionId: SessionId get() = _sessionId
     override val revIdCount: Int get() = _revIdCount
@@ -365,30 +416,86 @@ internal class EngineImpl(
     override val tombstones: Rope get() = _tombstones
     override val deletesFromUnion: Subset get() = _deletesFromUnion
     override val undoneGroups: Set<Int> get() = _undoneGroups
-    override val revisions: List<Revision> get() = _history
+    override val revisions: List<Revision> get() = _revisions
+
+    override fun merge(other: Engine) {
+        val baseIndex = revisions.findBaseIndex(other.revisions)
+        val thisToMerge = revisions.subList(baseIndex, revisions.size)
+        val otherToMerge = other.revisions.subList(baseIndex, other.revisions.size)
+
+        val common = thisToMerge.findCommon(otherToMerge)
+
+        val thisNew = rearrange(thisToMerge, common, deletesFromUnion.length())
+        val otherNew = rearrange(otherToMerge, common, other.deletesFromUnion.length())
+
+        val otherDelta = computeDeltas(otherNew, other.text, other.tombstones, other.deletesFromUnion)
+        val expandBy = computeTransforms(thisNew)
+
+        val maxUndo = maxUndoGroupId
+        rebase(expandBy, otherDelta, MaxUndoSoFarRef(maxUndo))
+    }
+
+    override fun gc(gcGroups: Set<Int>) {
+        TODO("Not yet implemented")
+    }
+
+    override fun undo(groups: Set<Int>) {
+        val (newRev, newDeletesFromUnion) = undoImpl(groups)
+        // Update `text` and `tombstones`.
+        val (newText, newTombstones) = shuffle(
+            text,
+            tombstones,
+            deletesFromUnion,
+            newDeletesFromUnion
+        )
+        tryUpdateText(newText)
+        tryUpdateTombstones(newTombstones)
+        tryUpdateDeletesFromUnion(newDeletesFromUnion)
+        _undoneGroups = groups.toMutableSet()
+        _revisions.add(newRev)
+        _revIdCount++
+    }
+
+
     override fun tryEditRev(
         priority: Int,
         undoGroup: Int,
         baseRev: RevToken,
         delta: DeltaRopeNode
     ): EngineResult<Unit> {
-        TODO("Not yet implemented")
+        val result = mkNewRev(
+            priority,
+            undoGroup,
+            baseRev,
+            delta
+        )
+        val newEdit = result.getOrElse { return EngineResult.failure(it) }
+        _revIdCount++
+        _revisions.add(newEdit.newRev)
+        tryUpdateText(newEdit.newText)
+        tryUpdateTombstones(newEdit.newTombstones)
+        tryUpdateDeletesFromUnion(newEdit.newDeletesFromUnion)
+        return EngineResult.success(Unit)
     }
 
+    //TODO: I think thi is not needed.
     override fun tryEditHistory(priority: Int, undoGroup: Int, baseRevToken: RevToken, delta: DeltaRope): Boolean {
         //TODO: mk_new_rev
         TODO("Not yet implemented")
     }
 
     override fun tryUpdateText(newText: Rope): Boolean {
-        TODO("Not yet implemented")
+        _text = newText
+        return true
     }
 
     override fun tryUpdateTombstones(newTombstones: Rope): Boolean {
-        TODO("Not yet implemented")
+        _tombstones = newTombstones
+        return true
     }
 
-    override fun tryUpdateDeletesFromUnion(transform: Subset): Boolean {
-        TODO("Not yet implemented")
+    override fun tryUpdateDeletesFromUnion(newDeletesFromUnion: Subset): Boolean {
+        _deletesFromUnion = newDeletesFromUnion
+        return true
     }
 }

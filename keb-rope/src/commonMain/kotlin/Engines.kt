@@ -2,37 +2,9 @@ package keb.ropes
 
 import keb.ropes.EngineResult.MalformedDelta
 import keb.ropes.EngineResult.MissingRevision
-import keb.ropes.internal.symmetricDifference
 import keb.ropes.ot.shuffle
 import keb.ropes.ot.shuffleTombstones
 import keb.ropes.ot.synthesize
-
-// This computes undo all the way from the beginning.
-private fun MutableEngine.undoImpl(groups: Set<Int>): Pair<Revision, Subset> {
-    val toggledGroups = undoneGroups.symmetricDifference(groups).toSet()
-    val firstCandidate = findFirstUndoCandidateIndex(toggledGroups)
-    // About `false` below:
-    // don't invert undos
-    // since our `firstCandidate`
-    // is based on the current undo set,
-    // not past.
-    var deletesFromUnion = getDeletesFromUnionBeforeIndex(firstCandidate, false)
-    val revView = revisions.subList(firstCandidate, revisions.size)
-    for (revision in revView) {
-        val content = revision.edit
-        if (content !is Edit) continue
-        if (groups.contains(content.undoGroup)) {
-            if (content.inserts.isNotEmpty()) deletesFromUnion = deletesFromUnion.transformUnion(content.inserts)
-        } else {
-            if (content.inserts.isNotEmpty()) deletesFromUnion = deletesFromUnion.transformExpand(content.inserts)
-            if (content.deletes.isNotEmpty()) deletesFromUnion = deletesFromUnion.union(content.deletes)
-        }
-    }
-    val deletesXor = deletesFromUnion.xor(deletesFromUnion)
-    val maxUndoSoFar = revisions.last().maxUndoSoFar
-    val newRev = Revision(nextRevId, maxUndoSoFar, Undo(toggledGroups, deletesXor))
-    return newRev to deletesFromUnion
-}
 
 /**
  * Returns the first [Revision] that could be affected by toggling a set of undo groups.
@@ -141,14 +113,14 @@ fun Engine.mkNewRev(
                 deletes = newDeletes
             ),
         ),
-        text = newText,
-        tombstones = newTombstones,
-        deletesFromUnion = newDeletesFromUnion
+        newText = newText,
+        newTombstones = newTombstones,
+        newDeletesFromUnion = newDeletesFromUnion
     )
     return EngineResult.success(result)
 }
 
-data class EditResult(val revision: Revision, val text: Rope, val tombstones: Rope, val deletesFromUnion: Subset)
+data class EditResult(val newRev: Revision, val newText: Rope, val newTombstones: Rope, val newDeletesFromUnion: Subset)
 
 /**
  * Returns a [Delta] that, when applied to [baseRevision], results in the current [head].
