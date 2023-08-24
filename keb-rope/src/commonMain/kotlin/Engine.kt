@@ -83,18 +83,6 @@ interface MutableEngine : Engine {
         delta: DeltaRopeNode
     ): EngineResult<Unit>
 
-    // TODO: have `base_rev` be an index so that it can be used maximally
-    // efficiently with the head revision, a token or a revision ID.
-    // Efficiency loss of token is negligible but unfortunate.
-    /// Attempts to apply a new edit based on the [`Revision`] specified by `base_rev`,
-    /// Returning an [`Error`] if the `Revision` cannot be found.
-    fun tryEditHistory(
-        priority: Int,
-        undoGroup: Int,
-        baseRevToken: RevToken,
-        delta: DeltaRope
-    ): Boolean // maybe here we need EngineResult
-
     fun tryUpdateText(newText: Rope): Boolean
 
     fun tryUpdateTombstones(newTombstones: Rope): Boolean
@@ -476,12 +464,6 @@ internal class EngineImpl(
         tryUpdateTombstones(newEdit.newTombstones)
         tryUpdateDeletesFromUnion(newEdit.newDeletesFromUnion)
         return EngineResult.success(Unit)
-    }
-
-    //TODO: I think thi is not needed.
-    override fun tryEditHistory(priority: Int, undoGroup: Int, baseRevToken: RevToken, delta: DeltaRope): Boolean {
-        //TODO: mk_new_rev
-        TODO("Not yet implemented")
     }
 
     override fun tryUpdateText(newText: Rope): Boolean {
