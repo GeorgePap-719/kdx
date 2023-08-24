@@ -257,6 +257,7 @@ val Engine.maxUndoGroupId: Int get() = revisions.last().maxUndoSoFar
 /**
  * Tries to find a [Revision] with the specified [revToken].
  */
+//TODO: fix kdoc and maybe rename to findRev for keeping a consistency
 fun Engine.findRevision(revToken: RevToken): Rope? {
     val revIndex = indexOfRev(revToken)
     if (revIndex == -1) return null
