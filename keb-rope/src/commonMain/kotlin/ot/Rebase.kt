@@ -60,9 +60,9 @@ fun MutableEngine.rebase(
             newDeletesFromUnion
         )
 
-        tryUpdateText(newText)
-        tryUpdateTombstones(newTombstones)
-        tryUpdateDeletesFromUnion(newDeletesFromUnion)
+        trySetText(newText)
+        trySetTombstones(newTombstones)
+        trySetDeletesFromUnion(newDeletesFromUnion)
 
         val maxUndoSoFarAfterRebased = maxOf(maxUndoSoFar, op.undoGroup)
         appRevisions.add(
