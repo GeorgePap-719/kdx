@@ -57,9 +57,6 @@ interface Engine {
 
 interface MutableEngine : Engine {
 
-    /// Merge the new content from another Engine into this one with a CRDT merge.
-    fun merge(other: Engine)
-
     // Note: this function would need some work to handle retaining arbitrary revisions,
     // partly because the reachability calculation would become more complicated (a
     // revision might hold content from an undo group that would otherwise be gc'ed),
@@ -83,11 +80,41 @@ interface MutableEngine : Engine {
         delta: DeltaRopeNode
     ): EngineResult<Unit>
 
-    fun tryUpdateText(newText: Rope): Boolean
+    fun trySetText(value: Rope): Boolean
 
-    fun tryUpdateTombstones(newTombstones: Rope): Boolean
+    fun trySetTombstones(value: Rope): Boolean
 
-    fun tryUpdateDeletesFromUnion(newDeletesFromUnion: Subset): Boolean
+    fun trySetDeletesFromUnion(value: Subset): Boolean
+
+    fun trySetUndoneGroups(newUndoneGroups: Set<Int>)
+
+    fun appendRevision(element: Revision): Boolean
+
+    fun appendRevisions(elements: List<Revision>): Boolean
+
+    fun incrementRevIdCountAndGet(): Int
+}
+
+/// Merge the new content from another Engine into this one with a CRDT merge.
+fun MutableEngine.merge(other: Engine) {
+    val baseIndex = revisions.findBaseIndex(other.revisions)
+    val thisToMerge = revisions.subList(baseIndex, revisions.size)
+    val otherToMerge = other.revisions.subList(baseIndex, other.revisions.size)
+
+    val common = thisToMerge.findCommon(otherToMerge)
+
+    val thisNew = rearrange(thisToMerge, common, deletesFromUnion.length())
+    val otherNew = rearrange(otherToMerge, common, other.deletesFromUnion.length())
+
+    val otherDelta = computeDeltas(otherNew, other.text, other.tombstones, other.deletesFromUnion)
+    val expandBy = computeTransforms(thisNew)
+
+    val rebased = rebase(expandBy, otherDelta, maxUndoGroupId)
+
+    trySetText(rebased.text)
+    trySetTombstones(rebased.tombstones)
+    trySetDeletesFromUnion(rebased.deletesFromUnion)
+    appendRevisions(rebased.newRevisions)
 }
 
 @JvmInline
@@ -406,27 +433,6 @@ internal class EngineImpl(
     override val undoneGroups: Set<Int> get() = _undoneGroups
     override val revisions: List<Revision> get() = _revisions
 
-    override fun merge(other: Engine) {
-        val baseIndex = revisions.findBaseIndex(other.revisions)
-        val thisToMerge = revisions.subList(baseIndex, revisions.size)
-        val otherToMerge = other.revisions.subList(baseIndex, other.revisions.size)
-
-        val common = thisToMerge.findCommon(otherToMerge)
-
-        val thisNew = rearrange(thisToMerge, common, deletesFromUnion.length())
-        val otherNew = rearrange(otherToMerge, common, other.deletesFromUnion.length())
-
-        val otherDelta = computeDeltas(otherNew, other.text, other.tombstones, other.deletesFromUnion)
-        val expandBy = computeTransforms(thisNew)
-
-        val rebased = rebase(expandBy, otherDelta, maxUndoGroupId)
-
-        tryUpdateText(rebased.text)
-        tryUpdateTombstones(rebased.tombstones)
-        tryUpdateDeletesFromUnion(rebased.deletesFromUnion)
-        _revisions.addAll(rebased.newRevisions)
-    }
-
     override fun gc(gcGroups: Set<Int>) {
         TODO("Not yet implemented")
     }
@@ -440,9 +446,9 @@ internal class EngineImpl(
             deletesFromUnion,
             newDeletesFromUnion
         )
-        tryUpdateText(newText)
-        tryUpdateTombstones(newTombstones)
-        tryUpdateDeletesFromUnion(newDeletesFromUnion)
+        trySetText(newText)
+        trySetTombstones(newTombstones)
+        trySetDeletesFromUnion(newDeletesFromUnion)
         _undoneGroups = groups.toMutableSet()
         _revisions.add(newRev)
         _revIdCount++
@@ -464,24 +470,33 @@ internal class EngineImpl(
         val newEdit = result.getOrElse { return EngineResult.failure(it) }
         _revIdCount++
         _revisions.add(newEdit.newRev)
-        tryUpdateText(newEdit.newText)
-        tryUpdateTombstones(newEdit.newTombstones)
-        tryUpdateDeletesFromUnion(newEdit.newDeletesFromUnion)
+        trySetText(newEdit.newText)
+        trySetTombstones(newEdit.newTombstones)
+        trySetDeletesFromUnion(newEdit.newDeletesFromUnion)
         return EngineResult.success(Unit)
     }
 
-    override fun tryUpdateText(newText: Rope): Boolean {
-        _text = newText
+    override fun trySetText(value: Rope): Boolean {
+        _text = value
         return true
     }
 
-    override fun tryUpdateTombstones(newTombstones: Rope): Boolean {
-        _tombstones = newTombstones
+    override fun trySetTombstones(value: Rope): Boolean {
+        _tombstones = value
         return true
     }
 
-    override fun tryUpdateDeletesFromUnion(newDeletesFromUnion: Subset): Boolean {
-        _deletesFromUnion = newDeletesFromUnion
+    override fun trySetDeletesFromUnion(value: Subset): Boolean {
+        _deletesFromUnion = value
         return true
     }
+
+    override fun trySetUndoneGroups(newUndoneGroups: Set<Int>) {
+        _undoneGroups = newUndoneGroups.toMutableSet()
+    }
+
+    override fun appendRevision(element: Revision): Boolean = _revisions.add(element)
+    override fun appendRevisions(elements: List<Revision>): Boolean = _revisions.addAll(elements)
+
+    override fun incrementRevIdCountAndGet(): Int = ++_revIdCount
 }
