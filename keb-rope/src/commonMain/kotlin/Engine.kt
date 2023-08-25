@@ -56,6 +56,8 @@ interface Engine {
 }
 
 interface MutableEngine : Engine {
+    /// Merge the new content from another Engine into this one with a CRDT merge.
+    fun merge(other: Engine)
 
     // Note: this function would need some work to handle retaining arbitrary revisions,
     // partly because the reachability calculation would become more complicated (a
@@ -93,28 +95,6 @@ interface MutableEngine : Engine {
     fun appendRevisions(elements: List<Revision>): Boolean
 
     fun incrementRevIdCountAndGet(): Int
-}
-
-/// Merge the new content from another Engine into this one with a CRDT merge.
-fun MutableEngine.merge(other: Engine) {
-    val baseIndex = revisions.findBaseIndex(other.revisions)
-    val thisToMerge = revisions.subList(baseIndex, revisions.size)
-    val otherToMerge = other.revisions.subList(baseIndex, other.revisions.size)
-
-    val common = thisToMerge.findCommon(otherToMerge)
-
-    val thisNew = rearrange(thisToMerge, common, deletesFromUnion.length())
-    val otherNew = rearrange(otherToMerge, common, other.deletesFromUnion.length())
-
-    val otherDelta = computeDeltas(otherNew, other.text, other.tombstones, other.deletesFromUnion)
-    val expandBy = computeTransforms(thisNew)
-
-    val rebased = rebase(expandBy, otherDelta, maxUndoGroupId)
-
-    trySetText(rebased.text)
-    trySetTombstones(rebased.tombstones)
-    trySetDeletesFromUnion(rebased.deletesFromUnion)
-    appendRevisions(rebased.newRevisions)
 }
 
 @JvmInline
@@ -432,6 +412,28 @@ internal class EngineImpl(
     override val deletesFromUnion: Subset get() = _deletesFromUnion
     override val undoneGroups: Set<Int> get() = _undoneGroups
     override val revisions: List<Revision> get() = _revisions
+
+
+    override fun merge(other: Engine) {
+        val baseIndex = revisions.findBaseIndex(other.revisions)
+        val thisToMerge = revisions.subList(baseIndex, revisions.size)
+        val otherToMerge = other.revisions.subList(baseIndex, other.revisions.size)
+
+        val common = thisToMerge.findCommon(otherToMerge)
+
+        val thisNew = rearrange(thisToMerge, common, deletesFromUnion.length())
+        val otherNew = rearrange(otherToMerge, common, other.deletesFromUnion.length())
+
+        val otherDelta = computeDeltas(otherNew, other.text, other.tombstones, other.deletesFromUnion)
+        val expandBy = computeTransforms(thisNew)
+
+        val rebased = rebase(expandBy, otherDelta, maxUndoGroupId)
+
+        trySetText(rebased.text)
+        trySetTombstones(rebased.tombstones)
+        trySetDeletesFromUnion(rebased.deletesFromUnion)
+        appendRevisions(rebased.newRevisions)
+    }
 
     override fun gc(gcGroups: Set<Int>) {
         TODO("Not yet implemented")
