@@ -419,8 +419,7 @@ internal class EngineImpl(
         val otherDelta = computeDeltas(otherNew, other.text, other.tombstones, other.deletesFromUnion)
         val expandBy = computeTransforms(thisNew)
 
-        val maxUndo = MaxUndoSoFarRef(maxUndoGroupId) //TODO: This will not be updated
-        val rebased = rebase(expandBy, otherDelta, maxUndo)
+        val rebased = rebase(expandBy, otherDelta, maxUndoGroupId)
 
         tryUpdateText(rebased.text)
         tryUpdateTombstones(rebased.tombstones)

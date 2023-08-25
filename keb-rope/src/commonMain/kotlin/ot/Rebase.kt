@@ -7,12 +7,21 @@ import keb.ropes.internal.replaceAll
  * Rebase [ops] on top of [expandBy],
  * and return revision contents that can be appended as new revisions on top of revisions represented by [expandBy].
  */
-//TODO: revisit this impl
 fun MutableEngine.rebase(
     expandBy: MutableList<Pair<FullPriority, Subset>>,
     ops: List<DeltaOp>,
-    maxUndoSoFar: MaxUndoSoFarRef
-): Rebaseable {
+    // Kind of tricky parameter,
+    // in the original implementation
+    // author passes this as `mut`
+    // but when calling the function,
+    // the variable is a `let` (immutable).
+    // From semantics perspective,
+    // it does not make much sense
+    // to mutate this variable directly
+    // on the existing item in the collection.
+    // As we use it for constructing the new (rebased) version.
+    maxUndoSoFar: Int
+): RebasedOp {
     val appRevisions: MutableList<Revision> = ArrayList(ops.size)
     var nextExpandBy: MutableList<Pair<FullPriority, Subset>> = ArrayList(expandBy.size)
     for (op in ops) {
@@ -55,15 +64,21 @@ fun MutableEngine.rebase(
         tryUpdateTombstones(newTombstones)
         tryUpdateDeletesFromUnion(newDeletesFromUnion)
 
-        maxUndoSoFar.value = maxOf(maxUndoSoFar.value, op.undoGroup)
-        appRevisions.add(Revision(op.id, maxUndoSoFar.value, Edit(op.priority, op.undoGroup, deletes, inserted)))
+        val maxUndoSoFarAfterRebased = maxOf(maxUndoSoFar, op.undoGroup)
+        appRevisions.add(
+            Revision(
+                id = op.id,
+                maxUndoSoFar = maxUndoSoFarAfterRebased,
+                edit = Edit(op.priority, op.undoGroup, deletes, inserted)
+            )
+        )
         expandBy.replaceAll(nextExpandBy)
         nextExpandBy = ArrayList(expandBy.size)
     }
-    return Rebaseable(appRevisions, text, tombstones, deletesFromUnion)
+    return RebasedOp(appRevisions, text, tombstones, deletesFromUnion)
 }
 
-class Rebaseable(
+class RebasedOp(
     val newRevisions: List<Revision>,
     val text: Rope,
     val tombstones: Rope,
