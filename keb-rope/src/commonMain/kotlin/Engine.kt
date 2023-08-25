@@ -304,6 +304,28 @@ fun MutableEngine(initialContent: Rope): MutableEngine {
     return engine
 }
 
+/**
+ * Creates a new empty [MutableEngine].
+ */
+fun emptyMutableEngine(): MutableEngine {
+    val deletesFromUnion = Subset(0)
+    val revId = RevId(0, 0, 0)
+    val content = Undo(
+        emptySet(),
+        Subset(0)
+    )
+    val rev = Revision(revId, 0, content)
+    return EngineImpl(
+        defaultSession,
+        1,
+        emptyRope(),
+        emptyRope(),
+        deletesFromUnion,
+        emptySet(),
+        listOf(rev)
+    )
+}
+
 fun DeltaRopeNode.applyTo(rope: Rope): Rope {
     val newRoot = applyTo(rope.root)
     return Rope(newRoot)
@@ -344,25 +366,6 @@ class FullPriority(val priority: Int, val sessionId: SessionId) : Comparable<Ful
         if (firstComp != 0) return firstComp
         return second.compareTo(other.second)
     }
-}
-
-private fun emptyMutableEngine(): MutableEngine {
-    val deletesFromUnion = Subset(0)
-    val revId = RevId(0, 0, 0)
-    val content = Undo(
-        emptySet(),
-        Subset(0)
-    )
-    val rev = Revision(revId, 0, content)
-    return EngineImpl(
-        defaultSession,
-        1,
-        emptyRope(),
-        emptyRope(),
-        deletesFromUnion,
-        emptySet(),
-        listOf(rev)
-    )
 }
 
 internal class EngineImpl(
