@@ -3,7 +3,8 @@ package keb.ropes
 import keb.ropes.internal.AbstractEngine
 import keb.ropes.internal.emptyClosedOpenRange
 import keb.ropes.internal.symmetricDifference
-import keb.ropes.ot.*
+import keb.ropes.ot.simpleEdit
+import keb.ropes.ot.synthesize
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
@@ -245,6 +246,33 @@ fun Engine.getDeletesFromCurUnionForIndex(revIndex: Int): Subset {
     return deletesFromUnion
 }
 
+// This computes undo all the way from the beginning.
+fun MutableEngine.computeUndo(groups: Set<Int>): Pair<Revision, Subset> {
+    val toggledGroups = undoneGroups.symmetricDifference(groups).toSet()
+    val firstCandidate = findFirstUndoCandidateIndex(toggledGroups)
+    // About `false` below:
+    // don't invert undos
+    // since our `firstCandidate`
+    // is based on the current undo set,
+    // not past.
+    var deletesFromUnion = getDeletesFromUnionBeforeIndex(firstCandidate, false)
+    val revView = revisions.subList(firstCandidate, revisions.size)
+    for (revision in revView) {
+        val content = revision.edit
+        if (content !is Edit) continue
+        if (groups.contains(content.undoGroup)) {
+            if (content.inserts.isNotEmpty()) deletesFromUnion = deletesFromUnion.transformUnion(content.inserts)
+        } else {
+            if (content.inserts.isNotEmpty()) deletesFromUnion = deletesFromUnion.transformExpand(content.inserts)
+            if (content.deletes.isNotEmpty()) deletesFromUnion = deletesFromUnion.union(content.deletes)
+        }
+    }
+    val deletesXor = deletesFromUnion.xor(deletesFromUnion)
+    val maxUndoSoFar = revisions.last().maxUndoSoFar
+    val newRev = Revision(nextRevId, maxUndoSoFar, Undo(toggledGroups, deletesXor))
+    return newRev to deletesFromUnion
+}
+
 /**
  * Returns the largest undo-group-id used so far.
  *
@@ -253,45 +281,27 @@ fun Engine.getDeletesFromCurUnionForIndex(revIndex: Int): Subset {
 val Engine.maxUndoGroupId: Int get() = revisions.last().maxUndoSoFar
 
 /**
- * Tries to find a [Revision] with the specified [revToken].
+ * Tries to find a [Revision] with the specified [revToken], returning its [content][Rope].
  */
-//TODO: fix kdoc and maybe rename to findRev for keeping a consistency
-fun Engine.findRevision(revToken: RevToken): Rope? {
+fun Engine.findRevContent(revToken: RevToken): Rope? {
     val revIndex = indexOfRev(revToken)
     if (revIndex == -1) return null
     return getRevContentForIndex(revIndex)
 }
 
 /**
- * TODO
+ * Creates a new [MutableEngine] with a single edit that inserts [initialContent], if it is not empty.
  */
-fun Engine(initialContent: Rope): Engine {
-    val engine = emptyEngine()
-    if (!initialContent.isEmpty()) {
-        val firstRev = engine.headRevId.token()
-        val delta = simpleEdit(emptyClosedOpenRange(), initialContent.root, 0)
-        //TODO: engine.edit_rev()
-    }
+/// It needs to be a separate commit rather than just
+/// part of the initial contents since any two `Engine`s need a common
+/// ancestor in order to be mergeable.
+fun MutableEngine(initialContent: Rope): MutableEngine {
+    val engine = emptyMutableEngine()
+    if (initialContent.isEmpty()) return engine
+    val firstRev = engine.headRevId.token()
+    val delta = simpleEdit(emptyClosedOpenRange(), initialContent.root, 0)
+    engine.editRev(0, 0, firstRev, delta)
     return engine
-}
-
-internal fun emptyEngine(): Engine {
-    val deletesFromUnion = Subset(0)
-    val revId = RevId(0, 0, 0)
-    val content = Undo(
-        emptySet(),
-        Subset(0)
-    )
-    val rev = Revision(revId, 0, content)
-    return EngineImpl(
-        defaultSession,
-        1,
-        emptyRope(),
-        emptyRope(),
-        deletesFromUnion,
-        emptySet(),
-        listOf(rev)
-    )
 }
 
 fun DeltaRopeNode.applyTo(rope: Rope): Rope {
@@ -334,6 +344,25 @@ class FullPriority(val priority: Int, val sessionId: SessionId) : Comparable<Ful
         if (firstComp != 0) return firstComp
         return second.compareTo(other.second)
     }
+}
+
+private fun emptyMutableEngine(): MutableEngine {
+    val deletesFromUnion = Subset(0)
+    val revId = RevId(0, 0, 0)
+    val content = Undo(
+        emptySet(),
+        Subset(0)
+    )
+    val rev = Revision(revId, 0, content)
+    return EngineImpl(
+        defaultSession,
+        1,
+        emptyRope(),
+        emptyRope(),
+        deletesFromUnion,
+        emptySet(),
+        listOf(rev)
+    )
 }
 
 internal class EngineImpl(
