@@ -4,20 +4,6 @@ import keb.ropes.*
 import keb.ropes.ot.*
 
 internal abstract class AbstractEngine : MutableEngine {
-    abstract fun trySetText(value: Rope): Boolean
-
-    abstract fun trySetTombstones(value: Rope): Boolean
-
-    abstract fun trySetDeletesFromUnion(value: Subset): Boolean
-
-    abstract fun trySetUndoneGroups(newUndoneGroups: Set<Int>)
-
-    abstract fun appendRevision(element: Revision): Boolean
-
-    abstract fun appendRevisions(elements: List<Revision>): Boolean
-
-    abstract fun incrementRevIdCountAndGet(): Int
-
     override fun gc(gcGroups: Set<Int>) {
         TODO("Not yet implemented")
     }
@@ -44,7 +30,7 @@ internal abstract class AbstractEngine : MutableEngine {
     }
 
     override fun undo(groups: Set<Int>) {
-        val (newRev, newDeletesFromUnion) = undoImpl(groups)
+        val (newRev, newDeletesFromUnion) = computeUndo(groups)
         // Update `text` and `tombstones`.
         val (newText, newTombstones) = shuffle(
             text,
@@ -91,30 +77,17 @@ internal abstract class AbstractEngine : MutableEngine {
         return baseSubset == otherSubset
     }
 
-    // This computes undo all the way from the beginning.
-    private fun MutableEngine.undoImpl(groups: Set<Int>): Pair<Revision, Subset> {
-        val toggledGroups = undoneGroups.symmetricDifference(groups).toSet()
-        val firstCandidate = findFirstUndoCandidateIndex(toggledGroups)
-        // About `false` below:
-        // don't invert undos
-        // since our `firstCandidate`
-        // is based on the current undo set,
-        // not past.
-        var deletesFromUnion = getDeletesFromUnionBeforeIndex(firstCandidate, false)
-        val revView = revisions.subList(firstCandidate, revisions.size)
-        for (revision in revView) {
-            val content = revision.edit
-            if (content !is Edit) continue
-            if (groups.contains(content.undoGroup)) {
-                if (content.inserts.isNotEmpty()) deletesFromUnion = deletesFromUnion.transformUnion(content.inserts)
-            } else {
-                if (content.inserts.isNotEmpty()) deletesFromUnion = deletesFromUnion.transformExpand(content.inserts)
-                if (content.deletes.isNotEmpty()) deletesFromUnion = deletesFromUnion.union(content.deletes)
-            }
-        }
-        val deletesXor = deletesFromUnion.xor(deletesFromUnion)
-        val maxUndoSoFar = revisions.last().maxUndoSoFar
-        val newRev = Revision(nextRevId, maxUndoSoFar, Undo(toggledGroups, deletesXor))
-        return newRev to deletesFromUnion
-    }
+    abstract fun trySetText(value: Rope): Boolean
+
+    abstract fun trySetTombstones(value: Rope): Boolean
+
+    abstract fun trySetDeletesFromUnion(value: Subset): Boolean
+
+    abstract fun trySetUndoneGroups(newUndoneGroups: Set<Int>)
+
+    abstract fun appendRevision(element: Revision): Boolean
+
+    abstract fun appendRevisions(elements: List<Revision>): Boolean
+
+    abstract fun incrementRevIdCountAndGet(): Int
 }
