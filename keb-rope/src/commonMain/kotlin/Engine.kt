@@ -1,5 +1,6 @@
 package keb.ropes
 
+import keb.ropes.internal.AbstractEngine
 import keb.ropes.internal.emptyClosedOpenRange
 import keb.ropes.internal.symmetricDifference
 import keb.ropes.ot.*
@@ -81,20 +82,6 @@ interface MutableEngine : Engine {
         baseRev: RevToken,
         delta: DeltaRopeNode
     ): EngineResult<Unit>
-
-    fun trySetText(value: Rope): Boolean
-
-    fun trySetTombstones(value: Rope): Boolean
-
-    fun trySetDeletesFromUnion(value: Subset): Boolean
-
-    fun trySetUndoneGroups(newUndoneGroups: Set<Int>)
-
-    fun appendRevision(element: Revision): Boolean
-
-    fun appendRevisions(elements: List<Revision>): Boolean
-
-    fun incrementRevIdCountAndGet(): Int
 }
 
 @JvmInline
@@ -349,45 +336,6 @@ class FullPriority(val priority: Int, val sessionId: SessionId) : Comparable<Ful
     }
 }
 
-abstract class AbstractEngine : Engine {
-    fun RevId.equalsInternal(other: RevId): Boolean {
-        val baseIndex = indexOfRev(this)
-        if (baseIndex == -1) return false
-        val baseSubset = getDeletesFromCurUnionForIndex(baseIndex)
-        val otherIndex = indexOfRev(other)
-        if (otherIndex == -1) return false
-        val otherSubset = getDeletesFromCurUnionForIndex(otherIndex)
-        return baseSubset == otherSubset
-    }
-
-    // This computes undo all the way from the beginning.
-    protected fun MutableEngine.undoImpl(groups: Set<Int>): Pair<Revision, Subset> {
-        val toggledGroups = undoneGroups.symmetricDifference(groups).toSet()
-        val firstCandidate = findFirstUndoCandidateIndex(toggledGroups)
-        // About `false` below:
-        // don't invert undos
-        // since our `firstCandidate`
-        // is based on the current undo set,
-        // not past.
-        var deletesFromUnion = getDeletesFromUnionBeforeIndex(firstCandidate, false)
-        val revView = revisions.subList(firstCandidate, revisions.size)
-        for (revision in revView) {
-            val content = revision.edit
-            if (content !is Edit) continue
-            if (groups.contains(content.undoGroup)) {
-                if (content.inserts.isNotEmpty()) deletesFromUnion = deletesFromUnion.transformUnion(content.inserts)
-            } else {
-                if (content.inserts.isNotEmpty()) deletesFromUnion = deletesFromUnion.transformExpand(content.inserts)
-                if (content.deletes.isNotEmpty()) deletesFromUnion = deletesFromUnion.union(content.deletes)
-            }
-        }
-        val deletesXor = deletesFromUnion.xor(deletesFromUnion)
-        val maxUndoSoFar = revisions.last().maxUndoSoFar
-        val newRev = Revision(nextRevId, maxUndoSoFar, Undo(toggledGroups, deletesXor))
-        return newRev to deletesFromUnion
-    }
-}
-
 internal class EngineImpl(
     sessionId: SessionId,
     revIdCount: Int,
@@ -396,7 +344,7 @@ internal class EngineImpl(
     deletesFromUnion: Subset,
     undoneGroups: Set<Int>,
     history: List<Revision>
-) : AbstractEngine(), MutableEngine {
+) : AbstractEngine() {
     private var _sessionId = sessionId
     private var _revIdCount = revIdCount
     private var _text = text
@@ -412,71 +360,6 @@ internal class EngineImpl(
     override val deletesFromUnion: Subset get() = _deletesFromUnion
     override val undoneGroups: Set<Int> get() = _undoneGroups
     override val revisions: List<Revision> get() = _revisions
-
-
-    override fun merge(other: Engine) {
-        val baseIndex = revisions.findBaseIndex(other.revisions)
-        val thisToMerge = revisions.subList(baseIndex, revisions.size)
-        val otherToMerge = other.revisions.subList(baseIndex, other.revisions.size)
-
-        val common = thisToMerge.findCommon(otherToMerge)
-
-        val thisNew = rearrange(thisToMerge, common, deletesFromUnion.length())
-        val otherNew = rearrange(otherToMerge, common, other.deletesFromUnion.length())
-
-        val otherDelta = computeDeltas(otherNew, other.text, other.tombstones, other.deletesFromUnion)
-        val expandBy = computeTransforms(thisNew)
-
-        val rebased = rebase(expandBy, otherDelta, maxUndoGroupId)
-
-        trySetText(rebased.text)
-        trySetTombstones(rebased.tombstones)
-        trySetDeletesFromUnion(rebased.deletesFromUnion)
-        appendRevisions(rebased.newRevisions)
-    }
-
-    override fun gc(gcGroups: Set<Int>) {
-        TODO("Not yet implemented")
-    }
-
-    override fun undo(groups: Set<Int>) {
-        val (newRev, newDeletesFromUnion) = undoImpl(groups)
-        // Update `text` and `tombstones`.
-        val (newText, newTombstones) = shuffle(
-            text,
-            tombstones,
-            deletesFromUnion,
-            newDeletesFromUnion
-        )
-        trySetText(newText)
-        trySetTombstones(newTombstones)
-        trySetDeletesFromUnion(newDeletesFromUnion)
-        _undoneGroups = groups.toMutableSet()
-        _revisions.add(newRev)
-        _revIdCount++
-    }
-
-
-    override fun tryEditRev(
-        priority: Int,
-        undoGroup: Int,
-        baseRev: RevToken,
-        delta: DeltaRopeNode
-    ): EngineResult<Unit> {
-        val result = mkNewRev(
-            priority,
-            undoGroup,
-            baseRev,
-            delta
-        )
-        val newEdit = result.getOrElse { return EngineResult.failure(it) }
-        _revIdCount++
-        _revisions.add(newEdit.newRev)
-        trySetText(newEdit.newText)
-        trySetTombstones(newEdit.newTombstones)
-        trySetDeletesFromUnion(newEdit.newDeletesFromUnion)
-        return EngineResult.success(Unit)
-    }
 
     override fun trySetText(value: Rope): Boolean {
         _text = value
@@ -499,6 +382,5 @@ internal class EngineImpl(
 
     override fun appendRevision(element: Revision): Boolean = _revisions.add(element)
     override fun appendRevisions(elements: List<Revision>): Boolean = _revisions.addAll(elements)
-
     override fun incrementRevIdCountAndGet(): Int = ++_revIdCount
 }
