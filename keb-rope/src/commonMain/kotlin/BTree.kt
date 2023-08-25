@@ -55,6 +55,8 @@ fun <T : LeafInfo> BTreeNode<T>.isBalanced(): Boolean {
  *
  * @throws IllegalArgumentException if a child node is not legal ([BTreeNode.isLegal]).
  */
+//TODO: rebalance should not throw in case a node is not legal,
+// but split it properly.
 fun <T : LeafInfo> BTreeNode<T>.rebalance(): BTreeNode<T> {
     if (isBalanced()) return this
     val leaves = this.mapNotNull { if (it.isEmpty) null else it }
