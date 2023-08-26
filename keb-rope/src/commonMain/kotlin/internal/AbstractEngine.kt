@@ -4,6 +4,29 @@ import keb.ropes.*
 
 internal abstract class AbstractEngine : MutableEngine {
 
+    override fun merge(other: Engine) {
+        val baseIndex = revisions.findBaseIndex(other.revisions)
+        val thisToMerge = revisions.subList(baseIndex, revisions.size)
+        val otherToMerge = other.revisions.subList(baseIndex, other.revisions.size)
+
+        val common = thisToMerge.findCommon(otherToMerge)
+
+        val thisNew = rearrange(thisToMerge, common, deletesFromUnion.length())
+        val otherNew = rearrange(otherToMerge, common, other.deletesFromUnion.length())
+
+        val otherDelta = computeDeltas(otherNew, other.text, other.tombstones, other.deletesFromUnion)
+        val expandBy = computeTransforms(thisNew)
+
+        val rebased = rebase(expandBy, otherDelta, maxUndoGroupId)
+
+        trySetText(rebased.text)
+        trySetTombstones(rebased.tombstones)
+        trySetDeletesFromUnion(rebased.deletesFromUnion)
+        appendRevisions(rebased.newRevisions)
+    }
+
+    abstract fun appendRevisions(elements: List<Revision>): Boolean
+
     override fun rebase(
         expandBy: MutableList<Pair<FullPriority, Subset>>,
         ops: List<DeltaOp>,
@@ -76,29 +99,108 @@ internal abstract class AbstractEngine : MutableEngine {
     }
 
     override fun gc(gcGroups: Set<Int>) {
-        TODO("Not yet implemented")
+        var gcDeletes = emptySubsetBeforeFirstRevision()
+        val retainRevs = mutableSetOf<RevisionId>()
+        revisions.lastOrNull()?.let { retainRevs.add(it.id) }
+        for (revision in revisions) {
+            val content = revision.edit
+            if (content !is Edit) continue
+            if (!retainRevs.contains(revision.id) && gcGroups.contains(content.undoGroup)) {
+                if (undoneGroups.contains(content.undoGroup)) {
+                    if (content.inserts.isNotEmpty()) gcDeletes = gcDeletes.transformUnion(content.inserts)
+                } else {
+                    if (content.inserts.isNotEmpty()) gcDeletes = gcDeletes.transformExpand(content.inserts)
+                    if (content.deletes.isNotEmpty()) gcDeletes = gcDeletes.union(content.deletes)
+                }
+                continue
+            }
+            if (content.inserts.isNotEmpty()) gcDeletes = gcDeletes.transformExpand(content.inserts)
+        }
+        if (gcDeletes.isNotEmpty()) {
+            val notInTombstones = deletesFromUnion.complement()
+            val deletesFromTombstones = gcDeletes.transformShrink(notInTombstones)
+            val newTombstones = deletesFromTombstones.deleteFrom(tombstones.root)
+            trySetTombstones(Rope(newTombstones))
+            val newDeletesFromUnion = deletesFromUnion.transformShrink(gcDeletes)
+            trySetDeletesFromUnion(newDeletesFromUnion)
+        }
+        val oldRevs = getAndSetRevisions(emptyList())
+        for (revision in oldRevs.reversed()) {
+            when (val content = revision.edit) {
+                is Edit -> {
+                    val newGcDeletes =
+                        if (content.inserts.isNotEmpty()) null else gcDeletes.transformShrink(content.inserts)
+                    if (retainRevs.contains(revision.id) || gcGroups.contains(content.undoGroup)) {
+                        val (inserts, deletes) = if (gcDeletes.isEmpty()) {
+                            content.inserts to content.deletes
+                        } else {
+                            content.inserts.transformShrink(gcDeletes) to content.deletes.transformShrink(gcDeletes)
+                        }
+                        appendRevision(
+                            Revision(
+                                id = revision.id,
+                                maxUndoSoFar = revision.maxUndoSoFar,
+                                edit = Edit(content.priority, content.undoGroup, inserts, deletes)
+                            )
+                        )
+                    }
+                    newGcDeletes?.let { gcDeletes = it }
+                }
+
+                is Undo -> {
+                    // We're super-aggressive about dropping these; after gc,
+                    // the history of which `undos` were used
+                    // to compute `deletesFromUnion` in edits may be lost.
+                    if (retainRevs.contains(revision.id)) {
+                        val newDeletesBitXor = if (gcDeletes.isEmpty()) {
+                            content.deletesBitXor
+                        } else {
+                            content.deletesBitXor.transformShrink(gcDeletes)
+                        }
+                        appendRevision(
+                            Revision(
+                                id = revision.id,
+                                maxUndoSoFar = revision.maxUndoSoFar,
+                                edit = Undo(content.toggledGroups - gcGroups, newDeletesBitXor)
+                            )
+                        )
+                    }
+                }
+            }
+        }
+        // Revert revisions in proper order,
+        // as we iterated `oldRevs` in reversed order.
+        reverseRevisions()
     }
 
-    override fun merge(other: Engine) {
-        val baseIndex = revisions.findBaseIndex(other.revisions)
-        val thisToMerge = revisions.subList(baseIndex, revisions.size)
-        val otherToMerge = other.revisions.subList(baseIndex, other.revisions.size)
-
-        val common = thisToMerge.findCommon(otherToMerge)
-
-        val thisNew = rearrange(thisToMerge, common, deletesFromUnion.length())
-        val otherNew = rearrange(otherToMerge, common, other.deletesFromUnion.length())
-
-        val otherDelta = computeDeltas(otherNew, other.text, other.tombstones, other.deletesFromUnion)
-        val expandBy = computeTransforms(thisNew)
-
-        val rebased = rebase(expandBy, otherDelta, maxUndoGroupId)
-
-        trySetText(rebased.text)
-        trySetTombstones(rebased.tombstones)
-        trySetDeletesFromUnion(rebased.deletesFromUnion)
-        appendRevisions(rebased.newRevisions)
+    // since undo and gc replay history with transforms, we need an empty set
+    // of the union string length *before* the first revision.
+    private fun Engine.emptySubsetBeforeFirstRevision(): Subset {
+        val first = revisions.first()
+        // It will be immediately transform_expanded by inserts
+        // if it is an `Edit`,
+        // so length must be before.
+        val len = when (val content = first.edit) {
+            is Edit -> content.inserts.count(CountMatcher.ZERO)
+            is Undo -> content.deletesBitXor.count(CountMatcher.ALL)
+        }
+        return Subset(len)
     }
+
+    /**
+     * Replaces revisions with new [value] and returns the old one.
+     *
+     * This function exists primarily to replicate the behavior of rust's [take](https://doc.rust-lang.org/std/mem/fn.take.html) function.
+     */
+    private fun getAndSetRevisions(value: List<Revision>): List<Revision> {
+        val cur = revisions
+        trySetRevisions(value)
+        return cur
+    }
+
+    abstract fun trySetRevisions(elements: List<Revision>): Boolean
+
+    abstract fun reverseRevisions()
 
     override fun undo(groups: Set<Int>) {
         val (newRev, newDeletesFromUnion) = computeUndo(groups)
@@ -116,6 +218,8 @@ internal abstract class AbstractEngine : MutableEngine {
         appendRevision(newRev)
         incrementRevIdCountAndGet()
     }
+
+    abstract fun trySetUndoneGroups(newUndoneGroups: Set<Int>): Boolean
 
     override fun tryEditRevision(
         priority: Int,
@@ -138,6 +242,8 @@ internal abstract class AbstractEngine : MutableEngine {
         return EngineResult.success(Unit)
     }
 
+    abstract fun incrementRevIdCountAndGet(): Int
+
     fun RevisionId.equalsInternal(other: RevisionId): Boolean {
         val baseIndex = indexOfRevision(this)
         if (baseIndex == -1) return false
@@ -154,11 +260,5 @@ internal abstract class AbstractEngine : MutableEngine {
 
     abstract fun trySetDeletesFromUnion(value: Subset): Boolean
 
-    abstract fun trySetUndoneGroups(newUndoneGroups: Set<Int>)
-
     abstract fun appendRevision(element: Revision): Boolean
-
-    abstract fun appendRevisions(elements: List<Revision>): Boolean
-
-    abstract fun incrementRevIdCountAndGet(): Int
 }

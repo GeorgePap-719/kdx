@@ -409,8 +409,18 @@ internal class EngineImpl(
         return true
     }
 
-    override fun trySetUndoneGroups(newUndoneGroups: Set<Int>) {
+    override fun trySetUndoneGroups(newUndoneGroups: Set<Int>): Boolean {
         _undoneGroups = newUndoneGroups.toMutableSet()
+        return true
+    }
+
+    override fun trySetRevisions(elements: List<Revision>): Boolean {
+        _revisions = elements.toMutableList()
+        return true
+    }
+
+    override fun reverseRevisions() {
+        _revisions.reverse()
     }
 
     override fun appendRevision(element: Revision): Boolean = _revisions.add(element)
