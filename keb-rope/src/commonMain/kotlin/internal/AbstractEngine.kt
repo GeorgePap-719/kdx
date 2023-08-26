@@ -124,7 +124,7 @@ internal abstract class AbstractEngine : MutableEngine {
             val newDeletesFromUnion = deletesFromUnion.transformShrink(gcDeletes)
             trySetDeletesFromUnion(newDeletesFromUnion)
         }
-        val oldRevs = getAndSetRevisions(emptyList())
+        val oldRevs = getAndClearRevisions()
         for (revision in oldRevs.reversed()) {
             when (val content = revision.edit) {
                 is Edit -> {
@@ -188,17 +188,15 @@ internal abstract class AbstractEngine : MutableEngine {
     }
 
     /**
-     * Replaces revisions with new [value] and returns the old one.
-     *
-     * This function exists primarily to replicate the behavior of rust's [take](https://doc.rust-lang.org/std/mem/fn.take.html) function.
+     * Returns the current value of revisions and removes all elements from revisions.
      */
-    private fun getAndSetRevisions(value: List<Revision>): List<Revision> {
+    private fun getAndClearRevisions(): List<Revision> {
         val cur = revisions
-        trySetRevisions(value)
+        clearRevisions()
         return cur
     }
 
-    abstract fun trySetRevisions(elements: List<Revision>): Boolean
+    abstract fun clearRevisions()
 
     abstract fun reverseRevisions()
 
