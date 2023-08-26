@@ -414,16 +414,10 @@ internal class EngineImpl(
         return true
     }
 
-    override fun trySetRevisions(elements: List<Revision>): Boolean {
-        _revisions = elements.toMutableList()
-        return true
-    }
-
-    override fun reverseRevisions() {
-        _revisions.reverse()
-    }
-
+    override fun reverseRevisions() = _revisions.reverse()
     override fun appendRevision(element: Revision): Boolean = _revisions.add(element)
     override fun appendRevisions(elements: List<Revision>): Boolean = _revisions.addAll(elements)
+    override fun clearRevisions() = _revisions.clear()
+
     override fun incrementRevIdCountAndGet(): Int = ++_revIdCount
 }
