@@ -117,32 +117,32 @@ internal abstract class AbstractEngine : MutableEngine {
         incrementRevIdCountAndGet()
     }
 
-    override fun tryEditRev(
+    override fun tryEditRevision(
         priority: Int,
         undoGroup: Int,
-        baseRev: RevToken,
+        baseRevision: RevisionToken,
         delta: DeltaRopeNode
     ): EngineResult<Unit> {
-        val result = mkNewRev(
+        val result = mkNewRevision(
             priority,
             undoGroup,
-            baseRev,
+            baseRevision,
             delta
         )
         val newEdit = result.getOrElse { return EngineResult.failure(it) }
         incrementRevIdCountAndGet()
-        appendRevision(newEdit.newRev)
+        appendRevision(newEdit.newRevision)
         trySetText(newEdit.newText)
         trySetTombstones(newEdit.newTombstones)
         trySetDeletesFromUnion(newEdit.newDeletesFromUnion)
         return EngineResult.success(Unit)
     }
 
-    fun RevId.equalsInternal(other: RevId): Boolean {
-        val baseIndex = indexOfRev(this)
+    fun RevisionId.equalsInternal(other: RevisionId): Boolean {
+        val baseIndex = indexOfRevision(this)
         if (baseIndex == -1) return false
         val baseSubset = getDeletesFromCurUnionForIndex(baseIndex)
-        val otherIndex = indexOfRev(other)
+        val otherIndex = indexOfRevision(other)
         if (otherIndex == -1) return false
         val otherSubset = getDeletesFromCurUnionForIndex(otherIndex)
         return baseSubset == otherSubset
