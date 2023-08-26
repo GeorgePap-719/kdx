@@ -1,6 +1,5 @@
-package keb.ropes.ot
+package keb.ropes
 
-import keb.ropes.*
 import kotlin.math.min
 
 /// Synthesize a delta from a "union string" and two subsets: an old set
