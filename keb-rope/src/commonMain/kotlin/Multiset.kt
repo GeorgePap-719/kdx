@@ -205,6 +205,20 @@ fun Subset.complementIterator(): RangeIterator = rangeIterator(CountMatcher.ZERO
 
 fun Subset.isNotEmpty(): Boolean = !isEmpty()
 
+/**
+ * Builds a version of [node] with all the elements in this [Subset] removed from it.
+ */
+// Actually, this is a builder for btree,
+// and probably makes more sense for the btree
+// to be the receiver.
+fun <T : NodeInfo> Subset.deleteFrom(node: BTreeNode<T>): BTreeNode<T> = buildBTree {
+    val iterator = rangeIterator(CountMatcher.ZERO)
+    for (range in iterator) {
+        val (start, end) = range ?: continue
+        add(node, start..<end)
+    }
+}
+
 private typealias Range = Pair<Int, Int>
 
 class RangeIterator(
