@@ -17,7 +17,7 @@ interface Delta<T : NodeInfo> {
 
     // The total length of the base document,
     // used for checks in some operations.
-    val baseLen: Int
+    val baseLength: Int
 }
 
 /**
@@ -29,11 +29,11 @@ val <T : NodeInfo> Delta<T>.isIdentity: Boolean
         // Case 1: Everything from beginning to end is getting copied.
         if (len == 1) {
             val element = changes.first() as? Copy
-            element?.let { return element.startIndex == 0 && element.endIndex == baseLen }
+            element?.let { return element.startIndex == 0 && element.endIndex == baseLength }
         }
         // Case 2: The rope is empty
         // and the entire rope is getting deleted.
-        return len == 0 && baseLen == 0
+        return len == 0 && baseLength == 0
     }
 
 /**
@@ -43,7 +43,7 @@ val <T : NodeInfo> Delta<T>.isIdentity: Boolean
  * is not compatible with the construction of the delta.
  */
 fun <T : NodeInfo> Delta<T>.applyTo(node: BTreeNode<T>): BTreeNode<T> {
-    assert { node.weight == baseLen }
+    assert { node.weight == baseLength }
     return buildBTree {
         for (element in changes) {
             when (element) {
@@ -86,11 +86,11 @@ fun <T : NodeInfo> Delta<T>.factor(): Pair<InsertDelta<T>, Subset> {
                 }
             }
         }
-        if (b1 < baseLen) insertions.add(Copy(b1, baseLen))
-        add(e1, baseLen, 1)
-        paddingToLength(baseLen)
+        if (b1 < baseLength) insertions.add(Copy(b1, baseLength))
+        add(e1, baseLength, 1)
+        paddingToLength(baseLength)
     }
-    return InsertDelta(DeltaSupport(insertions, baseLen)) to subset
+    return InsertDelta(DeltaSupport(insertions, baseLength)) to subset
 }
 
 /// Do a coordinate transformation on an insert-only delta. The `after` parameter
@@ -174,7 +174,7 @@ fun <T : NodeInfo> InsertDelta<T>.getInsertedSubset(): Subset = buildSubset {
  */
 class InsertDelta<T : NodeInfo>(val value: Delta<T>) : Delta<T> {
     override val changes: List<DeltaElement<T>> = value.changes
-    override val baseLen: Int = value.baseLen
+    override val baseLength: Int = value.baseLength
 }
 
 sealed class DeltaElement<out T : NodeInfo>
@@ -185,7 +185,7 @@ class Insert<T : NodeInfo>(val input: BTreeNode<T>) : DeltaElement<T>()
 
 open class DeltaSupport<T : NodeInfo>(
     override val changes: List<DeltaElement<T>>,
-    override val baseLen: Int
+    override val baseLength: Int
 ) : Delta<T>
 
 fun <T : LeafInfo> buildDelta(baseLen: Int, action: DeltaBuilder<T>.() -> Unit): Delta<T> {
@@ -200,7 +200,7 @@ class DeltaBuilder<T : LeafInfo> internal constructor(baseLen: Int) {
 
     fun delete(range: IntRange) {
         val start = range.first
-        val end = delta.baseLen
+        val end = delta.baseLength
         // Intervals are not properly sorted.
         assert { start >= lastOffset }
         if (start > lastOffset) addIntoDeltaElements(Copy(lastOffset, start))
@@ -222,16 +222,16 @@ class DeltaBuilder<T : LeafInfo> internal constructor(baseLen: Int) {
     }
 
     fun build(): Delta<T> {
-        if (lastOffset < delta.baseLen) addIntoDeltaElements(Copy(lastOffset, delta.baseLen))
+        if (lastOffset < delta.baseLength) addIntoDeltaElements(Copy(lastOffset, delta.baseLength))
         return delta
     }
 
     private fun addIntoDeltaElements(element: DeltaElement<T>) {
         val newChanges = delta.changes.plus(element)
-        delta = DeltaSupport(newChanges, delta.baseLen)
+        delta = DeltaSupport(newChanges, delta.baseLength)
     }
 }
 
 internal typealias DeltaRopeNode = Delta<RopeLeaf>
 
-class DeltaRope(override val changes: List<DeltaElement<RopeLeaf>>, override val baseLen: Int) : DeltaRopeNode
+class DeltaRope(override val changes: List<DeltaElement<RopeLeaf>>, override val baseLength: Int) : DeltaRopeNode

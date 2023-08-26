@@ -14,14 +14,14 @@ import keb.ropes.internal.symmetricDifference
 /// .n..n...nn..  -> ........NNNN -> returns vec![N,N,N,N]
 fun rearrange(
     revisions: List<Revision>,
-    baseRevIds: Set<RevId>,
-    headLen: Int
+    baseRevisionIds: Set<RevisionId>,
+    headLength: Int
 ): List<Revision> {
     // `Transform` representing the characters added by common revisions after a point.
-    var transform = Subset(headLen)
-    val ops: MutableList<Revision> = ArrayList(revisions.size - baseRevIds.size)
+    var transform = Subset(headLength)
+    val ops: MutableList<Revision> = ArrayList(revisions.size - baseRevisionIds.size)
     for (revision in revisions.reversed()) {
-        val isBase = baseRevIds.contains(revision.id)
+        val isBase = baseRevisionIds.contains(revision.id)
         val contents = when (val content = revision.edit) {
             is Edit -> {
                 if (isBase) {
@@ -127,7 +127,7 @@ fun computeDeltas(
 }
 
 class DeltaOp(
-    val id: RevId,
+    val id: RevisionId,
     val priority: Int,
     val undoGroup: Int,
     val inserts: InsertDelta<RopeLeaf>,
@@ -142,9 +142,9 @@ fun List<Revision>.findBaseIndex(other: List<Revision>): Int {
 }
 
 /**
- * Returns a [Set] containing all [revision-ids][RevId] that are contained by both this [List] and the specified [List].
+ * Returns a [Set] containing all [revision-ids][RevisionId] that are contained by both this [List] and the specified [List].
  */
-fun List<Revision>.findCommon(other: List<Revision>): Set<RevId> {
+fun List<Revision>.findCommon(other: List<Revision>): Set<RevisionId> {
     val thisIds = this.map { it.id }
     val otherIds = other.map { it.id }
     return thisIds intersect otherIds.toSet() // optimization: toSet()
@@ -175,7 +175,7 @@ fun MutableEngine.computeUndo(groups: Set<Int>): Pair<Revision, Subset> {
     }
     val deletesXor = deletesFromUnion.xor(deletesFromUnion)
     val maxUndoSoFar = revisions.last().maxUndoSoFar
-    val newRev = Revision(nextRevId, maxUndoSoFar, Undo(toggledGroups, deletesXor))
+    val newRev = Revision(nextRevisionId, maxUndoSoFar, Undo(toggledGroups, deletesXor))
     return newRev to deletesFromUnion
 }
 
@@ -202,8 +202,8 @@ private fun Engine.findFirstUndoCandidateIndex(toggledGroups: Set<Int>): Int {
  * Returns a [Delta] that, when applied to [baseRevision], results in the current [head].
  * Otherwise, returns failed result if there is not at least one edit.
  */
-fun Engine.tryDeltaRevHead(baseRevision: RevToken): EngineResult<DeltaRopeNode> {
-    val index = indexOfRev(baseRevision)
+fun Engine.tryDeltaRevisionHead(baseRevision: RevisionToken): EngineResult<DeltaRopeNode> {
+    val index = indexOfRevision(baseRevision)
     if (index == -1) return EngineResult.failure(EngineResult.MissingRevision(baseRevision))
     val prevFromUnion = getDeletesFromCurUnionForIndex(index)
     val oldTombstones = shuffleTombstones(
@@ -216,13 +216,13 @@ fun Engine.tryDeltaRevHead(baseRevision: RevToken): EngineResult<DeltaRopeNode> 
     return EngineResult.success(delta)
 }
 
-fun Engine.mkNewRev(
+fun Engine.mkNewRevision(
     newPriority: Int,
     undoGroup: Int,
-    baseRevision: RevToken,
+    baseRevision: RevisionToken,
     delta: DeltaRopeNode
 ): EngineResult<EditResult> {
-    val index = indexOfRev(baseRevision)
+    val index = indexOfRevision(baseRevision)
     if (index == -1) return EngineResult.failure(EngineResult.MissingRevision(baseRevision))
     val (insertDelta, deletes) = delta.factor()
     // Rebase delta
@@ -230,8 +230,13 @@ fun Engine.mkNewRev(
     // instead of the text.
     val deletesAtRev = getDeletesFromUnionForIndex(index)
     // Validate delta.
-    if (insertDelta.baseLen != deletesAtRev.lengthAfterDelete()) {
-        return EngineResult.failure(EngineResult.MalformedDelta(insertDelta.baseLen, deletesAtRev.lengthAfterDelete()))
+    if (insertDelta.baseLength != deletesAtRev.lengthAfterDelete()) {
+        return EngineResult.failure(
+            EngineResult.MalformedDelta(
+                insertDelta.baseLength,
+                deletesAtRev.lengthAfterDelete()
+            )
+        )
     }
     var unionInsertDelta = insertDelta.transformExpand(deletesAtRev, true)
     var newDeletes = deletes.transformExpand(deletesAtRev)
@@ -275,7 +280,7 @@ fun Engine.mkNewRev(
     val headRevision = revisions.last()
     val result = EditResult(
         Revision(
-            id = nextRevId,
+            id = nextRevisionId,
             maxUndoSoFar = maxOf(undoGroup, headRevision.maxUndoSoFar),
             edit = Edit(
                 priority = newPriority,
@@ -291,7 +296,12 @@ fun Engine.mkNewRev(
     return EngineResult.success(result)
 }
 
-data class EditResult(val newRev: Revision, val newText: Rope, val newTombstones: Rope, val newDeletesFromUnion: Subset)
+data class EditResult(
+    val newRevision: Revision,
+    val newText: Rope,
+    val newTombstones: Rope,
+    val newDeletesFromUnion: Subset
+)
 
 // -------------------------------- shared-helpers --------------------------------
 

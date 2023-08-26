@@ -17,7 +17,7 @@ interface Engine {
     val sessionId: SessionId
 
     /// The incrementing revision number counter for this session used for `RevId`s
-    val revIdCount: Int
+    val revisionIdCount: Int
 
     /// The current contents of the document as would be displayed on screen
     val text: Rope
@@ -75,10 +75,10 @@ interface MutableEngine : Engine {
 
     /// Attempts to apply a new edit based on the [`Revision`] specified by `base_rev`,
     /// Returning an [`Error`] if the `Revision` cannot be found.
-    fun tryEditRev(
+    fun tryEditRevision(
         priority: Int,
         undoGroup: Int,
-        baseRev: RevToken,
+        baseRevision: RevisionToken,
         delta: DeltaRopeNode
     ): EngineResult<Unit>
 
@@ -89,13 +89,14 @@ interface MutableEngine : Engine {
     fun rebase(expandBy: MutableList<Pair<FullPriority, Subset>>, ops: List<DeltaOp>, maxUndoSoFar: Int): RebasedResult
 }
 
-fun MutableEngine.editRev(
+fun MutableEngine.editRevision(
     priority: Int,
     undoGroup: Int,
-    baseRev: RevToken,
+    baseRevision: RevisionToken,
     delta: DeltaRopeNode
 ) =
-    tryEditRev(priority, undoGroup, baseRev, delta).getOrNull() ?: error("panic!") //TODO: research better handling
+    //TODO: research better handling
+    tryEditRevision(priority, undoGroup, baseRevision, delta).getOrNull() ?: error("panic!")
 
 @JvmInline
 value class EngineResult<out T> internal constructor(@PublishedApi internal val value: Any?) {
@@ -110,7 +111,7 @@ value class EngineResult<out T> internal constructor(@PublishedApi internal val 
     // An edit specified a revision that did not exist.
     // The revision may have been GC'd,
     // or it may have been specified incorrectly.
-    class MissingRevision(@JvmField val value: RevToken) : Failed {
+    class MissingRevision(@JvmField val value: RevisionToken) : Failed {
         override fun equals(other: Any?): Boolean = other is MissingRevision && value == other.value
         override fun hashCode(): Int = value.hashCode()
         override fun toString(): String = "MissingRevision($value)"
@@ -167,18 +168,18 @@ class RebasedResult(
 val Engine.head get() = text
 
 /**
- * Returns [RevId] of head revision.
+ * Returns [RevisionId] of head revision.
  *
  * @throws NoSuchElementException if [Engine.revisions] are empty.
  */
-val Engine.headRevId: RevId get() = revisions.last().id
+val Engine.headRevisionId: RevisionId get() = revisions.last().id
 
-val Engine.nextRevId: RevId get() = RevId(sessionId.first, sessionId.second, revIdCount)
+val Engine.nextRevisionId: RevisionId get() = RevisionId(sessionId.first, sessionId.second, revisionIdCount)
 
 /**
  * Returns the index of revision the specified [id], or -1 if it does exist.
  */
-fun Engine.indexOfRev(id: RevId): Int {
+fun Engine.indexOfRevision(id: RevisionId): Int {
     return revisions
         .asReversed() // lookup in recent ones first
         .indexOfFirst { it.id == id }
@@ -187,7 +188,7 @@ fun Engine.indexOfRev(id: RevId): Int {
 /**
  * Returns the index of revision with the specified [token], or -1 if it does exist.
  */
-fun Engine.indexOfRev(token: RevToken): Int {
+fun Engine.indexOfRevision(token: RevisionToken): Int {
     return revisions
         .asReversed() // lookup in recent ones first
         .indexOfFirst { it.id.token() == token }
@@ -241,7 +242,7 @@ fun Engine.getDeletesFromUnionBeforeIndex(revIndex: Int, insertUndos: Boolean): 
 /**
  * Returns the contents of the document at the given [revIndex].
  */
-fun Engine.getRevContentForIndex(revIndex: Int): Rope {
+fun Engine.getRevisionContentForIndex(revIndex: Int): Rope {
     val oldDeletesFromCurUnion = getDeletesFromCurUnionForIndex(revIndex)
     val delta = synthesize(tombstones.root, deletesFromUnion, oldDeletesFromCurUnion)
     val newRoot = delta.applyTo(text.root)
@@ -273,12 +274,12 @@ fun Engine.getDeletesFromCurUnionForIndex(revIndex: Int): Subset {
 val Engine.maxUndoGroupId: Int get() = revisions.last().maxUndoSoFar
 
 /**
- * Tries to find a [Revision] with the specified [revToken], returning its [content][Rope].
+ * Returns a revisions [content][Rope] with the specified [revisionToken], or `null` if it is not found.
  */
-fun Engine.findRevContent(revToken: RevToken): Rope? {
-    val revIndex = indexOfRev(revToken)
+fun Engine.getRevisionContentOrNull(revisionToken: RevisionToken): Rope? {
+    val revIndex = indexOfRevision(revisionToken)
     if (revIndex == -1) return null
-    return getRevContentForIndex(revIndex)
+    return getRevisionContentForIndex(revIndex)
 }
 
 /**
@@ -290,9 +291,9 @@ fun Engine.findRevContent(revToken: RevToken): Rope? {
 fun MutableEngine(initialContent: Rope): MutableEngine {
     val engine = emptyMutableEngine()
     if (initialContent.isEmpty()) return engine
-    val firstRev = engine.headRevId.token()
+    val firstRev = engine.headRevisionId.token()
     val delta = simpleEdit(emptyClosedOpenRange(), initialContent.root, 0)
-    engine.editRev(0, 0, firstRev, delta)
+    engine.editRevision(0, 0, firstRev, delta)
     return engine
 }
 
@@ -314,12 +315,12 @@ internal fun <T : NodeInfo> simpleEdit(
  */
 fun emptyMutableEngine(): MutableEngine {
     val deletesFromUnion = Subset(0)
-    val revId = RevId(0, 0, 0)
+    val revisionId = RevisionId(0, 0, 0)
     val content = Undo(
         emptySet(),
         Subset(0)
     )
-    val rev = Revision(revId, 0, content)
+    val rev = Revision(revisionId, 0, content)
     return EngineImpl(
         defaultSession,
         1,
@@ -386,7 +387,7 @@ internal class EngineImpl(
     private var _revisions = history.toMutableList()
 
     override val sessionId: SessionId get() = _sessionId
-    override val revIdCount: Int get() = _revIdCount
+    override val revisionIdCount: Int get() = _revIdCount
     override val text: Rope get() = _text
     override val tombstones: Rope get() = _tombstones
     override val deletesFromUnion: Subset get() = _deletesFromUnion

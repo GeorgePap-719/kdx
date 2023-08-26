@@ -6,7 +6,7 @@ package keb.ropes
 class Revision(
     // This uniquely represents the identity of this revision and it stays
     /// the same even if it is rebased or merged between devices.
-    val id: RevId,
+    val id: RevisionId,
     /// The largest undo group number of any edit in the history up to this
     /// point. Used to optimize undo to not look further back.
     val maxUndoSoFar: Int,
@@ -40,17 +40,17 @@ class Undo(
 ) : Content()
 
 /**
- * Returns the hash of this [RevId].
+ * Returns the hash of this [RevisionId].
  */
 /// Returns a u64 that will be equal for equivalent revision IDs and
 /// should be as unlikely to collide as two random u64s.
 //TODO: research about kotlin's hashCode() collision rate.
-fun RevId.token(): RevToken = hashCode().toLong()
+fun RevisionId.token(): RevisionToken = hashCode().toLong()
 
 /**
  * An unique identifier for a [Revision].
  */
-class RevId(
+class RevisionId(
     // 96 bits has a 10^(-12) chance of collision with 400 million sessions and 10^(-6) with 100 billion.
     // `session1==session2==0` is reserved for initialization which is the same on all sessions.
     // A colliding session will break merge invariants and the document will start crashing Xi.
@@ -70,7 +70,7 @@ class RevId(
         if (this === other) return true
         if (other == null || this::class != other::class) return false
 
-        other as RevId
+        other as RevisionId
 
         if (session1 != other.session1) return false
         if (session2 != other.session2) return false
@@ -92,4 +92,4 @@ class RevId(
 /// Valid within a session. If there's a collision the most recent matching
 /// Revision will be used, which means only the (small) set of concurrent edits
 /// could trigger incorrect behavior if they collide, so u64 is safe.
-typealias RevToken = Long
+typealias RevisionToken = Long

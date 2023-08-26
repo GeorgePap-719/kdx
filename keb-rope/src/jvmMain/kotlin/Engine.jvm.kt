@@ -26,7 +26,7 @@ class JvmEngine(
 
 
     override val sessionId: SessionId get() = _sessionId.value
-    override val revIdCount: Int get() = _revIdCount.value
+    override val revisionIdCount: Int get() = _revIdCount.value
     override val text: Rope get() = _text.value
     override val tombstones: Rope get() = _tombstones.value
     override val deletesFromUnion: Subset get() = _deletesFromUnion.value
@@ -38,7 +38,7 @@ class JvmEngine(
 fun JvmEngine(initialContent: Rope): JvmEngine {
     val engine = emptyJvmEngine()
     if (!initialContent.isEmpty()) {
-        engine.headRevId.token()
+        engine.headRevisionId.token()
         //let first_rev = engine.get_head_rev_id().token();
         //let delta = Delta::simple_edit(Interval::new(0, 0), initial_contents, 0);
         //engine.edit_rev(0, 0, first_rev, delta);
@@ -49,12 +49,12 @@ fun JvmEngine(initialContent: Rope): JvmEngine {
 
 private fun emptyJvmEngine(): JvmEngine {
     val deletesFromUnion = Subset(0)
-    val revId = RevId(0, 0, 0)
+    val revisionId = RevisionId(0, 0, 0)
     val content = Undo(
         emptySet(),
         Subset(0)
     )
-    val rev = Revision(revId, 0, content)
+    val rev = Revision(revisionId, 0, content)
     return JvmEngine(
         defaultSession,
         1,
