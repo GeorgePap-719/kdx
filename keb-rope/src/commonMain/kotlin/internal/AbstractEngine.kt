@@ -98,6 +98,7 @@ internal abstract class AbstractEngine : MutableEngine {
         return RebasedResult(appRevisions, text, tombstones, deletesFromUnion)
     }
 
+    // warning: this method is not thread-safe.
     override fun gc(gcGroups: Set<Int>) {
         var gcDeletes = emptySubsetBeforeFirstRevision()
         val retainRevs = mutableSetOf<RevisionId>()

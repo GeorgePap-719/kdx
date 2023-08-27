@@ -75,6 +75,8 @@ interface MutableEngine : Engine {
 
     /// Attempts to apply a new edit based on the [`Revision`] specified by `base_rev`,
     /// Returning an [`Error`] if the `Revision` cannot be found.
+    //TODO: rethink naming,
+    // this function, conceptually, is closer to tryApplyEditRevision().
     fun tryEditRevision(
         priority: Int,
         undoGroup: Int,
@@ -83,10 +85,17 @@ interface MutableEngine : Engine {
     ): EngineResult<Unit>
 
     /**
-     * Rebase [ops] on top of [expandBy],
-     * and return revision contents that can be appended as new revisions on top of revisions represented by [expandBy].
+     * Rebases [ops] on top of [expandBy],
+     * and returns revision contents
+     * that can be appended as new revisions on top of revisions represented by [expandBy].
      */
-    fun rebase(expandBy: MutableList<Pair<FullPriority, Subset>>, ops: List<DeltaOp>, maxUndoSoFar: Int): RebasedResult
+    //TODO: this is actually an internal API,
+    // used only by merge()
+    fun rebase(
+        expandBy: MutableList<Pair<FullPriority, Subset>>,
+        ops: List<DeltaOp>,
+        maxUndoSoFar: Int
+    ): RebasedResult
 }
 
 fun MutableEngine.editRevision(
@@ -95,8 +104,7 @@ fun MutableEngine.editRevision(
     baseRevision: RevisionToken,
     delta: DeltaRopeNode
 ) =
-    //TODO: research better handling
-    tryEditRevision(priority, undoGroup, baseRevision, delta).getOrNull() ?: error("panic!")
+    tryEditRevision(priority, undoGroup, baseRevision, delta).getOrNull() ?: throw NoSuchElementException()
 
 @JvmInline
 value class EngineResult<out T> internal constructor(@PublishedApi internal val value: Any?) {
