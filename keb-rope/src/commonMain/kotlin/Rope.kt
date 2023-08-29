@@ -588,9 +588,11 @@ open class Rope(
     }
 
     /**
-     * Returns the underlying [String].
+     * Returns the [String] representing this rope.
+     *
+     * Note that for big ropes, this might lead to `OutOfMemoryError`.
+     * It is recommended to iterate over the leaves and trigger an action individually on them.
      */
-    //TODO: add note about delicate API
     override fun toString(): String {
         val sb = StringBuilder()
         val leaves = collectLeaves()
