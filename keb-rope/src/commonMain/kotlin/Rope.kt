@@ -11,6 +11,7 @@ import keb.ropes.internal.Symbol
  *
  * Most operations have path-copying semantics.
  */
+//TODO: research if we need to check if a rope is balanced.
 open class Rope(
     // Due to bad initial design,
     // we are forced to expose this as internal.
@@ -19,10 +20,6 @@ open class Rope(
     // since it is supposed to be an implementation detail.
     internal val root: RopeNode
 ) {
-    init {
-        assert { root.isBalanced() }
-    }
-
     //TODO: we can also improve this too keep the tree wide.
     open operator fun plus(other: Rope): Rope {
         // Avoid checking for length == 0, since it might have a cost.
@@ -591,7 +588,7 @@ open class Rope(
      * Returns the [String] representing this rope.
      *
      * Note that for big ropes, this might lead to `OutOfMemoryError`.
-     * It is recommended to iterate over the leaves and trigger an action individually on them.
+     * It is recommended to iterate over the leaves and call `toString()` individually on them.
      */
     override fun toString(): String {
         val sb = StringBuilder()
