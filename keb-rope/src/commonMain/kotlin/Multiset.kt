@@ -188,6 +188,16 @@ class Subset internal constructor(private val segments: List<Segment>) {
     }
 }
 
+/**
+ * Creates an "empty" [Subset] of a string with [length].
+ *
+ * @throws IllegalArgumentException if length is less than or equal to zero.
+ */
+fun Subset(length: Int): Subset {
+    require(length > 0) { "`length` cannot be zero. All segments should have non-zero length." }
+    return Subset(listOf(Segment(length, 0)))
+}
+
 // Returns a `Mapper`
 // that can be used to map coordinates in the document to coordinates in this `Subset`,
 // but only in non-decreasing order
@@ -204,6 +214,90 @@ fun Subset.mapper(matcher: CountMatcher): Mapper {
 fun Subset.complementIterator(): RangeIterator = rangeIterator(CountMatcher.ZERO)
 
 fun Subset.isNotEmpty(): Boolean = !isEmpty()
+
+// The reverse of Subset::transform_expand.
+// It takes a Subset and a transform Subset that are based on the same string
+// and removes sections of the former that align with non-zero segments of the latter.
+// In most uses these sections of the former always have count 0 (otherwise this transform would lose information),
+// but there are some things like garbage collection that intentionally use this to discard information.
+fun Subset.transformShrink(other: Subset): Subset = buildSubset {
+    for (zseg in zip(other)) {
+        // Discard `ZipSegments` where the shrinking set has positive count.
+        if (zseg.rightCount == 0) {
+            add(zseg.length, zseg.leftCount)
+        }
+    }
+}
+
+/**
+ * Computes the union of two [subsets][Subset].
+ * The count of a [Segment] in the result is the sum of the counts in the inputs.
+ */
+fun Subset.union(other: Subset): Subset = buildSubset {
+    for (zseg in zip(other)) add(zseg.length, zseg.leftCount + zseg.rightCount)
+}
+
+/**
+ * Like [transformExpand] except it preserves the non-zero segments of the transform
+ * instead of mapping them to 0-segments (see [Subset.transform]).
+ *
+ * This function  is shorthand for:
+ * ```kotlin
+ *  val expandedSubset = transformExpand(b).union(b)
+ * ```
+ */
+fun Subset.transformUnion(other: Subset): Subset = transform(other, true)
+
+/**
+ * "Expands" the indices in a [Subset] after each insert by the size of that insert,
+ * where the inserted characters are the “transform”.
+ *
+ * Conceptually, if a [Subset] represents the set of characters in a string that were inserted by an edit,
+ * then it can be used as a "transform" from the coordinate space before that edit to after that edit
+ * by mapping a [Subset] of the string before the insertion onto the 0-count regions of the "transform" [Subset].
+ *
+ * One example of how this can be used is to find the characters
+ * that were inserted by a past [Revision][todo] in the coordinates of the current union string instead of the past one.
+ */
+/// Transform through coordinate transform represented by other.
+/// The equation satisfied is as follows:
+///
+/// s1 = other.delete_from_string(s0)
+///
+/// s2 = self.delete_from_string(s1)
+///
+/// element in self.transform_expand(other).delete_from_string(s0) if (not in s1) or in s2
+fun Subset.transformExpand(other: Subset): Subset = transform(other, false)
+
+/**
+ * Computes the bitwise "xor" operation of two subsets,
+ * useful as a reversible difference.
+ *
+ * The count of an element in the result is the bitwise "xor" of the counts of the inputs.
+ * Unchanged segments will be 0.
+ */
+fun Subset.xor(other: Subset): Subset = buildSubset {
+    for (zseg in zip(other)) add(zseg.length, zseg.leftCount.xor(zseg.rightCount))
+}
+
+/**
+ * Computes the difference of two subsets.
+ *
+ * The `count` of an element in the result is the subtraction of the counts of `other` from `this`.
+ */
+fun Subset.subtract(other: Subset): Subset = buildSubset {
+    for (zseg in zip(other)) {
+        // Otherwise, it cannot subtract from `other`.
+        assert { zseg.leftCount >= zseg.rightCount }
+        add(zseg.length, zseg.leftCount - zseg.rightCount)
+    }
+}
+
+/**
+ * Returns an "empty" [Subset], which is an **invariant**.
+ * Used in our own operations where we trust the context of usage.
+ */
+internal fun emptySubset(): Subset = Subset(listOf())
 
 /**
  * Builds a version of [node] with all the elements in this [Subset] removed from it.
@@ -287,100 +381,6 @@ class Mapper(
         }
     }
 }
-
-/**
- * Creates an "empty" [Subset] of a string with [length].
- *
- * @throws IllegalArgumentException if length is less than or equal to zero.
- */
-fun Subset(length: Int): Subset {
-    require(length > 0) { "`length` cannot be zero. All segments should have non-zero length." }
-    return Subset(listOf(Segment(length, 0)))
-}
-
-// The reverse of Subset::transform_expand.
-// It takes a Subset and a transform Subset that are based on the same string
-// and removes sections of the former that align with non-zero segments of the latter.
-// In most uses these sections of the former always have count 0 (otherwise this transform would lose information),
-// but there are some things like garbage collection that intentionally use this to discard information.
-fun Subset.transformShrink(other: Subset): Subset = buildSubset {
-    for (zseg in zip(other)) {
-        // Discard `ZipSegments` where the shrinking set has positive count.
-        if (zseg.rightCount == 0) {
-            add(zseg.length, zseg.leftCount)
-        }
-    }
-}
-
-/**
- * Computes the union of two [subsets][Subset].
- * The count of a [Segment] in the result is the sum of the counts in the inputs.
- */
-fun Subset.union(other: Subset): Subset = buildSubset {
-    for (zseg in zip(other)) add(zseg.length, zseg.leftCount + zseg.rightCount)
-}
-
-/**
- * Like [transformExpand] except it preserves the non-zero segments of the transform
- * instead of mapping them to 0-segments (see [Subset.transform]).
- *
- * This function  is shorthand for:
- * ```kotlin
- *  val expandedSubset = transformExpand(b).union(b)
- * ```
- */
-fun Subset.transformUnion(other: Subset): Subset = transform(other, true)
-
-/**
- * "Expands" the indices in a [Subset] after each insert by the size of that insert,
- * where the inserted characters are the “transform”.
- *
- * Conceptually, if a [Subset] represents the set of characters in a string that were inserted by an edit,
- * then it can be used as a "transform" from the coordinate space before that edit to after that edit
- * by mapping a [Subset] of the string before the insertion onto the 0-count regions of the "transform" [Subset].
- *
- * One example of how this can be used is to find the characters
- * that were inserted by a past [Revision][todo] in the coordinates of the current union string instead of the past one.
- */
-/// Transform through coordinate transform represented by other.
-/// The equation satisfied is as follows:
-///
-/// s1 = other.delete_from_string(s0)
-///
-/// s2 = self.delete_from_string(s1)
-///
-/// element in self.transform_expand(other).delete_from_string(s0) if (not in s1) or in s2
-fun Subset.transformExpand(other: Subset): Subset = transform(other, false)
-
-/**
- * Computes the bitwise "xor" operation of two subsets,
- * useful as a reversible difference.
- *
- * The count of an element in the result is the bitwise "xor" of the counts of the inputs.
- * Unchanged segments will be 0.
- */
-fun Subset.xor(other: Subset): Subset = buildSubset {
-    for (zseg in zip(other)) add(zseg.length, zseg.leftCount.xor(zseg.rightCount))
-}
-
-/**
- * Computes the difference of two subsets.
- *
- * The `count` of an element in the result is the subtraction of the counts of `other` from `this`.
- */
-fun Subset.subtract(other: Subset): Subset = buildSubset {
-    for (zseg in zip(other)) {
-        // Otherwise, it cannot subtract from `other`.
-        assert { zseg.leftCount >= zseg.rightCount }
-        add(zseg.length, zseg.leftCount - zseg.rightCount)
-    }
-}
-
-/**
- * Returns an "empty" [Subset].
- */
-//TODO: delete if not used
-//internal fun emptySubset(): Subset = Subset(listOf())
 
 enum class CountMatcher {
     ZERO,
