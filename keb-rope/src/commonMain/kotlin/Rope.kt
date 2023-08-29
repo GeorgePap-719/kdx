@@ -587,11 +587,20 @@ open class Rope(
         }
     }
 
+    /**
+     * Returns the underlying [String].
+     */
+    //TODO: add note about delicate API
+    override fun toString(): String {
+        val sb = StringBuilder()
+        val leaves = collectLeaves()
+        for (leaf in leaves) sb.append(leaf.chars)
+        return sb.toString()
+    }
+
     // ###################
     // # Debug Functions #
     // ###################
-
-    override fun toString(): String = root.toString()
 
     internal fun toStringDebug(): String = root.toStringDebug()
 }
