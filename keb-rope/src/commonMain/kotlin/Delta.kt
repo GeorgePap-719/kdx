@@ -87,7 +87,8 @@ fun <T : NodeInfo> Delta<T>.factor(): Pair<InsertDelta<T>, Subset> {
             }
         }
         if (b1 < baseLength) insertions.add(Copy(b1, baseLength))
-        add(e1, baseLength, 1)
+        // Add only non-empty ranges.
+        if (e1 < baseLength) add(e1, baseLength, 1)
         paddingToLength(baseLength)
     }
     return InsertDelta(DeltaSupport(insertions, baseLength)) to subset

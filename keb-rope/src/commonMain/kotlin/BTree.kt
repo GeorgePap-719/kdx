@@ -368,11 +368,14 @@ fun <T : LeafInfo> merge(left: BTreeNode<T>, right: BTreeNode<T>): InternalNode<
  *
  * @throws IllegalArgumentException if a child node is not legal ([BTreeNode.isLegal]).
  */
+//Note: this is changed.
 fun <T : LeafInfo> merge(nodes: List<BTreeNode<T>>): InternalNode<T> {
-    nodes.forEach {
+    val nonEmptyNodes = nodes.filter { !it.isEmpty }
+    if (nonEmptyNodes.isEmpty()) return emptyInternalNode()
+    nonEmptyNodes.forEach {
         require(it.isLegal) { "node:$it does not meet the requirements" }
     }
-    return unsafeMerge(nodes)
+    return unsafeMerge(nonEmptyNodes)
 }
 
 /**
