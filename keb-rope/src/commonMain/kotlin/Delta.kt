@@ -202,6 +202,21 @@ private fun <T> MutableList<T>.replace(new: T, old: T) {
     add(index, new)
 }
 
+//TODO: candidate for private access modifier,
+// still we use this in tests.
+internal fun <T : NodeInfo> simpleEdit(
+    range: IntRange,
+    node: BTreeNode<T>,
+    /* The length of the editing document. */
+    baseLength: Int
+): Delta<T> = buildDelta(baseLength) {
+    if (node.isEmpty) {
+        delete(range)
+    } else {
+        replace(range, node)
+    }
+}
+
 /// Do a coordinate transformation on an insert-only delta. The `after` parameter
 /// controls whether the insertions in `this` come after those specific in the
 /// coordinate transform.
@@ -289,8 +304,13 @@ class InsertDelta<T : NodeInfo>(val value: Delta<T>) : Delta<T> {
 sealed class DeltaElement<out T : NodeInfo>
 
 // Represents a range of text in the base document.
-class Copy(val startIndex: Int, val endIndex: Int /*`endIndex` exclusive*/) : DeltaElement<Nothing>()
-class Insert<T : NodeInfo>(val input: BTreeNode<T>) : DeltaElement<T>()
+class Copy(val startIndex: Int, val endIndex: Int /*`endIndex` exclusive*/) : DeltaElement<Nothing>() {
+    override fun toString(): String = "Copy(startIndex=$startIndex,endIndex=$endIndex)"
+}
+
+class Insert<T : NodeInfo>(val input: BTreeNode<T>) : DeltaElement<T>() {
+    override fun toString(): String = "Insert(input=$input)"
+}
 
 fun <T : LeafInfo> buildDelta(baseLen: Int, action: DeltaBuilder<T>.() -> Unit): Delta<T> {
     val builder = DeltaBuilder<T>(baseLen)
@@ -312,20 +332,14 @@ class DeltaBuilder<T : LeafInfo> internal constructor(baseLen: Int) {
         val closedOpenRange = range.intoInterval(delta.baseLength)
         val start = closedOpenRange.first
         val end = closedOpenRange.last + 1 // + 1 because it represents closed-**open** range
-        // Intervals are not properly sorted.
-        assert { start >= lastOffset }
+        require(start >= lastOffset) { "ranges are not sorted properly" }
         if (start > lastOffset) addIntoDeltaElements(Copy(lastOffset, start))
         lastOffset = end
     }
 
-    // A bit of weird signature,
-    // even though everything is `T`,
-    // here we acknowledge the fact that t is a [Rope].
-    // Fix: cannot work like it was,
-    // cause of generics doing their work properly.
     fun replace(range: IntRange, node: BTreeNode<T>) {
         delete(range)
-        if (node.isEmpty) addIntoDeltaElements(Insert(node))
+        if (node.isNotEmpty) addIntoDeltaElements(Insert(node))
     }
 
     fun isEmpty(): Boolean {
@@ -346,6 +360,8 @@ class DeltaBuilder<T : LeafInfo> internal constructor(baseLen: Int) {
 open class DeltaSupport<T : NodeInfo>(
     override val changes: List<DeltaElement<T>>,
     override val baseLength: Int
-) : Delta<T>
+) : Delta<T> {
+    override fun toString(): String = "DeltaSupport(changes=$changes,baseLength=$baseLength)"
+}
 
 internal typealias DeltaRopeNode = Delta<RopeLeaf>
