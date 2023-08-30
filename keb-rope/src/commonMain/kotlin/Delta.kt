@@ -202,9 +202,13 @@ private fun <T> MutableList<T>.replace(new: T, old: T) {
     add(index, new)
 }
 
-//TODO: candidate for private access modifier,
-// still we use this in tests.
+/**
+ * Creates a [Delta] representing an edit.
+ * The typical use-case is to apply this [Delta] through [applyTo].
+ */
+//TODO: rename to edit()?
 internal fun <T : NodeInfo> simpleEdit(
+    /* The range which the edit will be applied on. */
     range: IntRange,
     node: BTreeNode<T>,
     /* The length of the editing document. */
