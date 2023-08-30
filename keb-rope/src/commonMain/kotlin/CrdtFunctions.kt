@@ -303,7 +303,7 @@ data class EditResult(
     val newDeletesFromUnion: Subset
 )
 
-// -------------------------------- shared-helpers --------------------------------
+// -------------------------------- shuffle/shuffleTombstones --------------------------------
 
 /// Move sections from text to tombstones and vice versa based on a new and old set of deletions.
 /// Returns a tuple of a new text `Rope` and a new `Tombstones` rope described by `new_deletes_from_union`.
