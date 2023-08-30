@@ -38,6 +38,8 @@ sealed class BTreeNode<out T : LeafInfo> : Iterable<LeafNode<T>> {
     abstract fun subSequence(range: IntRange): BTreeNode<T>
 }
 
+val <T : LeafInfo> BTreeNode<T>.isNotEmpty: Boolean get() = !isEmpty
+
 /**
  * Adds the [other] tree to the right side of this tree, and creates a new balanced btree.
  */

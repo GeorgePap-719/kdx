@@ -305,19 +305,6 @@ fun MutableEngine(initialContent: Rope): MutableEngine {
     return engine
 }
 
-//TODO: candidate for private access modifier
-internal fun <T : NodeInfo> simpleEdit(
-    range: IntRange,
-    node: BTreeNode<T>,
-    baseLen: Int
-): Delta<T> = buildDelta(baseLen) {
-    if (node.isEmpty) {
-        delete(range)
-    } else {
-        replace(range, node)
-    }
-}
-
 /**
  * Creates a new empty [MutableEngine].
  */
