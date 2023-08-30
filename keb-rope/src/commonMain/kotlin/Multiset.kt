@@ -8,7 +8,7 @@ package keb.ropes
  */
 class Subset internal constructor(private val segments: List<Segment>) {
     init {
-        // Invariant, maintained by `SubsetBuilder`: all `Segment`s have non-zero
+        // Invariant, maintained by subset-builders: all `Segment`s have non-zero
         // length, and no `Segment` has the same count as the one before it.
         assert {
             checkForInvariants()

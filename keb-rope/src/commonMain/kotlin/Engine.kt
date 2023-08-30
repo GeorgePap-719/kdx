@@ -322,11 +322,11 @@ internal fun <T : NodeInfo> simpleEdit(
  * Creates a new empty [MutableEngine].
  */
 fun emptyMutableEngine(): MutableEngine {
-    val deletesFromUnion = Subset(0)
+    val deletesFromUnion = emptySubset()
     val revisionId = RevisionId(0, 0, 0)
     val content = Undo(
         emptySet(),
-        Subset(0)
+        emptySubset()
     )
     val rev = Revision(revisionId, 0, content)
     return EngineImpl(
