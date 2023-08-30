@@ -16,5 +16,10 @@ internal fun IntRange.translateNeg(amount: Int): IntRange {
     return IntRange(first - amount, last - amount)
 }
 
+// Returns a closed-open range.
+internal fun IntRange.intoInterval(upperBound: Int): IntRange {
+    return if (last > upperBound) first..<upperBound else this
+}
+
 @Suppress("EmptyRange")
 internal fun emptyClosedOpenRange(): IntRange = 0..<0

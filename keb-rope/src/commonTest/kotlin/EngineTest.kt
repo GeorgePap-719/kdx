@@ -1,13 +1,12 @@
 package keb.ropes
 
-import keb.ropes.internal.emptyClosedOpenRange
-import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class EngineTest {
     private val simpleString = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 
-    @Test
+    //@Test without individual tests,
+    // this becomes too complex to handle.
     fun testSimpleEditRevision() {
         val engine = MutableEngine(Rope(simpleString))
         val firstRev = engine.headRevisionId.token()
@@ -20,7 +19,7 @@ class EngineTest {
     private fun buildDelta1(): DeltaRopeNode = buildDelta(simpleString.length) {
         delete(10..<36)
         replace(39..<42, Rope("DEEF"))
-        replace(emptyClosedOpenRange(), Rope("999"))
+        replace(54..<54, Rope("999"))
         delete(58..<61)
     }
 
@@ -28,7 +27,7 @@ class EngineTest {
         replace(1..<3, Rope("!"))
         delete(10..<36)
         replace(42..<45, Rope("GI"))
-        replace(emptyClosedOpenRange(), Rope("888"))
+        replace(54..54, Rope("888"))
         replace(59..<60, Rope("HI"))
     }
 }

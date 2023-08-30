@@ -1,5 +1,7 @@
 package keb.ropes
 
+import keb.ropes.internal.intoInterval
+
 internal typealias NodeInfo = LeafInfo
 
 /**
@@ -195,13 +197,20 @@ fun <T : LeafInfo> buildDelta(baseLen: Int, action: DeltaBuilder<T>.() -> Unit):
     return builder.build()
 }
 
+/**
+ * A builder for creating new deltas.
+ *
+ * Note that all edit operations must be sorted;
+ * the start point of each range must be no less than the end point of the previous one.
+ */
 class DeltaBuilder<T : LeafInfo> internal constructor(baseLen: Int) {
     private var delta: Delta<T> = DeltaSupport(listOf(), baseLen)
     private var lastOffset = 0
 
     fun delete(range: IntRange) {
-        val start = range.first
-        val end = delta.baseLength
+        val closedOpenRange = range.intoInterval(delta.baseLength)
+        val start = closedOpenRange.first
+        val end = closedOpenRange.last + 1 // + 1 because it represents closed-**open** range
         // Intervals are not properly sorted.
         assert { start >= lastOffset }
         if (start > lastOffset) addIntoDeltaElements(Copy(lastOffset, start))
