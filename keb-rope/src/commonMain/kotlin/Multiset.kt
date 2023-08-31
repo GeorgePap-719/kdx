@@ -461,10 +461,18 @@ fun buildSubset(action: SubsetBuilder.() -> Unit): Subset {
     return builder.build()
 }
 
+/**
+ * Each segment has a count representing how many times is in the [Subset].
+ */
 class Segment(
     /**
      * The length of the string which this segment represents.
      */
     val length: Int,
+    /**
+     * The "count" of this segment.
+     * Zero marks the absence in the set and one marks the presence.
+     * It can also have a value of greater than one.
+     */
     val count: Int
 )
