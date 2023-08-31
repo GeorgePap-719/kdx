@@ -186,6 +186,8 @@ class Subset internal constructor(private val segments: List<Segment>) {
             0
         )
     }
+
+    override fun toString(): String = "Subset($segments)"
 }
 
 /**
@@ -257,7 +259,7 @@ fun Subset.transformUnion(other: Subset): Subset = transform(other, true)
  * by mapping a [Subset] of the string before the insertion onto the 0-count regions of the "transform" [Subset].
  *
  * One example of how this can be used is to find the characters
- * that were inserted by a past [Revision][todo] in the coordinates of the current union string instead of the past one.
+ * that were inserted by a past [Revision] in the coordinates of the current union string instead of the past one.
  */
 /// Transform through coordinate transform represented by other.
 /// The equation satisfied is as follows:
