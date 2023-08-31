@@ -16,7 +16,7 @@ class DeltaTest {
         assertEquals(6, str.length)
     }
 
-    @Test
+    @Test //TODO:
     fun testFactor() {
         val delta = simpleEdit(1..<9, Rope("era").root, 11)
         val (d1, ss) = delta.factor()
