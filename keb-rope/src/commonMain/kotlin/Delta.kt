@@ -14,12 +14,16 @@ internal typealias NodeInfo = LeafInfo
  *
  * See [xi-editor Delta](https://xi-editor.io/docs/crdt-details.html#delta), for more details.
  */
-//TODO: improve kdoc
 interface Delta<T : NodeInfo> {
+    /**
+     * The sequence that describes the new document.
+     */
     val changes: List<DeltaElement<T>>
 
-    // The total length of the base document,
-    // used for checks in some operations.
+    /**
+     * The total length of the **old document**.
+     * The typical use-case is to be used for validations in operations.
+     */
     val baseLength: Int
 }
 
