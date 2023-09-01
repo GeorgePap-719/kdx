@@ -86,6 +86,7 @@ fun <T : NodeInfo> Delta<T>.factor(): Pair<InsertDelta<T>, Subset> {
         for (element in changes) {
             when (element) {
                 is Copy -> {
+                    //TODO: add if(e1 > 0) add()
                     add(e1, element.startIndex, 1)
                     e1 = element.endIndex
                 }
