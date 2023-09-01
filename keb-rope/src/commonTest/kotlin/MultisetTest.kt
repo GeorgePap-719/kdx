@@ -1,12 +1,20 @@
 package keb.ropes
 
 import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class MultisetTest {
 
     private val simpleString = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 
-    @Test //TODO: this fails ..
+    @Test // does this even has some value?
+    fun testBuilder() {
+        val subset = buildSubset {}
+        assertTrue(subset.isEmpty())
+    }
+
+    @Test
     fun testApplyTo() {
         val ranges = listOf(
             0 to 1,
@@ -26,9 +34,32 @@ class MultisetTest {
             58 to 59,
         )
         val subset = buildSubset {
-            for ((start, end) in ranges) add(start, end)
+            for ((start, end) in ranges) add(start, end, 1)
             paddingToLength(simpleString.length)
         }
-        println(subset)
+        assertEquals("145BCEINQRSTUWZbcdimpvxyz", subset.deleteFromString(simpleString))
+    }
+
+    @Test
+    fun testFindDeletions() {
+        val str = "015ABDFHJOPQVYdfgloprsuvz"
+        val subset = str.findDeletions(simpleString)
+        assertEquals(str, subset.deleteFromString(simpleString))
+        assertTrue(subset.isNotEmpty())
+    }
+}
+
+private fun String.findDeletions(other: String): Subset {
+    return buildSubset {
+        val thisString = this@findDeletions
+        var j = 0
+        for (i in other.indices) {
+            if (j < thisString.length && thisString[j].code == other[i].code) {
+                j++
+            } else {
+                add(i, i + 1, 1)
+            }
+        }
+        paddingToLength(other.length)
     }
 }

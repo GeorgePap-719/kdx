@@ -23,3 +23,5 @@ internal fun IntRange.intoInterval(upperBound: Int): IntRange {
 
 @Suppress("EmptyRange")
 internal fun emptyClosedOpenRange(): IntRange = 0..<0
+
+internal fun IntRange.isNotEmpty(): Boolean = !isEmpty()

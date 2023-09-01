@@ -301,6 +301,17 @@ fun Subset.subtract(other: Subset): Subset = buildSubset {
  */
 internal fun emptySubset(): Subset = Subset(listOf())
 
+// Used in testing.
+internal fun Subset.deleteFromString(input: String): String {
+    val sb = StringBuilder()
+    val iterator = rangeIterator(CountMatcher.ZERO)
+    while (iterator.hasNext()) {
+        val next = iterator.next() ?: continue
+        sb.append(input.subSequence(next.first, next.second))
+    }
+    return sb.toString()
+}
+
 /**
  * Builds a version of [node] with all the elements in this [Subset] removed from it.
  */
@@ -318,17 +329,17 @@ fun <T : NodeInfo> Subset.deleteFrom(node: BTreeNode<T>): BTreeNode<T> = buildBT
 private typealias Range = Pair<Int, Int>
 
 class RangeIterator(
-    private val segIterator: Iterator<Segment>,
+    private val segmentIterator: Iterator<Segment>,
     private val matcher: CountMatcher,
     consumed: Int
 ) : Iterator<Range?> {
     var consumed: Int = consumed
         private set
 
-    override operator fun hasNext(): Boolean = segIterator.hasNext()
+    override operator fun hasNext(): Boolean = segmentIterator.hasNext()
 
     override operator fun next(): Range? {
-        for (seg in segIterator) {
+        for (seg in segmentIterator) {
             consumed += seg.length
             if (matcher.matches(seg)) return consumed - seg.length to consumed
         }
@@ -419,17 +430,18 @@ class SubsetBuilder {
         require(element.length > 0) { "Cannot add empty segment." }
         totalLength += element.length
         // Merge into previous segment if possible.
-        val last = segments.last()
-        if (last.count == element.count) {
+        val last = segments.lastOrNull()
+        if (last?.count == element.count) {
             segments[segments.lastIndex] = Segment(last.length + element.length, last.count)
         } else {
-            segments.plus(element)
+            segments.add(element)
         }
     }
 
     /**
-     * Sets the count for the given range.
+     * Adds a [Segment] with the given range being the length, to the end of this [Subset].
      * The "gaps" will be filled with a 0-count segment.
+     * Technically, this function "sets" the count for the given range.
      *
      * @throws IllegalArgumentException if the [startIndex] is before the largest range or segment added so far.
      * @throws IllegalArgumentException if the given range is empty.
@@ -453,6 +465,14 @@ class SubsetBuilder {
     fun build(): Subset = Subset(segments)
 }
 
+/**
+ * Adds a [Segment] with the given [length] and [count], to the end of this [Subset].
+ * Technically, it assigns [count] to the next [length] elements in the [Subset].
+ *
+ * This function is an alias to [SubsetBuilder.add].
+ *
+ * @throws IllegalArgumentException if the [length] is empty.
+ */
 fun SubsetBuilder.add(length: Int, count: Int) {
     add(Segment(length, count))
 }
@@ -466,7 +486,7 @@ fun buildSubset(action: SubsetBuilder.() -> Unit): Subset {
 /**
  * Each segment has a count representing how many times is in the [Subset].
  */
-class Segment(
+data class Segment(
     /**
      * The length of the string which this segment represents.
      */
