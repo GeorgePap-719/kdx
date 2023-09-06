@@ -1,7 +1,7 @@
 package keb.server.routers
 
 import keb.server.dto.CreateDocumentFile
-import keb.server.routers.request.awaitAndReceive
+import keb.server.routers.request.awaitReceive
 import keb.server.services.DocumentFileService
 import keb.server.util.info
 import keb.server.util.logger
@@ -35,7 +35,7 @@ class DocumentFileHandler(private val documentFileService: DocumentFileService) 
 
     suspend fun create(request: ServerRequest): ServerResponse {
         logger.info { "request: $documentApiPrefix/create" }
-        val body = request.awaitAndReceive<CreateDocumentFile>()
+        val body = request.awaitReceive<CreateDocumentFile>()
         val documentFile = documentFileService.create(body)
         return ServerResponse.ok().bodyValueAndAwait(documentFile)
     }

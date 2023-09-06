@@ -45,9 +45,10 @@ class DocumentFileRouterTest(
         val response = webClient
             .post()
             .uri("$documentFileUrl/create")
+            .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.APPLICATION_JSON)
 //            .body(newDocumentFile)
-            .bodyValue(newDocumentFile)
+            .bodyValue("newDocumentFile")
 
         response.awaitExchange {
             println(it.statusCode().value())
