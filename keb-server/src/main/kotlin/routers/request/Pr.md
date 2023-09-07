@@ -32,12 +32,17 @@ Add `ServerRequest.awaitReceive`.
 
 Both APIs introduce a "mindset" that only serialization-wise can something go wrong, in other words, user input.
 
+**Extensions:**
+
+Based on these functions, the user can create their own function for a general catch-all and return `null` pattern
+
+```
+runCatching { awaitReceiveOrNull }.getOrNull()
+```
+
 ## Deprecations/Migrations
 
 Deprecate `ServerRequest.awaitBodyOrNull` which can be replaced with `ServerRequest.awaitReceiveNullable`, as
 **behavior** wise they are pretty close.
 
 Deprecate `ServerRequest.awaitBody` with not direct replacement, but promote the usage of `ServerRequest.awaitReceive`.
-
-Promote through KDocs the pattern `try { awaitReceive() } catch() { return null }` for anyone interested, 
-or create their own `awaitReceiveCatchingOrNull` extension.
