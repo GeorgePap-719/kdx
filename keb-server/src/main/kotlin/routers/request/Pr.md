@@ -1,10 +1,4 @@
-# ServerRequest.awaitBody()
-
-## Commit message
-
-Introduce awaitReceive API
-
-..
+# Introduce awaitReceive API
 
 ## Summary
 
@@ -12,8 +6,7 @@ Introduce awaitReceive API
 
 1. `ServerRequest.awaitBody` forces you to think about the coroutines-bridge exception handling, since it uses
    `kotlinx.coroutines.reactive.awaitSingle`. Also, it is not documented that it might throw `NoSuchElementException`
-   and
-   `IllegalArgumentException` for **coroutines-related** errors.
+   and `IllegalArgumentException` for **coroutines-related** errors.
 
 2. `ServerRequest.awaitBody` might throw `IllegalArgumentException` for two different reasons, for serialization-related
    errors and for coroutines-related errors.
@@ -24,13 +17,26 @@ Introduce awaitReceive API
 
 ## Proposal
 
-Introduce `ServerRequest.awaitReceive` and friends which addresses all the above.
+Introduce APIs that address all the above.
 
-Add `ServerRequest.awaitReceiveNullable` which acts as a replacement for `ServerRequest.awaitBodyOrNull` behavior wise,
-but **semantically** are not the same. The core differences are:
+Add `ServerRequest.awaitReceiveNullable`.
 
 - This API "abstracts" away the coroutine-bridging exception handling from the user
+- Throws only in case of serialization error
+- Returns `null` in case user is expecting the body to be "missing"
+- Introduces a "mindset" that only serialization-wise can something go wrong, in other words, user input
 
-## Migration
+Add `ServerRequest.awaitReceive`.
 
-Deprecate `ServerRequest.awaitBodyOrNull` and promote the patter
+- This API "abstracts" away the coroutine-bridging exception handling from the user
+- Throws only in case of serialization error
+
+## Deprecations/Migrations
+
+Deprecate `ServerRequest.awaitBodyOrNull` which can be replaced with `ServerRequest.awaitReceiveNullable`, as
+**behavior** wise they are pretty close.
+
+Deprecate `ServerRequest.awaitBody` with not direct replacement, but promote the usage of `ServerRequest.awaitReceive`.
+
+Promote through KDocs the pattern `try { awaitReceive() } catch() { return null }` for anyone interested, 
+or create their own `awaitReceiveCatchingOrNull` extension.
