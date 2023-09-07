@@ -1,4 +1,4 @@
-# Introduce awaitReceive API
+# Introduce awaitReceive and awaitReceiveOrNull APIs
 
 ## Summary
 
