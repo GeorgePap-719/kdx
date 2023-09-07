@@ -24,12 +24,13 @@ Add `ServerRequest.awaitReceiveNullable`.
 - This API "abstracts" away the coroutine-bridging exception handling from the user
 - Throws only in case of serialization error
 - Returns `null` in case user is expecting the body to be "missing"
-- Introduces a "mindset" that only serialization-wise can something go wrong, in other words, user input
 
 Add `ServerRequest.awaitReceive`.
 
 - This API "abstracts" away the coroutine-bridging exception handling from the user
 - Throws only in case of serialization error
+
+Both APIs introduce a "mindset" that only serialization-wise can something go wrong, in other words, user input.
 
 ## Deprecations/Migrations
 
