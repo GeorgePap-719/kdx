@@ -49,17 +49,19 @@ class MultisetTest {
     }
 }
 
+//TODO: better name candidate diff()?
 private fun String.findDeletions(other: String): Subset {
     return buildSubset {
-        val thisString = this@findDeletions
+        val base = other
+        val final = this@findDeletions
         var j = 0
-        for (i in other.indices) {
-            if (j < thisString.length && thisString[j].code == other[i].code) {
+        for (i in base.indices) {
+            if (j < final.length && final[j].code == base[i].code) {
                 j++
             } else {
                 add(i, i + 1, 1)
             }
         }
-        paddingToLength(other.length)
+        paddingToLength(base.length)
     }
 }
