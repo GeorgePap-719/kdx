@@ -409,6 +409,8 @@ enum class CountMatcher {
 
 class ZipSegment(val length: Int, val leftCount: Int, val rightCount: Int)
 
+// This builder, by design, fills any gaps with "zero" count segments,
+// which means it can be used in cases where we know there we not "deletes" in the target "ranges".
 class SubsetBuilder {
     private val segments: MutableList<Segment> = mutableListOf()
     private var totalLength: Int = 0
@@ -485,6 +487,11 @@ fun buildSubset(action: SubsetBuilder.() -> Unit): Subset {
 
 /**
  * Each segment has a count representing how many times is in the [Subset].
+ *
+ * **NB** If the [Subset] represents the "deletes" in a string,
+ * then the count represents the presence or absence in the final string.
+ * For example, count "one" indicates the absence (as it exists in the subset) and count "zero" indicates the presence
+ * (as it does not exist in the subset).
  */
 data class Segment(
     /**
