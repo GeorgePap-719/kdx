@@ -178,7 +178,7 @@ fun <T : NodeInfo> InsertDelta<T>.transformShrink(xform: Subset): InsertDelta<T>
     val mapper = xform.mapper(CountMatcher.ZERO)
     val changes = changes.map {
         when (val content = it) {
-            is Copy -> Copy(mapper.docIndexToSubset(content.startIndex), mapper.docIndexToSubset(content.endIndex))
+            is Copy -> Copy(mapper.documentIndexToSubset(content.startIndex), mapper.documentIndexToSubset(content.endIndex))
             is Insert -> Insert(content.input)
         }
     }
