@@ -372,7 +372,7 @@ class Mapper(
     /// with `i` values in non-decreasing order or it will panic. This allows
     /// the total cost to be O(n) where `n = max(calls,ranges)` over all times
     /// called on a single `Mapper`
-    fun docIndexToSubset(index: Int): Int {
+    fun documentIndexToSubset(index: Int): Int {
         require(index >= lastIndex) {
             "index must be in non-decreasing order, but got:$index, with lastIndex:$lastIndex"
         }
@@ -410,7 +410,7 @@ enum class CountMatcher {
 class ZipSegment(val length: Int, val leftCount: Int, val rightCount: Int)
 
 // This builder, by design, fills any gaps with "zero" count segments,
-// which means it can be used in cases where we know there we not "deletes" in the target "ranges".
+// which means it can be used in cases where we know there are not "deletes" in the target "ranges".
 class SubsetBuilder {
     private val segments: MutableList<Segment> = mutableListOf()
     private var totalLength: Int = 0
