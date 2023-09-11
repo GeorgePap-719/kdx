@@ -242,7 +242,7 @@ fun Subset.union(other: Subset): Subset = buildSubset {
  * Like [transformExpand] except it preserves the non-zero segments of the transform
  * instead of mapping them to 0-segments (see [Subset.transform]).
  *
- * This function  is shorthand for:
+ * This function is shorthand for:
  * ```kotlin
  *  val expandedSubset = transformExpand(b).union(b)
  * ```

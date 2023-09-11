@@ -92,6 +92,16 @@ class MultisetTest {
             mapper.documentIndexToSubset(1)
         }
     }
+
+    @Test
+    fun testUnion() {
+        val substr1 = "024AEGHJKNQTUWXYZabcfgikqrvy"
+        val substr2 = "14589DEFGIKMOPQRUXZabcdefglnpsuxyz"
+        val str1 = substr1.findDeletions(simpleString)
+        val str2 = substr2.findDeletions(simpleString)
+        val expected = "4EGKQUXZabcfgy"
+        assertEquals(expected, str1.union(str2).deleteFromString(simpleString))
+    }
 }
 
 private fun String.findDeletions(other: String): Subset {
