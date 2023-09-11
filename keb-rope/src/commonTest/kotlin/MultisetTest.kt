@@ -2,6 +2,7 @@ package keb.ropes
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class MultisetTest {
@@ -78,6 +79,18 @@ class MultisetTest {
         assertEquals(8, mapper.documentIndexToSubset(60))
         assertEquals(9, mapper.documentIndexToSubset(61)) // "z": not in subset
         assertEquals(9, mapper.documentIndexToSubset(62)) // out-of-bounds
+    }
+
+    @Test
+    fun testMapperThrowsForNonDescOrder() {
+        val substr = "469ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvw"
+        val deletes = substr.findDeletions(simpleString)
+        val mapper = deletes.mapper(CountMatcher.NON_ZERO)
+        assertFailsWith<IllegalArgumentException> {
+            mapper.documentIndexToSubset(0)
+            mapper.documentIndexToSubset(2)
+            mapper.documentIndexToSubset(1)
+        }
     }
 }
 

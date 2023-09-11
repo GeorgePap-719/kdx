@@ -325,7 +325,14 @@ fun <T : NodeInfo> Subset.deleteFrom(node: BTreeNode<T>): BTreeNode<T> = buildBT
     }
 }
 
+// Second represents the current length we have consumed.
+// First represents the current length without the current step.
+// The difference between second and first can give us the current step.
 private typealias Range = Pair<Int, Int>
+
+private val Range.curStep: Int get() = second - first
+private val Range.curLen: Int get() = second
+private val Range.prevLen: Int get() = first
 
 class RangeIterator(
     private val segmentIterator: Iterator<Segment>,
@@ -363,8 +370,10 @@ class Mapper(
     private var curRange: Range,
     subsetAmountConsumed: Int
 ) {
-    var subsetAmountConsumed: Int = subsetAmountConsumed
-        private set
+    private var curIndex = subsetAmountConsumed
+
+    @Suppress("unused") //TODO: delete if it stays unused.
+    val subsetAmountConsumed: Int get() = curIndex
 
 
     /**
@@ -375,7 +384,7 @@ class Mapper(
      *
      * If the [index] is not in the subset, it returns the closest coordinate in the subset.
      * If the [index] (coordinate) is past the end of the subset,
-     * it will return one more than the largest index in the subset (i.e., the length).
+     * it will return one more than the largest index in the subset (i.e. the length).
      * This behavior is suitable for mapping closed-open ranges in a string to ranges in a subset of the string.
      *
      * @throws IllegalArgumentException if [index] is not provided in non-decreasing order, for performance reasons.
@@ -385,20 +394,29 @@ class Mapper(
             "index must be in non-decreasing order, but got:$index, with lastIndex:$lastIndex"
         }
         lastIndex = index
-        while (index >= curRange.second) {
-            subsetAmountConsumed += curRange.second - curRange.first
+        while (index >= curRange.curLen) {
+            curIndex += curRange.curStep
             val nextRange = rangeIterator.next()
+            // Target [index] is past the end of this subset.
             if (nextRange == null) {
+                // Insert a flag like value,
+                // to ensure we do not parse again.
                 curRange = Int.MAX_VALUE to Int.MAX_VALUE
-                return subsetAmountConsumed
+                // Return the "largest" index,
+                // i.e. the "curIndex".
+                return curIndex
             }
             curRange = nextRange
         }
-        return if (index >= curRange.first) {
-            val distanceInRange = index - curRange.first
-            distanceInRange + subsetAmountConsumed
+        // If `index >= curRange.prevLen` is not true,
+        // it means [RangeIterator.next] moved more than two steps.
+        return if (index >= curRange.prevLen) {
+            val distanceInRange = index - curRange.prevLen
+            distanceInRange + curIndex
         } else {
-            subsetAmountConsumed
+            // Not in the subset,
+            // return the closest index.
+            curIndex
         }
     }
 }
