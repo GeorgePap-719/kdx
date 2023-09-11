@@ -63,20 +63,21 @@ class MultisetTest {
     fun testMapper() {
         val substr = "469ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwz"
         // segment (4, 1), segment (1, 0), segment (1, 1), segment (1, 0), segment (2, 1), segment(50, 0), segment(2, 1), segment(1, 0)
+        // Non-zero-index: 8
         val deletes = substr.findDeletions(simpleString)
         val mapper = deletes.mapper(CountMatcher.NON_ZERO)
         assertEquals(0, mapper.documentIndexToSubset(0))
         assertEquals(2, mapper.documentIndexToSubset(2))
         assertEquals(2, mapper.documentIndexToSubset(2))
         assertEquals(3, mapper.documentIndexToSubset(3))
-        assertEquals(4, mapper.documentIndexToSubset(4)) // not in subset
+        assertEquals(4, mapper.documentIndexToSubset(4)) // "4": not in subset
         assertEquals(4, mapper.documentIndexToSubset(5))
         assertEquals(5, mapper.documentIndexToSubset(7))
         assertEquals(6, mapper.documentIndexToSubset(8))
         assertEquals(6, mapper.documentIndexToSubset(8))
         assertEquals(8, mapper.documentIndexToSubset(60))
-        assertEquals(9, mapper.documentIndexToSubset(61)) // not in subset
-        assertEquals(9, mapper.documentIndexToSubset(62)) // not in subset
+        assertEquals(9, mapper.documentIndexToSubset(61)) // "z": not in subset
+        assertEquals(9, mapper.documentIndexToSubset(62)) // out-of-bounds
     }
 }
 
