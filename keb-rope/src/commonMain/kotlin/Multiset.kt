@@ -200,10 +200,9 @@ fun Subset(length: Int): Subset {
     return Subset(listOf(Segment(length, 0)))
 }
 
-// Returns a `Mapper`
-// that can be used to map coordinates in the document to coordinates in this `Subset`,
-// but only in non-decreasing order
-// for performance reasons.
+/**
+ * Returns a [Mapper] that can be used to map "coordinates" in the document to coordinates in this [Subset].
+ */
 fun Subset.mapper(matcher: CountMatcher): Mapper {
     return Mapper(
         rangeIterator(matcher),
@@ -347,8 +346,19 @@ class RangeIterator(
     }
 }
 
+/**
+ * A mapper that maps a coordinate in the document this subset corresponds to,
+ * to a coordinate in the given subset matched by [CountMatcher] in [RangeIterator].
+ *
+ * In order to guarantee good performance, [documentIndexToSubset]
+ * must be called with `index` values in non-decreasing order.
+ * This allows the total const to be `O(n)` where `n = max(calls,ranges)` over all times called on a single [Mapper].
+ */
 class Mapper(
     private val rangeIterator: RangeIterator,
+    /**
+     * It is used to validate the non-decreasing order.
+     */
     private var lastIndex: Int,
     private var curRange: Range,
     subsetAmountConsumed: Int
@@ -356,22 +366,20 @@ class Mapper(
     var subsetAmountConsumed: Int = subsetAmountConsumed
         private set
 
-    /// Map a coordinate in the document this subset corresponds to, to a
-    /// coordinate in the subset matched by the `CountMatcher`. For example,
-    /// if the Subset is a set of deletions and the matcher is
-    /// `CountMatcher::NonZero`, this would map indices in the union string to
-    /// indices in the tombstones string.
-    ///
-    /// Will return the closest coordinate in the subset if the index is not
-    /// in the subset. If the coordinate is past the end of the subset it will
-    /// return one more than the largest index in the subset (i.e the length).
-    /// This behaviour is suitable for mapping closed-open intervals in a
-    /// string to intervals in a subset of the string.
-    ///
-    /// In order to guarantee good performance, this method must be called
-    /// with `i` values in non-decreasing order or it will panic. This allows
-    /// the total cost to be O(n) where `n = max(calls,ranges)` over all times
-    /// called on a single `Mapper`
+
+    /**
+     * Maps the given [index] (coordinate) in the document,
+     * to a coordinate in the subset matched by the [CountMatcher] in [RangeIterator].
+     * For example, if the subset represents a set of "deletions" and the matcher is [CountMatcher.NON_ZERO],
+     * this function would map indices in the "union string" to indices in the "tombstones" string.
+     *
+     * If the [index] is not in the subset, it returns the closest coordinate in the subset.
+     * If the [index] (coordinate) is past the end of the subset,
+     * it will return one more than the largest index in the subset (i.e., the length).
+     * This behavior is suitable for mapping closed-open ranges in a string to ranges in a subset of the string.
+     *
+     * @throws IllegalArgumentException if [index] is not provided in non-decreasing order, for performance reasons.
+     */
     fun documentIndexToSubset(index: Int): Int {
         require(index >= lastIndex) {
             "index must be in non-decreasing order, but got:$index, with lastIndex:$lastIndex"
