@@ -64,7 +64,7 @@ class MultisetTest {
         val substr = "469ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwz"
         // segment (4, 1), segment (1, 0), segment (1, 1), segment (1, 0), segment (2, 1), segment(50, 0), segment(2, 1), segment(1, 0)
         val deletes = substr.findDeletions(simpleString)
-        var mapper = deletes.mapper(CountMatcher.NON_ZERO)
+        val mapper = deletes.mapper(CountMatcher.NON_ZERO)
         assertEquals(0, mapper.documentIndexToSubset(0))
         assertEquals(2, mapper.documentIndexToSubset(2))
         assertEquals(2, mapper.documentIndexToSubset(2))
@@ -80,7 +80,6 @@ class MultisetTest {
     }
 }
 
-//TODO: better name candidate diff()?
 private fun String.findDeletions(other: String): Subset {
     return buildSubset {
         val base = other
