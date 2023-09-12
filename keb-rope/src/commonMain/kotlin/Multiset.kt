@@ -35,7 +35,8 @@ class Subset internal constructor(private val segments: List<Segment>) {
 
     /**
      * Returns the total length of this [Subset].
-     * Convenient alias for [count(CountMatcher.ALL)][count].
+     *
+     * This function is a shorthand for `count(CountMatcher.ALL)` (see [count]).
      */
     fun length(): Int {
         var len = 0
@@ -105,6 +106,14 @@ class Subset internal constructor(private val segments: List<Segment>) {
         }
     }
 
+    /**
+     * Returns an [Iterator] over `ZipSegments`
+     * where each [ZipSegment] contains the count for both `this` and `other` subset in that range.
+     * Both subsets must have the same "base" total length,
+     * otherwise the iterator will throw [IllegalArgumentException].
+     *
+     * Note that each returned [ZipSegment] will differ in at least one of the two counts.
+     */
     fun zip(other: Subset): Iterator<ZipSegment> = ZipIterator(this, other)
 
     private inner class ZipIterator(
@@ -116,25 +125,24 @@ class Subset internal constructor(private val segments: List<Segment>) {
         private var rightConsumed: Int = 0,
         private var consumed: Int = 0
     ) : Iterator<ZipSegment> {
-        init {
-            require(leftSubset.segments.size == rightSubset.segments.size) {
-                "Cannot zip Subsets with different lengths."
-            }
-        }
-
         private val leftSegments = leftSubset.segments
         private val rightSegments = rightSubset.segments
 
         override operator fun hasNext(): Boolean = when {
             leftSegments.getOrNull(leftI) != null && rightSegments.getOrNull(rightI) != null -> true
             leftSegments.getOrNull(leftI) == null && rightSegments.getOrNull(rightI) == null -> false
-            else -> error("Cannot zip Subsets with different lengths.")
+            else -> throw diffSubBaseLenException
         }
 
-        //TODO: research this.
+        /**
+         * Consumes as far as possible from [consumed] until reaching a segment boundary in either [Subset],
+         * and returns the resulting [ZipSegment].
+         *
+         * @throws IllegalArgumentException if the two subsets have different base lengths.
+         */
         override operator fun next(): ZipSegment {
-            val left = leftSegments[leftI]
-            val right = rightSegments[rightI]
+            val left = leftSegments.getOrNull(leftI) ?: throw diffSubBaseLenException
+            val right = rightSegments.getOrNull(rightI) ?: throw diffSubBaseLenException
             val result = (left.length + leftConsumed).compareTo(right.length + rightConsumed)
             val length = when {
                 result == 0 -> {
@@ -145,13 +153,13 @@ class Subset internal constructor(private val segments: List<Segment>) {
                     leftConsumed - consumed
                 }
 
-                result > 0 -> {
+                result < 0 -> {
                     leftConsumed += left.length
                     leftI++
                     leftConsumed - consumed
                 }
 
-                result < 0 -> {
+                result > 0 -> {
                     rightConsumed += right.length
                     rightI++
                     rightConsumed - consumed
@@ -162,6 +170,8 @@ class Subset internal constructor(private val segments: List<Segment>) {
             consumed += length
             return ZipSegment(length, left.count, right.count)
         }
+
+        private val diffSubBaseLenException = IllegalArgumentException(DIFFERENT_SUBSETS_BASE_LENGTH_MESSAGE)
     }
 
     /**
@@ -457,8 +467,8 @@ class SubsetBuilder {
     fun add(element: Segment) {
         require(element.length > 0) { "Cannot add empty segment." }
         totalLength += element.length
-        // Merge into previous segment if possible.
         val last = segments.lastOrNull()
+        // Merge into previous segment if possible.
         if (last?.count == element.count) {
             segments[segments.lastIndex] = Segment(last.length + element.length, last.count)
         } else {
@@ -531,3 +541,5 @@ data class Segment(
      */
     val count: Int
 )
+
+private const val DIFFERENT_SUBSETS_BASE_LENGTH_MESSAGE = "Cannot zip Subsets with different base lengths."

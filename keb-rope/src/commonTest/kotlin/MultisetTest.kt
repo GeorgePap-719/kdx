@@ -99,6 +99,10 @@ class MultisetTest {
         val substr2 = "14589DEFGIKMOPQRUXZabcdefglnpsuxyz"
         val str1 = substr1.findDeletions(simpleString)
         val str2 = substr2.findDeletions(simpleString)
+        val union = str1.union(str2)
+        println(str1.length())
+        println(str2.length())
+        println(union.length())
         val expected = "4EGKQUXZabcfgy"
         assertEquals(expected, str1.union(str2).deleteFromString(simpleString))
     }
