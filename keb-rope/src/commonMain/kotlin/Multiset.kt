@@ -114,6 +114,8 @@ class Subset internal constructor(private val segments: List<Segment>) {
      *
      * Note that each returned [ZipSegment] will differ in at least one of the two counts.
      */
+    //TODO: future design improvement:
+    // To be somewhat consistent with stdlib, zip() like operators should return a list.
     fun zip(other: Subset): Iterator<ZipSegment> = ZipIterator(this, other)
 
     private inner class ZipIterator(
@@ -507,7 +509,7 @@ class SubsetBuilder {
  * Adds a [Segment] with the given [length] and [count], to the end of this [Subset].
  * Technically, it assigns [count] to the next [length] elements in the [Subset].
  *
- * This function is an alias to [SubsetBuilder.add].
+ * This function is a shorthand for `add(Segment(length, count))` (see [SubsetBuilder.add]).
  *
  * @throws IllegalArgumentException if the [length] is empty.
  */
