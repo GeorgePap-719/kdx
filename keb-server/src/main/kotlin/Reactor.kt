@@ -34,7 +34,7 @@ class MutableSharedFlux<T : Any> : Flux<T>() {
             if (count > spins) error("FAIL_NON_SERIALIZED")
             if (tryEmit(value)) break
             count++
-            Thread.sleep(10)
+            Thread.sleep(100)
         }
         updateStatistics(count)
     }

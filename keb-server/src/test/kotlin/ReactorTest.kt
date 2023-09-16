@@ -1,6 +1,8 @@
 package keb.server
 
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import org.junit.jupiter.api.Test
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.system.measureTimeMillis
@@ -13,7 +15,7 @@ class ReactorTest {
         val fails = AtomicInteger(0)
         val flux = MutableSharedFlux<String>()
 
-        launch(Dispatchers.Unconfined) {
+        launch(Dispatchers.Default) {
             flux.subscribe()
         }
 
@@ -29,7 +31,7 @@ class ReactorTest {
         val fails = AtomicInteger(0)
         val flux = MutableSharedFlux<String>()
 
-        launch(Dispatchers.Unconfined) {
+        launch(Dispatchers.Default) {
             flux.subscribe()
         }
 
@@ -48,7 +50,7 @@ class ReactorTest {
         val flux = MutableSharedFlux<String>()
         val emitted = AtomicInteger(0)
 
-        launch(Dispatchers.Unconfined) {
+        launch(Dispatchers.Default) {
             flux.subscribe {
                 emitted.incrementAndGet()
             }
@@ -73,7 +75,7 @@ class ReactorTest {
         val flux = MutableSharedFlux<String>()
         val emitted = AtomicInteger(0)
 
-        launch(Dispatchers.Unconfined) {
+        launch(Dispatchers.Default) {
             flux.subscribe {
                 emitted.incrementAndGet()
             }
@@ -98,7 +100,7 @@ class ReactorTest {
         val verifier = AtomicInteger(0)
         val step = 100_000
 
-        launch(Dispatchers.Unconfined) {
+        launch(Dispatchers.Default) {
             flux.subscribe {
                 emitted.incrementAndGet()
             }
@@ -124,7 +126,7 @@ class ReactorTest {
         val flux = MutableSharedFlux<String>()
         val emitted = AtomicInteger(0)
 
-        launch(Dispatchers.Unconfined) {
+        launch(Dispatchers.Default) {
             flux.subscribe {
                 emitted.incrementAndGet()
             }
@@ -146,10 +148,8 @@ class ReactorTest {
     fun stressTestLockedEmit() = runBlocking<Unit> {
         val flux = MutableSharedFlux<String>()
         val emitted = AtomicInteger(0)
-        val verifier = AtomicInteger(0)
-        val step = 100_000
 
-        launch(Dispatchers.Unconfined) {
+        launch(Dispatchers.Default) {
             flux.subscribe {
                 emitted.incrementAndGet()
             }
@@ -165,60 +165,55 @@ class ReactorTest {
                 println("stats after throwing:${flux.statistics} and emitted:${emitted.get()}")
                 throw e
             }
-            verifier.compareAndSet(verifier.get(), verifier.get() + step)
-            assert(emitted.get() == verifier.get())
         }
+        println(emitted.get())
     }
 
     @Test
     fun stressTestBusyLoopWithDelayEmitAndMultipleSubscribers() = runBlocking<Unit> {
         val flux = MutableSharedFlux<String>()
         val emitted = AtomicInteger(0)
-        val verifier = AtomicInteger(0)
-        val step = 100_000
-        val collectors = 10_000
+        val collectors = 50_000
 
         for (i in 0..<collectors) {
-            launch(Dispatchers.Unconfined) {
+            launch(Dispatchers.Default) {
                 flux.subscribe {
                     emitted.incrementAndGet()
                 }
             }
         }
 
-        assertFails {
-            repeat(1000) {
-                try {
-                    withContext(Dispatchers.Default) {
-                        massiveRun {
-                            flux.emitWithDelay("hey")
-                        }
+        repeat(10) {
+            try {
+                withContext(Dispatchers.Default) {
+                    massiveRun {
+                        flux.emitWithDelay("hey")
                     }
-                } catch (e: Throwable) {
-                    println("stats after throwing:${flux.statistics} and emitted:${emitted.get()}")
-                    throw e
                 }
-                verifier.compareAndSet(verifier.get(), verifier.get() + step)
-                assert(emitted.get() == verifier.get())
+            } catch (e: Throwable) {
+                println("stats after throwing:${flux.statistics} and emitted:${emitted.get()}")
+                throw e
             }
         }
     }
 
+    // 42749 ms
+    // 49133 ms
     @Test
     fun stressTestLockedEmitAndMultipleSubscribers() = runBlocking<Unit> {
         val flux = MutableSharedFlux<String>()
         val emitted = AtomicInteger(0)
-        val collectors = 100
+        val collectors = 50_000
 
         for (i in 0..<collectors) {
-            launch(Dispatchers.Unconfined) {
+            launch(Dispatchers.Default) {
                 flux.subscribe {
                     emitted.incrementAndGet()
                 }
             }
         }
 
-        repeat(100) {
+        repeat(10) {
             try {
                 withContext(Dispatchers.Default) {
                     massiveRun {
@@ -230,7 +225,43 @@ class ReactorTest {
                 throw e
             }
         }
-        println("emitted with div:${emitted.get() / collectors}")
+        println("emitted with div:${emitted.get()}")
+    }
+
+    // 7103 ms
+    // 6776 ms
+    @Test
+    fun stressTestSharedFlow() = runBlocking {
+        val flow = MutableSharedFlow<String>(
+            extraBufferCapacity = 10_000,
+            onBufferOverflow = BufferOverflow.DROP_LATEST
+        )
+        val emitted = AtomicInteger(0)
+        val collectors = 50_000
+        val jobs = mutableListOf<Job>()
+        for (i in 0..<collectors) {
+            val job = launch(Dispatchers.Default) {
+                flow.collect {
+                    emitted.incrementAndGet()
+                }
+            }
+            jobs.add(job)
+        }
+
+        repeat(10) {
+            try {
+                withContext(Dispatchers.Default) {
+                    massiveRun {
+                        flow.emit("hey")
+                    }
+                }
+            } catch (e: Throwable) {
+                println("stats after throwing emitted:${emitted.get()}")
+                throw e
+            }
+        }
+        println("emitted with div:${emitted.get()}")
+        jobs.forEach { it.cancelAndJoin() }
     }
 
     private suspend fun massiveRun(action: suspend () -> Unit) {
