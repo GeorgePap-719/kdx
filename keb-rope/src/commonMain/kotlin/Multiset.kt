@@ -60,8 +60,9 @@ class Subset internal constructor(private val segments: List<Segment>) {
     fun isEmpty(): Boolean = segments.isEmpty() || (segments.size == 1 && segments.first().count == 0)
 
     /**
-     * Maps the contents of [this][Subset] into the 0-regions of [other].
-     * By extension, it is a precondition that the 0-regions of [other] to be of equal size with [this][Subset].
+     * Maps the contents of [this][Subset] subset onto the 0-regions of the [other] subset.
+     * By extension, it is a precondition that the 0-regions of [other] subset to be of equal size with [this][Subset] subset.
+     * Otherwise, it throws [IllegalArgumentException].
      *
      * When input [union] is true, the result is the same as [transformExpand]
      * and then taking the union with the "transform", but more efficient.
@@ -70,7 +71,6 @@ class Subset internal constructor(private val segments: List<Segment>) {
      *   instead of mapping them to 0-segments.
      * @param other the "transform" [Subset].
      */
-    // Precondition: `self.count(CountMatcher::All) == other.count(CountMatcher::Zero)`
     fun transform(other: Subset, union: Boolean): Subset {
         return buildSubset {
             val iterator = segments.iterator()
@@ -79,32 +79,29 @@ class Subset internal constructor(private val segments: List<Segment>) {
                 if (transformSeg.count > 0) {
                     add(transformSeg.length, if (union) transformSeg.count else 0)
                 } else {
-                    // Fill 0-region with segments from `this`.
+                    // Fill 0-region with segments from `this`,
+                    // until it fills its size.
                     var consumable = transformSeg.length
                     while (consumable > 0) {
                         if (curSeg.length == 0) {
-                            // `iterator.next()` should not throw `NoSuchElementException`,
+                            // `iterator.next()` should not throw `IllegalArgumentException`,
                             // because this must cover all 0-regions of `other`.
-                            curSeg = iterator.next()
+                            curSeg = requireNotNull(iterator.nextOrNull()) { ZERO_REGIONS_MUST_BE_OF_EQUAL_SIZE }
                         }
-                        // Consume as much of the segment as possible and necessary.
                         val consumed = minOf(curSeg.length, consumable)
                         add(consumed, curSeg.count)
                         consumable -= consumed
-                        // Hypothesis:
-                        // Since, we cannot know what `count` represents for this segment,
-                        // we just copy it.
-                        // It is associated with its length anyway,
-                        // even if we break it into parts.
+                        // Length is associated with its `count`,
+                        // that's why we copy the same count for all the remaining `length`.
                         curSeg = Segment(curSeg.length - consumed, curSeg.count)
                     }
                 }
             }
-            // The 0-regions of `other` must be the size of `this`.
-            assert { curSeg.length == 0 }
-            assert { !iterator.hasNext() }
+            require(curSeg.length == 0 && !iterator.hasNext()) { ZERO_REGIONS_MUST_BE_OF_EQUAL_SIZE }
         }
     }
+
+    private fun Iterator<Segment>.nextOrNull(): Segment? = if (hasNext()) next() else null
 
     /**
      * Returns an [Iterator] over `ZipSegments`
@@ -544,4 +541,9 @@ data class Segment(
     val count: Int
 )
 
+// Error message for [ZipIterator].
 private const val DIFFERENT_SUBSETS_BASE_LENGTH_MESSAGE = "Cannot zip Subsets with different base lengths."
+
+// Error message for transform() operation.
+private const val ZERO_REGIONS_MUST_BE_OF_EQUAL_SIZE =
+    "the 0-regions of the `other` subset must be of equal size with `this` subset"

@@ -106,64 +106,20 @@ class MultisetTest {
         val expected = "4EGKQUXZabcfgy"
         assertEquals(expected, str1.union(str2).deleteFromString(simpleString))
     }
+}
 
-    private fun String.findDeletions(other: String): Subset {
-        return buildSubset {
-            val base = other
-            val final = this@findDeletions
-            var j = 0
-            for (i in base.indices) {
-                if (j < final.length && final[j].code == base[i].code) {
-                    j++
-                } else {
-                    add(i, i + 1, 1)
-                }
+fun String.findDeletions(other: String): Subset {
+    return buildSubset {
+        val base = other
+        val final = this@findDeletions
+        var j = 0
+        for (i in base.indices) {
+            if (j < final.length && final[j].code == base[i].code) {
+                j++
+            } else {
+                add(i, i + 1, 1)
             }
-            paddingToLength(base.length)
         }
-    }
-
-    @Test
-    fun testTransforms() {
-        transformCase(
-            "02345678BCDFGHKLNOPQRTUVXZbcefghjlmnopqrstwx",
-            "027CDGKLOTUbcegopqrw",
-            "01279ACDEGIJKLMOSTUWYabcdegikopqruvwyz",
-        )
-        transformCase(
-            "01234678DHIKLMNOPQRUWZbcdhjostvy",
-            "136KLPQZvy",
-            "13569ABCEFGJKLPQSTVXYZaefgiklmnpqruvwxyz",
-        )
-        transformCase(
-            "0125789BDEFIJKLMNPVXabdjmrstuwy",
-            "12BIJVXjmrstu",
-            "12346ABCGHIJOQRSTUVWXYZcefghijklmnopqrstuvxz",
-        )
-        transformCase(
-            "12456789ABCEFGJKLMNPQRSTUVXYadefghkrtwxz",
-            "15ACEFGKLPRUVYdhrtx",
-            "0135ACDEFGHIKLOPRUVWYZbcdhijlmnopqrstuvxy",
-        )
-        transformCase(
-            "0128ABCDEFGIJMNOPQXYZabcfgijkloqruvy",
-            "2CEFGMZabijloruvy",
-            "2345679CEFGHKLMRSTUVWZabdehijlmnoprstuvwxyz",
-        )
-        transformCase(
-            "01245689ABCDGJKLMPQSTWXYbcdfgjlmnosvy",
-            "01245ABCDJLQSWXYgsv",
-            "0123457ABCDEFHIJLNOQRSUVWXYZaeghikpqrstuvwxz",
-        )
-    }
-
-    private fun transformCase(str1: String, str2: String, result: String) {
-        val str1Deletes = str1.findDeletions(simpleString)
-        val str2Deletes = str2.findDeletions(str1)
-        val transformExpand = str2Deletes.transformExpand(str1Deletes)
-        val str3 = transformExpand.deleteFromString(simpleString)
-        assertEquals(result, str3)
-        assertEquals(str2, str1Deletes.transformShrink(transformExpand).deleteFromString(str3))
-        assertEquals(str2, str1Deletes.transformUnion(str1Deletes).deleteFromString(simpleString))
+        paddingToLength(base.length)
     }
 }
