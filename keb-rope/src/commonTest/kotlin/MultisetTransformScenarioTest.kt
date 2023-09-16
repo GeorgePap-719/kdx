@@ -50,6 +50,4 @@ class MultisetTransformScenarioTest {
         assertEquals(str2, deletes1.transformShrink(deletes3).deleteFromString(str3))
         assertEquals(str2, deletes2.transformUnion(deletes1).deleteFromString(simpleString))
     }
-
-    private fun String.findAdditions(other: String): Subset = findDeletions(other)
 }
