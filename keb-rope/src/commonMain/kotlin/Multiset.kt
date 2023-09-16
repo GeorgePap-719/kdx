@@ -60,8 +60,8 @@ class Subset internal constructor(private val segments: List<Segment>) {
     fun isEmpty(): Boolean = segments.isEmpty() || (segments.size == 1 && segments.first().count == 0)
 
     /**
-     * Maps the contents of [this][Subset] subset onto the 0-regions of the [other] subset.
-     * By extension, it is a precondition that the 0-regions of [other] subset to be of equal size with [this][Subset] subset.
+     * Maps the contents of [this][Subset] subset onto the 0-regions of the [transform] subset.
+     * By extension, it is a precondition that the 0-regions of [transform] subset to be of equal size with [this][Subset] subset.
      * Otherwise, it throws [IllegalArgumentException].
      *
      * When input [union] is true, the result is the same as [transformExpand]
@@ -69,13 +69,13 @@ class Subset internal constructor(private val segments: List<Segment>) {
      *
      * @param union indicates if operation should preserve the non-zero segments of the "transform"
      *   instead of mapping them to 0-segments.
-     * @param other the "transform" [Subset].
+     * @param transform the other "transform" [Subset].
      */
-    fun transform(other: Subset, union: Boolean): Subset {
+    fun transform(transform: Subset, union: Boolean): Subset {
         return buildSubset {
             val iterator = segments.iterator()
             var curSeg = Segment(0, 0)
-            for (transformSeg in other.segments) {
+            for (transformSeg in transform.segments) {
                 if (transformSeg.count > 0) {
                     add(transformSeg.length, if (union) transformSeg.count else 0)
                 } else {
@@ -248,6 +248,8 @@ fun Subset.union(other: Subset): Subset = buildSubset {
 }
 
 /**
+ * Transforms [this] subset through the coordinate transform represented by the [transform][other].
+ *
  * Like [transformExpand] except it preserves the non-zero segments of the transform
  * instead of mapping them to 0-segments (see [Subset.transform]).
  *
@@ -259,7 +261,8 @@ fun Subset.union(other: Subset): Subset = buildSubset {
 fun Subset.transformUnion(other: Subset): Subset = transform(other, true)
 
 /**
- * "Expands" the indices in a [Subset] after each insert by the size of that insert,
+ * Transforms [this] Subset through the coordinate transform represented by the [transform][other].
+ * This is achieved by "expanding" the indices in a [Subset] after each insert by the size of that insert,
  * where the inserted characters are the “transform”.
  *
  * Conceptually, if a [Subset] represents the set of characters in a string that were inserted by an edit,
