@@ -67,7 +67,7 @@ class Subset internal constructor(private val segments: List<Segment>) {
      * When input [union] is true, the result is the same as [transformExpand]
      * and then taking the union with the "transform", but more efficient.
      *
-     * @param union indicates if operation should preserve the non-zero segments of the "transform"
+     * @param union indicates if operation should preserve the non-zero segments of the [transform]
      *   instead of mapping them to 0-segments.
      * @param transform the other "transform" [Subset].
      */
@@ -225,14 +225,18 @@ fun Subset.complementIterator(): RangeIterator = rangeIterator(CountMatcher.ZERO
 
 fun Subset.isNotEmpty(): Boolean = !isEmpty()
 
-// The reverse of Subset::transform_expand.
-// It takes a Subset and a transform Subset that are based on the same string
-// and removes sections of the former that align with non-zero segments of the latter.
-// In most uses these sections of the former always have count 0 (otherwise this transform would lose information),
-// but there are some things like garbage collection that intentionally use this to discard information.
-fun Subset.transformShrink(other: Subset): Subset = buildSubset {
-    for (zseg in zip(other)) {
-        // Discard `ZipSegments` where the shrinking set has positive count.
+/**
+ * "Shrinks" (transforms) [this] subset through the coordinate transform represented by the [transform].
+ * Both subsets must be based on the same string.
+ * This function removes sections of [this] subset that align with the non-zero segments of the [transform].
+ * In most cases, these sections (of `this`) always have count zero (otherwise this transform would lose information),
+ * but there are some cases like garbage-collection that intentionally uses this to discard information.
+ *
+ * This function is the reverse of [transformExpand].
+ */
+fun Subset.transformShrink(transform: Subset): Subset = buildSubset {
+    for (zseg in zip(transform)) {
+        // Discard `ZipSegments` that align with transform's non-zero `count` (leftCount).
         if (zseg.rightCount == 0) {
             add(zseg.length, zseg.leftCount)
         }
@@ -248,9 +252,9 @@ fun Subset.union(other: Subset): Subset = buildSubset {
 }
 
 /**
- * Transforms [this] subset through the coordinate transform represented by the [transform][other].
+ * Transforms [this] subset through the coordinate transform represented by the [transform].
  *
- * Like [transformExpand] except it preserves the non-zero segments of the transform
+ * Like [transformExpand] except it preserves the non-zero segments of the [transform]
  * instead of mapping them to 0-segments (see [Subset.transform]).
  *
  * This function is shorthand for:
@@ -258,10 +262,10 @@ fun Subset.union(other: Subset): Subset = buildSubset {
  *  val expandedSubset = transformExpand(b).union(b)
  * ```
  */
-fun Subset.transformUnion(other: Subset): Subset = transform(other, true)
+fun Subset.transformUnion(transform: Subset): Subset = transform(transform, true)
 
 /**
- * Transforms [this] Subset through the coordinate transform represented by the [transform][other].
+ * Transforms [this] subset through the coordinate transform represented by the [transform].
  * This is achieved by "expanding" the indices in a [Subset] after each insert by the size of that insert,
  * where the inserted characters are the “transform”.
  *
@@ -272,15 +276,7 @@ fun Subset.transformUnion(other: Subset): Subset = transform(other, true)
  * One example of how this can be used is to find the characters
  * that were inserted by a past [Revision] in the coordinates of the current union string instead of the past one.
  */
-/// Transform through coordinate transform represented by other.
-/// The equation satisfied is as follows:
-///
-/// s1 = other.delete_from_string(s0)
-///
-/// s2 = self.delete_from_string(s1)
-///
-/// element in self.transform_expand(other).delete_from_string(s0) if (not in s1) or in s2
-fun Subset.transformExpand(other: Subset): Subset = transform(other, false)
+fun Subset.transformExpand(transform: Subset): Subset = transform(transform, false)
 
 /**
  * Computes the bitwise "xor" operation of two subsets,
