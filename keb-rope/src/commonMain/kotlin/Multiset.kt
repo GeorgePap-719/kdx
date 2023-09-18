@@ -449,11 +449,13 @@ class SubsetBuilder {
     private val segments: MutableList<Segment> = mutableListOf()
     private var totalLength: Int = 0
 
-    /// Intended for use with `add(range)` to ensure the total length of the
-    /// `Subset` corresponds to the document length.
-    fun paddingToLength(totalLength: Int) {
+    /**
+     * Ensures the total length of this [Subset] corresponds to the document's [length].
+     * It's typically used along with `add(startIndex, endIndex, count)`.
+     */
+    fun growLengthIfNeeded(length: Int) {
         val curLen = this.totalLength
-        if (totalLength > curLen) add(Segment(totalLength - curLen, 0))
+        if (length > curLen) add(Segment(length - curLen, 0))
     }
 
     /**

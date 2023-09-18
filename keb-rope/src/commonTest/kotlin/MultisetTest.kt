@@ -36,7 +36,7 @@ class MultisetTest {
         )
         val subset = buildSubset {
             for ((start, end) in ranges) add(start, end, 1)
-            paddingToLength(simpleString.length)
+            growLengthIfNeeded(simpleString.length)
         }
         assertEquals("145BCEINQRSTUWZbcdimpvxyz", subset.deleteFromString(simpleString))
     }
@@ -120,6 +120,6 @@ fun String.findDeletions(other: String): Subset {
                 add(i, i + 1, 1)
             }
         }
-        paddingToLength(base.length)
+        growLengthIfNeeded(base.length)
     }
 }
