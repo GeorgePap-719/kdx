@@ -63,7 +63,7 @@ fun <T : NodeInfo> Delta<T>.applyTo(node: BTreeNode<T>): BTreeNode<T> {
 
 /**
  * "Factor" the delta into an [InsertDelta] and a [Subset] representing deletions.
- * Applying the [InsertDelta] and then the delete, yields the same result as the original [Delta].
+ * Applying the [InsertDelta] and then the deletions, yields the same result as the [original][this] [Delta].
  */
 /// Factor the delta into an insert-only delta and a subset representing deletions.
 /// Applying the insert-delta then the delete, yields the same result as the original delta:
@@ -81,26 +81,26 @@ fun <T : NodeInfo> Delta<T>.applyTo(node: BTreeNode<T>): BTreeNode<T> {
 fun <T : NodeInfo> Delta<T>.factor(): Pair<InsertDelta<T>, Subset> {
     val insertions = mutableListOf<DeltaElement<T>>()
     val subset = buildSubset {
-        var b1 = 0
-        var e1 = 0
+        var startIndex = 0
+        var endIndex = 0
         for (element in changes) {
             when (element) {
                 is Copy -> {
-                    //TODO: add if(e1 > 0) add()
-                    add(e1, element.startIndex, 1)
-                    e1 = element.endIndex
+                    val len = element.startIndex - endIndex
+                    if (len > 0) add(endIndex, element.startIndex, 1)
+                    endIndex = element.endIndex
                 }
 
                 is Insert -> {
-                    if (e1 > b1) insertions.add(Copy(b1, e1))
-                    b1 = e1
+                    if (endIndex > startIndex) insertions.add(Copy(startIndex, endIndex))
+                    startIndex = endIndex
                     insertions.add(Insert(element.input))
                 }
             }
         }
-        if (b1 < baseLength) insertions.add(Copy(b1, baseLength))
+        if (startIndex < baseLength) insertions.add(Copy(startIndex, baseLength))
         // Add only non-empty ranges.
-        if (e1 < baseLength) add(e1, baseLength, 1)
+        if (endIndex < baseLength) add(endIndex, baseLength, 1)
         paddingToLength(baseLength)
     }
     return InsertDelta(insertions, baseLength) to subset
@@ -178,7 +178,11 @@ fun <T : NodeInfo> InsertDelta<T>.transformShrink(xform: Subset): InsertDelta<T>
     val mapper = xform.mapper(CountMatcher.ZERO)
     val changes = changes.map {
         when (val content = it) {
-            is Copy -> Copy(mapper.documentIndexToSubset(content.startIndex), mapper.documentIndexToSubset(content.endIndex))
+            is Copy -> Copy(
+                mapper.documentIndexToSubset(content.startIndex),
+                mapper.documentIndexToSubset(content.endIndex)
+            )
+
             is Insert -> Insert(content.input)
         }
     }
