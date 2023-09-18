@@ -86,8 +86,7 @@ fun <T : NodeInfo> Delta<T>.factor(): Pair<InsertDelta<T>, Subset> {
         for (element in changes) {
             when (element) {
                 is Copy -> {
-                    val len = element.startIndex - endIndex
-                    if (len > 0) add(endIndex, element.startIndex, 1)
+                    if (element.startIndex > endIndex) add(endIndex, element.startIndex, 1)
                     endIndex = element.endIndex
                 }
 
@@ -101,7 +100,7 @@ fun <T : NodeInfo> Delta<T>.factor(): Pair<InsertDelta<T>, Subset> {
         if (startIndex < baseLength) insertions.add(Copy(startIndex, baseLength))
         // Add only non-empty ranges.
         if (endIndex < baseLength) add(endIndex, baseLength, 1)
-        paddingToLength(baseLength)
+        growLengthIfNeeded(baseLength)
     }
     return InsertDelta(insertions, baseLength) to subset
 }
