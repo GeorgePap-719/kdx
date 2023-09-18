@@ -38,8 +38,23 @@ class DeltaTest {
         assertEquals("hello world", inserts.getInsertedSubset().deleteFromString("heraello world"))
     }
 
+    @Test
     fun testSynthesize() {
-
+        val str = "hello world"
+        val delta = simpleEdit(1..<9, Rope("era").root, 11)
+        // delta: "herald"
+        val (inserts, deletes) = delta.factor()
+        val insertedSubset = inserts.getInsertedSubset()
+        val deletesTransform = deletes.transformExpand(insertedSubset)
+        val unionString = inserts.applyToString(str)
+        val tombstones = insertedSubset.complement().deleteFromString(unionString.toString())
+        println("tombstones:${tombstones}")
+        val newDelta = synthesize(
+            tombstones = Rope(tombstones).root,
+            toDeletes = insertedSubset,
+            fromDeletes = deletes
+        )
+        assertEquals("herald", newDelta.applyToString(str).toString())
     }
 }
 
