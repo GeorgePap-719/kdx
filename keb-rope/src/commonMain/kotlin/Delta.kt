@@ -65,19 +65,6 @@ fun <T : NodeInfo> Delta<T>.applyTo(node: BTreeNode<T>): BTreeNode<T> {
  * "Factor" the delta into an [InsertDelta] and a [Subset] representing deletions.
  * Applying the [InsertDelta] and then the deletions, yields the same result as the [original][this] [Delta].
  */
-/// Factor the delta into an insert-only delta and a subset representing deletions.
-/// Applying the insert-delta then the delete, yields the same result as the original delta:
-///
-/// ```no_run
-/// # use xi_rope::rope::{Rope, RopeInfo};
-/// # use xi_rope::delta::Delta;
-/// # use std::str::FromStr;
-/// fn test_factor(d : &Delta<RopeInfo>, r : &Rope) {
-///     let (ins, del) = d.clone().factor();
-///     let del2 = del.transform_expand(&ins.inserted_subset());
-///     assert_eq!(String::from(del2.delete_from(&ins.apply(r))), String::from(d.apply(r)));
-/// }
-/// ```
 fun <T : NodeInfo> Delta<T>.factor(): Pair<InsertDelta<T>, Subset> {
     val insertions = mutableListOf<DeltaElement<T>>()
     val subsetBuilder = SubsetBuilder()
@@ -207,11 +194,12 @@ fun <T : NodeInfo> InsertDelta<T>.transformShrink(xform: Subset): InsertDelta<T>
 /**
  * Returns a [Subset] containing the inserted ranges.
  */
-// `d.inserted_subset().delete_from_string(d.apply_to_string(s)) == s`
 fun <T : NodeInfo> InsertDelta<T>.getInsertedSubset(): Subset = buildSubset {
     for (change in changes) {
         when (change) {
             is Copy -> add(change.endIndex - change.startIndex, 0)
+            // Inserted characters do not exist in the base document.
+            // That's why they are represented as "deletes".
             is Insert -> add(change.input.weight, 1)
         }
     }
