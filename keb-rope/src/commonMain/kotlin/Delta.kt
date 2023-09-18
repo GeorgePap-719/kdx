@@ -81,28 +81,41 @@ fun <T : NodeInfo> Delta<T>.applyTo(node: BTreeNode<T>): BTreeNode<T> {
 fun <T : NodeInfo> Delta<T>.factor(): Pair<InsertDelta<T>, Subset> {
     val insertions = mutableListOf<DeltaElement<T>>()
     val subsetBuilder = SubsetBuilder()
+    // Tracks the offset of copied ranges against `endIndex`.
     var startIndex = 0
+    // Tracks the document's length.
     var endIndex = 0
     for (element in changes) {
         when (element) {
+            // `Delta` represents "deletes" as gaps in the ranges copied from the old document.
+            // That's why Copy-branch is the only place we can create the subset of "deletes".
             is Copy -> {
+                // If there are "deletes" `element.startIndex` will be greater than `endIndex`.
+                // Since, `endIndex` is getting updated by each copy-element.
                 if (element.startIndex > endIndex) subsetBuilder.add(endIndex, element.startIndex, 1)
                 endIndex = element.endIndex
             }
 
             is Insert -> {
-                // Since we track the "deletes" through the subset,
-                // we can simply add as `Copy` all ranges,
-                // and then add the actual `Insert` element.
-                if (endIndex > startIndex) insertions.add(Copy(startIndex, endIndex))
+                // We only need to know the traversed length
+                // to copy the characters in delta.
+                if (endIndex > startIndex) {
+                    // We track the "deletes" through the subset,
+                    // therefore, we can simply add all ranges as `Copy` elements,
+                    // and then add the `Insert` element.
+                    insertions.add(Copy(startIndex, endIndex))
+                }
                 startIndex = endIndex
                 insertions.add(Insert(element.input))
             }
         }
     }
+    // Iterate one more time to the end of the document,
+    // as last-element might be a `Copy`, or there might be "gaps" in the tail.
     if (startIndex < baseLength) insertions.add(Copy(startIndex, baseLength))
-    // Add only non-empty ranges.
+    // Similarly as above, check for "gaps" in the tail.
     if (endIndex < baseLength) subsetBuilder.add(endIndex, baseLength, 1)
+    // Grow builder to match document's length.
     subsetBuilder.growLengthIfNeeded(baseLength)
     val deletes = subsetBuilder.build()
     return InsertDelta(insertions, baseLength) to deletes
