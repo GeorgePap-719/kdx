@@ -80,29 +80,32 @@ fun <T : NodeInfo> Delta<T>.applyTo(node: BTreeNode<T>): BTreeNode<T> {
 /// ```
 fun <T : NodeInfo> Delta<T>.factor(): Pair<InsertDelta<T>, Subset> {
     val insertions = mutableListOf<DeltaElement<T>>()
-    val subset = buildSubset {
-        var startIndex = 0
-        var endIndex = 0
-        for (element in changes) {
-            when (element) {
-                is Copy -> {
-                    if (element.startIndex > endIndex) add(endIndex, element.startIndex, 1)
-                    endIndex = element.endIndex
-                }
+    val subsetBuilder = SubsetBuilder()
+    var startIndex = 0
+    var endIndex = 0
+    for (element in changes) {
+        when (element) {
+            is Copy -> {
+                if (element.startIndex > endIndex) subsetBuilder.add(endIndex, element.startIndex, 1)
+                endIndex = element.endIndex
+            }
 
-                is Insert -> {
-                    if (endIndex > startIndex) insertions.add(Copy(startIndex, endIndex))
-                    startIndex = endIndex
-                    insertions.add(Insert(element.input))
-                }
+            is Insert -> {
+                // Since we track the "deletes" through the subset,
+                // we can simply add as `Copy` all ranges,
+                // and then add the actual `Insert` element.
+                if (endIndex > startIndex) insertions.add(Copy(startIndex, endIndex))
+                startIndex = endIndex
+                insertions.add(Insert(element.input))
             }
         }
-        if (startIndex < baseLength) insertions.add(Copy(startIndex, baseLength))
-        // Add only non-empty ranges.
-        if (endIndex < baseLength) add(endIndex, baseLength, 1)
-        growLengthIfNeeded(baseLength)
     }
-    return InsertDelta(insertions, baseLength) to subset
+    if (startIndex < baseLength) insertions.add(Copy(startIndex, baseLength))
+    // Add only non-empty ranges.
+    if (endIndex < baseLength) subsetBuilder.add(endIndex, baseLength, 1)
+    subsetBuilder.growLengthIfNeeded(baseLength)
+    val deletes = subsetBuilder.build()
+    return InsertDelta(insertions, baseLength) to deletes
 }
 
 /**
