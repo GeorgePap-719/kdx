@@ -16,11 +16,15 @@ class DeltaTest {
         assertEquals(6, str.length)
     }
 
-    @Test //TODO:
+    @Test
     fun testFactor() {
         val delta = simpleEdit(1..<9, Rope("era").root, 11)
-        val (d1, ss) = delta.factor()
-        assertEquals("heraello world", d1.applyToString("hello world").toString())
+        val (inserts, deletes) = delta.factor()
+        assertEquals("heraello world", inserts.applyToString("hello world").toString())
+        assertEquals("hld", deletes.deleteFromString("hello world"))
+        //
+        val transform = deletes.transformExpand(inserts.getInsertedSubset())
+        assertEquals("herald", transform.deleteFromString("heraello world"))
     }
 }
 
