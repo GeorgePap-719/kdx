@@ -43,7 +43,7 @@ fun <T : NodeInfo> synthesize(
     var x = 0
     val oldRanges = fromDeletes.complementIterator()
     var lastOld = oldRanges.next()
-    val mapper = fromDeletes.mapper(CountMatcher.ZERO)
+    val mapper = fromDeletes.mapper(CountMatcher.NON_ZERO)
 
     val toDelsIterator = toDeletes.complementIterator()
     // For each segment of the new text.
@@ -88,7 +88,7 @@ fun <T : NodeInfo> synthesize(
                 // Note: could try to aggregate insertions,
                 // but not sure of the win.
                 // Use the mapper to insert the corresponding section of the tombstones rope.
-                val range = mapper.documentIndexToSubset(beg)..<mapper.documentIndexToSubset(end)
+                val range = mapper.documentIndexToSubset(beg)..mapper.documentIndexToSubset(end)
                 val node = tombstones.subSequence(range)
                 changes.add(Insert(node))
                 beg = end

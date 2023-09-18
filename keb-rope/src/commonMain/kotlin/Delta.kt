@@ -54,7 +54,7 @@ fun <T : NodeInfo> Delta<T>.applyTo(node: BTreeNode<T>): BTreeNode<T> {
     return buildBTree {
         for (element in changes) {
             when (element) {
-                is Copy -> add(node, IntRange(element.startIndex, element.endIndex))
+                is Copy -> add(node, element.startIndex..element.endIndex)
                 is Insert -> add(element.input)
             }
         }

@@ -751,7 +751,10 @@ open class RopeLeaf(val chars: String, val lineCount: Int) : LeafInfo, Iterable<
     }
 
     open operator fun get(index: Int): Char = chars[index]
-    open fun subSequence(startIndex: Int, endIndex: Int): CharSequence = chars.subSequence(startIndex, endIndex)
+    open fun subSequence(startIndex: Int, endIndex: Int): CharSequence {
+//        checkRangeIndexes(startIndex, endIndex)
+        return chars.subSequence(startIndex, endIndex)
+    }
 
     val isEmpty: Boolean = chars.isEmpty()
 
