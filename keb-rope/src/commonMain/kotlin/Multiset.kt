@@ -25,12 +25,12 @@ class Subset internal constructor(private val segments: List<Segment>) {
         }
     }
 
-    /// The length of the resulting sequence after deleting this subset. A
-    /// convenience alias for `self.count(CountMatcher::Zero)` to reduce
-    /// thinking about what that means in the cases where the length after
-    /// delete is what you want to know.
-    ///
-    /// `self.delete_from_string(s).len() = self.len(s.len())`
+    /**
+     * The length of the resulting sequence after deleting this subset from the string.
+     * It provides a convenient way to learn the length after the `delete`.
+     *
+     * This function is a shorthand for `count(CountMatcher.ZERO)` (see [count]).
+     */
     fun lengthAfterDelete(): Int = count(CountMatcher.ZERO)
 
     /**
