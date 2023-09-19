@@ -13,9 +13,9 @@ class SynthesizeTest {
         val (inserts, deletes) = delta.factor()
         val insertedSubset = inserts.getInsertedSubset()
         val deletesTransform = deletes.transformExpand(insertedSubset)
-        val unionString = inserts.applyToString(str)
-        println("unionString:$unionString")
-        val tombstones = insertedSubset.complement().deleteFromString(unionString.toString())
+        val union = inserts.applyToString(str)
+        println("unionString:$union")
+        val tombstones = insertedSubset.complement().deleteFromString(union.toString())
         println("tombstones:${tombstones}")
         // Reconstruct delta.
         val newDelta = synthesize(
@@ -25,9 +25,10 @@ class SynthesizeTest {
         )
         assertEquals("herald", newDelta.applyToString(str).toString())
         // Inverse edit.
-        val text = deletesTransform.complement().deleteFromString(unionString.toString())
+        val newDeltaTombstones = deletesTransform.complement().deleteFromString(union.toString())
+        println("text:$newDeltaTombstones")
         val inverseDelta = synthesize(
-            tombstones = Rope(text).root,
+            tombstones = Rope(newDeltaTombstones).root,
             fromDeletes = deletesTransform,
             toDeletes = insertedSubset
         )
