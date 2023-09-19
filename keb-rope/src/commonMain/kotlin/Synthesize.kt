@@ -34,8 +34,9 @@ import kotlin.math.min
 // For if last_old.is_some() && last_old.unwrap().0 <= beg
 //TODO: research the usage of this fun.
 fun <T : NodeInfo> synthesize(
-    tombstones: BTreeNode<T>,
-    fromDeletes: Subset,
+    // union-string -> "a", "b", "c", "d", "e,
+    tombstones: BTreeNode<T>, // "a", "b", "c" -> deleted characters.
+    fromDeletes: Subset, // Subset[Segment(1,1),Segment(1,0),Segment(1,1)]
     toDeletes: Subset
 ): Delta<T> {
     val baseLen = fromDeletes.lengthAfterDelete()
