@@ -37,39 +37,38 @@ fun <T : NodeInfo> synthesize(
     // union-string -> "a", "b", "c", "d", "e,
     tombstones: BTreeNode<T>, // "a", "b", "c" -> deleted characters.
     fromDeletes: Subset, // Subset[Segment(1,1),Segment(1,0),Segment(1,1)]
-    toDeletes: Subset
+    toDeletes: Subset // toDeletesFromUnion
 ): Delta<T> {
     val baseLen = fromDeletes.lengthAfterDelete()
     val changes = mutableListOf<DeltaElement<T>>()
     var x = 0
     val oldRanges = fromDeletes.complementIterator()
-    var lastOld = oldRanges.next()
+    var curOld = oldRanges.next()
     val mapper = fromDeletes.mapper(CountMatcher.NON_ZERO)
-
     val toDelsIterator = toDeletes.complementIterator()
     // For each segment of the new text.
     while (toDelsIterator.hasNext()) {
-        val (b, e) = toDelsIterator.next() ?: continue
+        val (prevLen, curLen) = toDelsIterator.next() ?: break
         // Fill the whole segment.
-        var beg = b
-        while (beg < e) {
+        var begin = prevLen
+        while (begin < curLen) {
             // Skip over ranges in old text
             // until one overlaps where we want to fill.
-            while (lastOld != null) {
-                val (ib, ie) = lastOld
-                if (ie > beg) break
-                x += ie - ib
-                lastOld = oldRanges.next()
+            while (curOld != null) {
+                val (oldPrevLen, oldCurLen) = curOld
+                if (oldCurLen > begin) break
+                x += oldCurLen - oldPrevLen // step
+                curOld = oldRanges.next()
             }
             // If we have a range in the old text
             // with the character at beg,
             // then we Copy.
-            if (lastOld != null && lastOld.first <= beg) {
-                val (ib, ie) = lastOld
-                val end = min(e, ie)
+            if (curOld != null && curOld.prevLen <= begin) {
+                val (oldPrevLen, oldCurLen) = curOld
+                val end = min(curLen, oldCurLen)
                 // Try to merge contiguous copies in the output.
-                val xbeg = beg + x - ib // "beg - ib + x" better for overflow?
-                val xend = end + x - ib // ditto
+                val xbeg = begin + x - oldPrevLen // "beg - oldPrevLen + x" better for overflow?
+                val xend = end + x - oldPrevLen // ditto
                 val lastElement = changes.lastOrNull()
                 val merged = if (lastElement is Copy && lastElement.endIndex == xbeg) {
                     changes.replace(Copy(lastElement.startIndex, xend), lastElement)
@@ -78,21 +77,21 @@ fun <T : NodeInfo> synthesize(
                     false
                 }
                 if (!merged) changes.add(Copy(xbeg, xend))
-                beg = end
+                begin = end
             } else {
                 // If the character at `beg` isn't in the old text,
                 // then we insert.
                 // Insert up until the next old range we could copy from,
                 // or the end of this segment.
-                var end = e
-                if (lastOld != null) end = min(end, lastOld.first)
+                var end = curLen
+                if (curOld != null) end = min(end, curOld.prevLen)
                 // Note: could try to aggregate insertions,
                 // but not sure of the win.
                 // Use the mapper to insert the corresponding section of the tombstones rope.
-                val range = mapper.documentIndexToSubset(beg)..mapper.documentIndexToSubset(end)
+                val range = mapper.documentIndexToSubset(begin)..mapper.documentIndexToSubset(end)
                 val node = tombstones.subSequence(range)
                 changes.add(Insert(node))
-                beg = end
+                begin = end
             }
         }
     }

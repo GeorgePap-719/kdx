@@ -221,6 +221,7 @@ fun Subset.mapper(matcher: CountMatcher): Mapper {
     )
 }
 
+//TODO: this fun could be named better, e.g. zeroRangeIterator.
 fun Subset.complementIterator(): RangeIterator = rangeIterator(CountMatcher.ZERO)
 
 fun Subset.isNotEmpty(): Boolean = !isEmpty()
@@ -338,9 +339,9 @@ fun <T : NodeInfo> Subset.deleteFrom(node: BTreeNode<T>): BTreeNode<T> = buildBT
 // The difference between second and first can give us the current step.
 private typealias Range = Pair<Int, Int>
 
-private val Range.curStep: Int get() = second - first
-private val Range.curLen: Int get() = second
-private val Range.prevLen: Int get() = first
+internal val Range.curStep: Int get() = second - first
+internal val Range.curLen: Int get() = second
+internal val Range.prevLen: Int get() = first
 
 class RangeIterator(
     private val segmentIterator: Iterator<Segment>,
@@ -382,7 +383,6 @@ class Mapper(
 
     @Suppress("unused") //TODO: delete if it stays unused.
     val subsetAmountConsumed: Int get() = curIndex
-
 
     /**
      * Maps the given [index] (coordinate) in the document,
