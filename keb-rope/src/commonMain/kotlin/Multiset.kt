@@ -339,7 +339,7 @@ fun <T : NodeInfo> Subset.deleteFrom(node: BTreeNode<T>): BTreeNode<T> = buildBT
 // The difference between second and first can give us the current step.
 private typealias Range = Pair<Int, Int>
 
-internal val Range.curStep: Int get() = second - first
+internal val Range.step: Int get() = second - first
 internal val Range.curLen: Int get() = second
 internal val Range.prevLen: Int get() = first
 
@@ -354,9 +354,9 @@ class RangeIterator(
     override operator fun hasNext(): Boolean = segmentIterator.hasNext()
 
     override operator fun next(): Range? {
-        for (seg in segmentIterator) {
-            consumed += seg.length
-            if (matcher.matches(seg)) return consumed - seg.length to consumed
+        for (segment in segmentIterator) {
+            consumed += segment.length
+            if (matcher.matches(segment)) return consumed - segment.length to consumed
         }
         return null
     }
@@ -403,7 +403,7 @@ class Mapper(
         }
         lastIndex = index
         while (index >= curRange.curLen) {
-            curIndex += curRange.curStep
+            curIndex += curRange.step
             val nextRange = rangeIterator.next()
             // Target [index] is past the end of this subset.
             if (nextRange == null) {
