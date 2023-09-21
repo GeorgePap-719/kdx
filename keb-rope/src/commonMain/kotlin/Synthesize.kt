@@ -49,10 +49,10 @@ fun <T : NodeInfo> synthesize(
     var curOld = oldRanges.next()
     val tombstonesMapper = fromDeletes.mapper(CountMatcher.NON_ZERO)
     // Iterate only zero segments.
-    val toDeletesIterator = toDeletes.complementIterator()
+    val newText = toDeletes.complementIterator()
     // For each segment of the new text.
-    while (toDeletesIterator.hasNext()) {
-        val (prevLen, curLen) = toDeletesIterator.next() ?: break
+    for (range in newText) {
+        val (prevLen, curLen) = range ?: break
         // Fill the whole segment.
         var startIndex = prevLen
         while (startIndex < curLen) {
