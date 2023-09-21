@@ -88,9 +88,9 @@ fun <T : NodeInfo> synthesize(
                 var endIndex = curLen
                 if (curOld != null) endIndex = min(endIndex, curOld.prevLen)
                 // Use the mapper to insert the corresponding section of the "tombstones" rope.
-                val range =
+                val tombstonesRange =
                     tombstonesMapper.documentIndexToSubset(startIndex)..tombstonesMapper.documentIndexToSubset(endIndex)
-                val node = tombstones.subSequence(range)
+                val node = tombstones.subSequence(tombstonesRange)
                 changes.add(Insert(node))
                 startIndex = endIndex
             }
