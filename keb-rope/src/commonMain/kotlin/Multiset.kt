@@ -353,6 +353,12 @@ class RangeIterator(
 
     override operator fun hasNext(): Boolean = segmentIterator.hasNext()
 
+    /**
+     * Returns the next item in iteration.
+     * This function allows a nullable result because even though [hasNext] might return `true`
+     * it is not a guarantee that this will yield an item.
+     * The result is based on the provided [matcher].
+     */
     override operator fun next(): Range? {
         for (segment in segmentIterator) {
             consumed += segment.length
