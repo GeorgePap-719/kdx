@@ -41,12 +41,14 @@ fun <T : NodeInfo> synthesize(
     fromDeletes: Subset,
     toDeletes: Subset
 ): Delta<T> {
-    val baseLen = fromDeletes.lengthAfterDelete()
+    // We assume that `fromDeletes` are based on the `tombstones`.
+    assert { tombstones.weight == fromDeletes.count(CountMatcher.NON_ZERO) }
     val changes = mutableListOf<DeltaElement<T>>()
-    var step = 0 // not exactly step, more like offset or index
+    var offset = 0
     val oldRanges = fromDeletes.complementIterator()
     var curOld = oldRanges.next()
     val tombstonesMapper = fromDeletes.mapper(CountMatcher.NON_ZERO)
+    // Iterate only zero segments.
     val toDeletesIterator = toDeletes.complementIterator()
     // For each segment of the new text.
     while (toDeletesIterator.hasNext()) {
@@ -59,7 +61,7 @@ fun <T : NodeInfo> synthesize(
             while (curOld != null) {
                 val (_, oldCurLen) = curOld
                 if (oldCurLen > startIndex) break
-                step += curOld.step
+                offset += curOld.step
                 curOld = oldRanges.next()
             }
             // If we have a range in the old text
@@ -68,8 +70,8 @@ fun <T : NodeInfo> synthesize(
                 val (oldPrevLen, oldCurLen) = curOld
                 val endIndex = min(curLen, oldCurLen)
                 // Try to merge contiguous copies in the output.
-                val xbeg = startIndex + step - oldPrevLen
-                val xend = endIndex + step - oldPrevLen
+                val xbeg = startIndex + offset - oldPrevLen
+                val xend = endIndex + offset - oldPrevLen
                 val lastElement = changes.lastOrNull()
                 val merged = if (lastElement is Copy && lastElement.endIndex == xbeg) {
                     changes.replace(Copy(lastElement.startIndex, xend), lastElement)
@@ -94,6 +96,7 @@ fun <T : NodeInfo> synthesize(
             }
         }
     }
+    val baseLen = fromDeletes.lengthAfterDelete()
     return DeltaSupport(changes, baseLen)
 }
 
