@@ -6,7 +6,6 @@ import kotlin.test.assertEquals
 class SynthesizeTest {
     @Test
     fun testSynthesize() {
-        val str = "hello world"
         val delta = simpleEdit(1..<9, Rope("era").root, 11)
         // delta: "herald"
         // Break down delta into parts.
@@ -15,11 +14,12 @@ class SynthesizeTest {
         val insertedSubset = inserts.getInsertedSubset()
         println("insertedSubset:$insertedSubset")
         val deletesTransform = deletes.transformExpand(insertedSubset)
-        val union = inserts.applyToString(str)
+        val union = inserts.applyToString("hello world")
         println("unionString:$union")
         // Applying complement() on a subset which represents the insertions,
         // and then applying that subset will yield the inserted characters.
         val tombstones = insertedSubset.complement().deleteFromString(union.toString())
+        // tombstones:era
         println("tombstones:${tombstones}")
         // Reconstruct delta.
         val newDelta = synthesize(
@@ -27,15 +27,18 @@ class SynthesizeTest {
             fromDeletes = insertedSubset,
             toDeletes = deletesTransform
         )
-        assertEquals("herald", newDelta.applyToString(str).toString())
-        // Inverse edit.
+        assertEquals("herald", newDelta.applyToString("hello world").toString())
+        // Applying complement() on a subset which represents the "deletions",
+        // and then applying that subset will yield the deleted characters.
         val newDeltaTombstones = deletesTransform.complement().deleteFromString(union.toString())
-        println("text:$newDeltaTombstones")
+        // newDeltaTombstones:ello wor
+        println("newDeltaTombstones:$newDeltaTombstones")
+        // Inverse edit.
         val inverseDelta = synthesize(
             tombstones = Rope(newDeltaTombstones).root,
             fromDeletes = deletesTransform,
             toDeletes = insertedSubset
         )
-        assertEquals(str, inverseDelta.applyToString("herald").toString())
+        assertEquals("hello world", inverseDelta.applyToString("herald").toString())
     }
 }

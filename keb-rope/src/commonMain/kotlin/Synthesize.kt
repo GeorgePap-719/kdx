@@ -33,15 +33,17 @@ import kotlin.math.min
 /// ```
 // For if last_old.is_some() && last_old.unwrap().0 <= beg
 //TODO: research the usage of this fun.
+// Notes: the input of the function does not always represent "deletes".
 fun <T : NodeInfo> synthesize(
     // union-string -> "a", "b", "c", "d", "e,
     tombstones: BTreeNode<T>, // "a", "b", "c" -> deleted characters.
-    fromDeletes: Subset, // Subset[Segment(1,1),Segment(1,0),Segment(1,1)]
-    toDeletes: Subset // toDeletesFromUnion
+    /* The subset which tombstones are based on. */
+    fromDeletes: Subset,
+    toDeletes: Subset
 ): Delta<T> {
     val baseLen = fromDeletes.lengthAfterDelete()
     val changes = mutableListOf<DeltaElement<T>>()
-    var step = 0
+    var step = 0 // not exactly step, more like offset or index
     val oldRanges = fromDeletes.complementIterator()
     var curOld = oldRanges.next()
     val tombstonesMapper = fromDeletes.mapper(CountMatcher.NON_ZERO)
