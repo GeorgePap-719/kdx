@@ -343,6 +343,7 @@ internal val Range.step: Int get() = second - first
 internal val Range.curLen: Int get() = second
 internal val Range.prevLen: Int get() = first
 
+//TODO: this can be redesigned to avoid false-positives from hasNext().
 class RangeIterator(
     private val segmentIterator: Iterator<Segment>,
     private val matcher: CountMatcher,
