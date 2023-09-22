@@ -83,7 +83,7 @@ fun <T : NodeInfo> synthesize(
                 // Take `endIndex` but do not exceed slice length.
                 // Also, if `fromCurLen` is a shorter segment,
                 // we update `endIndex` with that as a step.
-                // This indicates the next (remaining slice) step should be an insertion.
+                // This indicates the next step should be an insertion.
                 val endIndex = min(toCurLen, fromCurLen)
                 // Try to merge contiguous copies in the output.
                 val startOffset = startIndex + offset - fromPrevLen

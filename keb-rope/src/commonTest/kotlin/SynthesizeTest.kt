@@ -4,6 +4,22 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class SynthesizeTest {
+
+    @Test
+    fun testSynthesizeBasic() {
+        // union-string: "hello world 1"
+        val string = "hello"
+        val tombstones = Rope(" world 1")
+        val deletesFromUnion = Subset(listOf(Segment(5, 0), Segment(8, 1)))
+        val oldDeletesFromUnion = Subset(listOf(Segment(11, 0), Segment(2, 1)))
+        val oldDelta = synthesize(
+            tombstones = tombstones.root,
+            fromDeletes = deletesFromUnion,
+            toDeletes = oldDeletesFromUnion
+        )
+        assertEquals("hello world", oldDelta.applyToString(string).toString())
+    }
+
     @Test
     fun testSynthesize() {
         val delta = simpleEdit(1..<9, Rope("era").root, 11)
