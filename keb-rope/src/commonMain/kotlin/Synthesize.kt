@@ -35,43 +35,54 @@ import kotlin.math.min
 //TODO: research the usage of this fun.
 // Notes: the input of the function does not always represent "deletes".
 fun <T : NodeInfo> synthesize(
-    // union-string -> "a", "b", "c", "d", "e,
-    tombstones: BTreeNode<T>, // "a", "b", "c" -> deleted characters.
+    tombstones: BTreeNode<T>,
     /* The subset which tombstones are based on. */
     fromDeletes: Subset,
-    toDeletes: Subset
+    toDeletes: Subset,
 ): Delta<T> {
     // We assume that `fromDeletes` are based on the `tombstones`.
     assert { tombstones.weight == fromDeletes.count(CountMatcher.NON_ZERO) }
     val changes = mutableListOf<DeltaElement<T>>()
     var offset = 0
-    val oldRanges = fromDeletes.complementIterator()
-    var curOld = oldRanges.next()
+    // 0-segments of `toDeletes` correspond to characters in from-text.
+    val fromTextIterator = fromDeletes.complementIterator()
+    var fromRange = fromTextIterator.next()
     val tombstonesMapper = fromDeletes.mapper(CountMatcher.NON_ZERO)
-    // Iterate only zero segments.
-    val newText = toDeletes.complementIterator()
-    // For each segment of the new text.
-    for (range in newText) {
-        val (prevLen, curLen) = range ?: break
-        // Fill the whole segment.
-        var startIndex = prevLen
-        while (startIndex < curLen) {
-            // Skip over ranges in old text
+    // 0-segments of `toDeletes` correspond to characters in to-text.
+    val toTextIterator = toDeletes.complementIterator()
+    // Try to move both text iterators with the same step.
+    // The procedure expects (and handles) the `fromTextIterator`
+    // to move forward faster, as typically contains more 1-segments.
+    // The operation-"flow" is to reverse the deleted `tombstones`
+    // and fill them into `toTextIterator`.
+    // In case, `fromTextIterator` finishes first (fromRange == null)
+    // then we insert all remaining ranges.
+    for (toRange in toTextIterator) {
+        // Note that even though the iterators loops over 0-segments,
+        // the provided ranges (prevLen, curLen) are counting
+        // the actual length of the subset.
+        val (toPrevLen, toCurLen) = toRange
+        // No more 0-segments to iterate.
+            ?: break
+        // `startIndex` marks the start of the delta element.
+        // It is updated until we fill the "slice".
+        var startIndex = toPrevLen
+        while (startIndex < toCurLen) {
+            // Move forward slices in `fromRange`
             // until one overlaps where we want to fill.
-            while (curOld != null) {
-                val (_, oldCurLen) = curOld
-                if (oldCurLen > startIndex) break
-                offset += curOld.step
-                curOld = oldRanges.next()
+            while (fromRange != null) {
+                if (fromRange.curLen > startIndex) break
+                offset += fromRange.step
+                fromRange = fromTextIterator.next()
             }
-            // If we have a range in the old text
-            // with the character at startIndex, then we Copy.
-            if (curOld != null && curOld.prevLen <= startIndex) {
-                val (oldPrevLen, oldCurLen) = curOld
-                val endIndex = min(curLen, oldCurLen)
+            // If we have a slice in the `fromRange`
+            // with the character at `startIndex`, then we copy.
+            if (fromRange != null && fromRange.prevLen <= startIndex) {
+                val (fromPrevLen, fromCurLen) = fromRange
+                val endIndex = min(toCurLen, fromCurLen)
                 // Try to merge contiguous copies in the output.
-                val xbeg = startIndex + offset - oldPrevLen
-                val xend = endIndex + offset - oldPrevLen
+                val xbeg = startIndex + offset - fromPrevLen
+                val xend = endIndex + offset - fromPrevLen
                 val lastElement = changes.lastOrNull()
                 val merged = if (lastElement is Copy && lastElement.endIndex == xbeg) {
                     changes.replace(Copy(lastElement.startIndex, xend), lastElement)
@@ -82,11 +93,11 @@ fun <T : NodeInfo> synthesize(
                 if (!merged) changes.add(Copy(xbeg, xend))
                 startIndex = endIndex
             } else {
-                // If the character at `beg` isn't in the old text, then we insert.
-                // Insert up until the next old range we could copy from,
+                // If the character at `startIndex` isn't in the `fromText`, then we insert.
+                // Insert up until the next old `toRange` we could copy from,
                 // or the end of this segment.
-                var endIndex = curLen
-                if (curOld != null) endIndex = min(endIndex, curOld.prevLen)
+                var endIndex = toCurLen
+                if (fromRange != null) endIndex = min(endIndex, fromRange.prevLen)
                 // Use the mapper to insert the corresponding section of the "tombstones" rope.
                 val tombstonesRange =
                     tombstonesMapper.documentIndexToSubset(startIndex)..tombstonesMapper.documentIndexToSubset(endIndex)

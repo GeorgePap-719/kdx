@@ -21,6 +21,7 @@ class SynthesizeTest {
         val tombstones = insertedSubset.complement().deleteFromString(union.toString())
         // tombstones:era
         println("tombstones:${tombstones}")
+        println(deletesTransform)
         // Reconstruct delta.
         val newDelta = synthesize(
             tombstones = Rope(tombstones).root,
@@ -33,6 +34,7 @@ class SynthesizeTest {
         val newDeltaTombstones = deletesTransform.complement().deleteFromString(union.toString())
         // newDeltaTombstones:ello wor
         println("newDeltaTombstones:$newDeltaTombstones")
+        println(insertedSubset)
         // Inverse edit.
         val inverseDelta = synthesize(
             tombstones = Rope(newDeltaTombstones).root,
