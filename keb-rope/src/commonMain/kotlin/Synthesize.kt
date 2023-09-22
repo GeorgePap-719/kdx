@@ -53,10 +53,10 @@ fun <T : NodeInfo> synthesize(
     // Try to move both text iterators with the same step.
     // The procedure expects (and handles) the `fromTextIterator`
     // to move forward faster, as typically contains more 1-segments.
-    // The operation-"flow" is to reverse the deleted `tombstones`
-    // and fill them into `toTextIterator`.
     // In case, `fromTextIterator` finishes first (fromRange == null)
     // then we insert all remaining ranges.
+    // The logic is to reverse the deleted `tombstones`
+    // and fill them into `toTextIterator`.
     for (toRange in toTextIterator) {
         // Note that even though the iterators loops over 0-segments,
         // the provided ranges (prevLen, curLen) are counting
@@ -77,8 +77,13 @@ fun <T : NodeInfo> synthesize(
             }
             // If we have a slice in the `fromRange`
             // with the character at `startIndex`, then we copy.
+            // Practically, this checks if the above loop moved more than one step.
             if (fromRange != null && fromRange.prevLen <= startIndex) {
                 val (fromPrevLen, fromCurLen) = fromRange
+                // Take `endIndex` but do not exceed slice length.
+                // Also, if `fromCurLen` is a shorter segment,
+                // we update `endIndex` with that as a step.
+                // This indicates the next (remaining slice) step should be an insertion.
                 val endIndex = min(toCurLen, fromCurLen)
                 // Try to merge contiguous copies in the output.
                 val xbeg = startIndex + offset - fromPrevLen
@@ -93,7 +98,7 @@ fun <T : NodeInfo> synthesize(
                 if (!merged) changes.add(Copy(xbeg, xend))
                 startIndex = endIndex
             } else {
-                // If the character at `startIndex` isn't in the `fromText`, then we insert.
+                // If the character at `startIndex` isn't in the `fromRange`, then we insert.
                 // Insert up until the next old `toRange` we could copy from,
                 // or the end of this segment.
                 var endIndex = toCurLen
