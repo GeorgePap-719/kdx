@@ -86,16 +86,14 @@ fun <T : NodeInfo> synthesize(
                 // This indicates the next (remaining slice) step should be an insertion.
                 val endIndex = min(toCurLen, fromCurLen)
                 // Try to merge contiguous copies in the output.
-                val xbeg = startIndex + offset - fromPrevLen
-                val xend = endIndex + offset - fromPrevLen
+                val startOffset = startIndex + offset - fromPrevLen
+                val endOffset = endIndex + offset - fromPrevLen
                 val lastElement = changes.lastOrNull()
-                val merged = if (lastElement is Copy && lastElement.endIndex == xbeg) {
-                    changes.replace(Copy(lastElement.startIndex, xend), lastElement)
-                    true
+                if (lastElement is Copy && lastElement.endIndex == startOffset) {
+                    changes.replace(Copy(lastElement.startIndex, endOffset), lastElement)
                 } else {
-                    false
+                    changes.add(Copy(startOffset, endOffset))
                 }
-                if (!merged) changes.add(Copy(xbeg, xend))
                 startIndex = endIndex
             } else {
                 // If the character at `startIndex` isn't in the `fromRange`, then we insert.
