@@ -37,6 +37,26 @@ class DeltaTest {
         val (inserts, _) = delta.factor()
         assertEquals("hello world", inserts.getInsertedSubset().deleteFromString("heraello world"))
     }
+
+    @Test
+    fun testTransformExpand() {
+        val str1 = "01259DGJKNQTUVWXYcdefghkmopqrstvwxy"
+        val deletions = str1.findDeletions(simpleString)
+        val delta = simpleEdit(10..<12, Rope("+").root, str1.length)
+        assertEquals("01259DGJKN+UVWXYcdefghkmopqrstvwxy", delta.applyToString(str1).toString())
+        val (inserts, deletes) = delta.factor()
+        assertEquals("01259DGJKN+QTUVWXYcdefghkmopqrstvwxy", inserts.applyToString(str1).toString())
+        val transformExpand = inserts.transformExpand(deletions, false)
+        assertEquals(
+            "0123456789ABCDEFGHIJKLMN+OPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
+            transformExpand.applyToString(simpleString).toString()
+        )
+        val transformExpandAfter = inserts.transformExpand(deletions, true)
+        assertEquals(
+            "0123456789ABCDEFGHIJKLMNOP+QRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
+            transformExpandAfter.applyToString(simpleString).toString()
+        )
+    }
 }
 
 fun DeltaRopeNode.applyToString(input: String): Rope {
