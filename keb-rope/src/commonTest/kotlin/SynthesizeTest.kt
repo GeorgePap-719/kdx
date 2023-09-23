@@ -8,7 +8,7 @@ class SynthesizeTest {
     @Test
     fun testSynthesizeBasic() {
         // union-string: "hello world 1"
-        val string = "hello"
+        val text = "hello"
         val tombstones = Rope(" world 1")
         val deletesFromUnion = Subset(listOf(Segment(5, 0), Segment(8, 1)))
         val oldDeletesFromUnion = Subset(listOf(Segment(11, 0), Segment(2, 1)))
@@ -17,28 +17,19 @@ class SynthesizeTest {
             fromDeletes = deletesFromUnion,
             toDeletes = oldDeletesFromUnion
         )
-        assertEquals("hello world", oldDelta.applyToString(string).toString())
+        assertEquals("hello world", oldDelta.applyToString(text).toString())
     }
 
     @Test
     fun testSynthesize() {
         val delta = simpleEdit(1..<9, Rope("era").root, 11)
-        // delta: "herald"
-        // Break down delta into parts.
         val (inserts, deletes) = delta.factor()
-        // Subset([Segment(length=1, count=0), Segment(length=3, count=1), Segment(length=10, count=0)])
         val insertedSubset = inserts.getInsertedSubset()
-        println("insertedSubset:$insertedSubset")
         val deletesTransform = deletes.transformExpand(insertedSubset)
         val union = inserts.applyToString("hello world")
-        println("unionString:$union")
         // Applying complement() on a subset which represents the insertions,
         // and then applying that subset will yield the inserted characters.
         val tombstones = insertedSubset.complement().deleteFromString(union.toString())
-        // tombstones:era
-        println("tombstones:${tombstones}")
-        println(deletesTransform)
-        // Reconstruct delta.
         val newDelta = synthesize(
             tombstones = Rope(tombstones).root,
             fromDeletes = insertedSubset,
@@ -48,10 +39,6 @@ class SynthesizeTest {
         // Applying complement() on a subset which represents the "deletions",
         // and then applying that subset will yield the deleted characters.
         val newDeltaTombstones = deletesTransform.complement().deleteFromString(union.toString())
-        // newDeltaTombstones:ello wor
-        println("newDeltaTombstones:$newDeltaTombstones")
-        println(insertedSubset)
-        // Inverse edit.
         val inverseDelta = synthesize(
             tombstones = Rope(newDeltaTombstones).root,
             fromDeletes = deletesTransform,
