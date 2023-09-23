@@ -2,19 +2,28 @@ package keb.ropes
 
 import kotlin.math.min
 
-/// Synthesize a delta from a "union string" and two subsets: an old set
-/// of deletions and a new set of deletions from the union. The Delta is
-/// from text to text, not union to union; anything in both subsets will
-/// be assumed to be missing from the Delta base and the new text. You can
-/// also think of these as a set of insertions and one of deletions, with
-/// overlap doing nothing. This is basically the inverse of `factor`.
-///
-/// Since only the deleted portions of the union string are necessary,
-/// instead of requiring a union string the function takes a `tombstones`
-/// rope which contains the deleted portions of the union string.
+/**
+ * "Synthesize" a [Delta] from [tombstones][Rope] and two subsets of deletions;
+ * one describing the "from" state and another the "to" state.
+ * The [Delta] is relative from a [text][Rope] to a [text][Rope], not "union" to "union".
+ * Also, anything in both subsets will be assumed to be missing.
+ *
+ * This can also be thought of as a set of insertions and one of deletions, with overlap doing nothing.
+ * This function is the inverse of [factor].
+ *
+ * A typical use-case is to construct a [Delta] from current "text" to the targeted "text" at a specified revision.
+ *
+ * Note that since the zero segments of "deletesFromUnion" correspond to characters in "text" and the non-zero segments correspond to characters in "tombstones".
+ * If we take the complement of "deletesFromUnion" we can use helpers designed for use with "tombstones" on "text" and vice-versa.
+ * So we can use [synthesize] with the "text" and the complement of the old and new "deletesFromUnion"
+ * to create the required [Delta] of the tombstones when it normally creates deltas of "text".
+ *
+ * @param tombstones the deleted characters from the current union-string.
+ * @param fromDeletes the [Subset] of deletions which is based on [tombstones], relative to union-string.
+ * @param toDeletes the [Subset] of deletions which is based on the target "text", relative to union-string.
+ */
 fun <T : NodeInfo> synthesize(
     tombstones: BTreeNode<T>,
-    /* The subset which tombstones are based on. */
     fromDeletes: Subset,
     toDeletes: Subset,
 ): Delta<T> {
