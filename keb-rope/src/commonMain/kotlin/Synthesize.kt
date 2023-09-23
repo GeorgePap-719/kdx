@@ -12,28 +12,6 @@ import kotlin.math.min
 /// Since only the deleted portions of the union string are necessary,
 /// instead of requiring a union string the function takes a `tombstones`
 /// rope which contains the deleted portions of the union string.
-//
-// /// Notes: this assumption could be an assertion?
-/// The `from_dels` subset must be the interleaving of `tombstones` into the
-/// union string.
-///
-/// ```no_run
-/// # use xi_rope::rope::{Rope, RopeInfo};
-/// # use xi_rope::delta::Delta;
-/// # use std::str::FromStr;
-/// fn test_synthesize(d : &Delta<RopeInfo>, r : &Rope) {
-///     let (ins_d, del) = d.clone().factor();
-///     let ins = ins_d.inserted_subset();
-///     let del2 = del.transform_expand(&ins);
-///     let r2 = ins_d.apply(&r);
-///     let tombstones = ins.complement().delete_from(&r2);
-///     let d2 = Delta::synthesize(&tombstones, &ins, &del);
-///     assert_eq!(String::from(d2.apply(r)), String::from(d.apply(r)));
-/// }
-/// ```
-// For if last_old.is_some() && last_old.unwrap().0 <= beg
-//TODO: research the usage of this fun.
-// Notes: the input of the function does not always represent "deletes".
 fun <T : NodeInfo> synthesize(
     tombstones: BTreeNode<T>,
     /* The subset which tombstones are based on. */
@@ -68,8 +46,10 @@ fun <T : NodeInfo> synthesize(
         // It is updated until we fill the "slice".
         var startIndex = toPrevLen
         while (startIndex < toCurLen) {
-            // Move forward slices in `fromRange`
-            // until one overlaps where we want to fill.
+            // Move forward slices in `fromRange` until one overlaps with `toRange`.
+            // In this operation, the `fromTextIterator` is the leader
+            // as we base all the differences against him.
+            // That's why we try to move forward the `fromTextIterator` first.
             while (fromRange != null) {
                 if (fromRange.curLen > startIndex) break
                 offset += fromRange.step
