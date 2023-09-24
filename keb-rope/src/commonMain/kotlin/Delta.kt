@@ -1,5 +1,7 @@
 package keb.ropes
 
+import keb.ropes.internal.DeltaDeletesIterator
+import keb.ropes.internal.DeltaInsertsIterator
 import keb.ropes.internal.intoInterval
 
 internal typealias NodeInfo = LeafInfo
@@ -109,6 +111,20 @@ fun <T : NodeInfo> Delta<T>.factor(): Pair<InsertDelta<T>, Subset> {
 }
 
 /**
+ * Returns an [DeltaIterator] that iterates over the "inserts" of the delta.
+ */
+fun <T : NodeInfo> Delta<T>.insertsIterator(): DeltaIterator {
+    return DeltaInsertsIterator(this)
+}
+
+/**
+ * Returns an [DeltaIterator] that iterates over the "deletes" of the delta.
+ */
+fun <T : NodeInfo> Delta<T>.deletesIterator(): DeltaIterator {
+    return DeltaDeletesIterator(delta = this, baseLen = baseLength)
+}
+
+/**
  * Creates a [Delta] representing an edit.
  * The typical use-case is to apply this [Delta] through [applyTo].
  */
@@ -130,7 +146,7 @@ internal fun <T : NodeInfo> simpleEdit(
 /// Do a coordinate transformation on an insert-only delta. The `after` parameter
 /// controls whether the insertions in `this` come after those specific in the
 /// coordinate transform.
-//TODO:
+//TODO: research internals
 fun <T : NodeInfo> InsertDelta<T>.transformExpand(xform: Subset, after: Boolean): InsertDelta<T> {
     val curChanges = changes
     var curChangesIndex = 0
@@ -177,6 +193,7 @@ fun <T : NodeInfo> InsertDelta<T>.transformExpand(xform: Subset, after: Boolean)
 /// the same base. For example, if `self` applies to a union string, and
 /// `xform` is the deletions from that union, the resulting Delta will
 /// apply to the text.
+//TODO: research internals
 fun <T : NodeInfo> InsertDelta<T>.transformShrink(xform: Subset): InsertDelta<T> {
     val mapper = xform.mapper(CountMatcher.ZERO)
     val changes = changes.map {
@@ -231,6 +248,7 @@ class Copy(val startIndex: Int, val endIndex: Int /*`endIndex` exclusive*/) : De
  */
 class Insert<T : NodeInfo>(val input: BTreeNode<T>) : DeltaElement<T>() {
     override fun toString(): String = "Insert(input=$input)"
+    val length = input.weight
 }
 
 fun <T : LeafInfo> buildDelta(baseLen: Int, action: DeltaBuilder<T>.() -> Unit): Delta<T> {
@@ -249,6 +267,7 @@ class DeltaBuilder<T : LeafInfo> internal constructor(baseLen: Int) {
     private var delta: Delta<T> = DeltaSupport(listOf(), baseLen)
     private var lastOffset = 0
 
+    //TODO: add kdocs
     fun delete(range: IntRange) {
         val closedOpenRange = range.intoInterval(delta.baseLength)
         val start = closedOpenRange.first
@@ -258,6 +277,8 @@ class DeltaBuilder<T : LeafInfo> internal constructor(baseLen: Int) {
         lastOffset = end
     }
 
+    //TODO: Improve API:
+    // dissallow empty ranges and promote a new API which is closer to add().
     fun replace(range: IntRange, node: BTreeNode<T>) {
         delete(range)
         if (node.isNotEmpty) addIntoDeltaElements(Insert(node))
@@ -286,3 +307,60 @@ internal open class DeltaSupport<T : NodeInfo>(
 }
 
 internal typealias DeltaRopeNode = Delta<RopeLeaf>
+
+/**
+ * Iterator for [Delta].
+ */
+interface DeltaIterator {
+    /**
+     * Returns `true` if iterator has more elements, or returns `false` if the iterator has no more elements.
+     *
+     * This function retrieves an element from this delta for the subsequent invocation of [next].
+     */
+    operator fun hasNext(): Boolean
+
+    /**
+     * Retrieves the element retrieved by a preceding call to [hasNext],
+     * or throws an [IllegalStateException] if [hasNext] was not invoked.
+     * This method should only be used in pair with [hasNext]:
+     * ```
+     * while (iterator.hasNext()) {
+     *     val deltaRegion = iterator.next()
+     *     // ... handle element ..
+     * }
+     * ```
+     *
+     * This method throws [NoSuchElementException] if iterator is finished.
+     */
+    operator fun next(): DeltaRegion
+}
+
+/**
+ * Type for [DeltaIterator] result.
+ */
+class DeltaRegion(
+    val previousOffset: Int,
+    val currentOffset: Int,
+    val length: Int
+) {
+    override fun toString(): String {
+        return "DeltaRegion(previousOffset=$previousOffset,currentOffset=$currentOffset,length=$length)"
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+        other as DeltaRegion
+        if (previousOffset != other.previousOffset) return false
+        if (currentOffset != other.currentOffset) return false
+        if (length != other.length) return false
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = previousOffset
+        result = 31 * result + currentOffset
+        result = 31 * result + length
+        return result
+    }
+}
