@@ -221,6 +221,9 @@ fun Subset.mapper(matcher: CountMatcher): Mapper {
     )
 }
 
+/**
+ * Returns an [RangeIterator] that iterates through the "complement", that is the zero-segments.
+ */
 //TODO: this fun could be named better, e.g. zeroRangeIterator.
 fun Subset.complementIterator(): RangeIterator = rangeIterator(CountMatcher.ZERO)
 
