@@ -44,7 +44,7 @@ class DeltaTest {
         val deletions = str1.findDeletions(simpleString)
         val delta = simpleEdit(10..<12, Rope("+").root, str1.length)
         assertEquals("01259DGJKN+UVWXYcdefghkmopqrstvwxy", delta.applyToString(str1).toString())
-        val (inserts, deletes) = delta.factor()
+        val (inserts, _) = delta.factor()
         assertEquals("01259DGJKN+QTUVWXYcdefghkmopqrstvwxy", inserts.applyToString(str1).toString())
         val transformExpand = inserts.transformExpand(deletions, false)
         assertEquals(
@@ -56,6 +56,24 @@ class DeltaTest {
             "0123456789ABCDEFGHIJKLMNOP+QRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
             transformExpandAfter.applyToString(simpleString).toString()
         )
+    }
+
+    @Test
+    fun testTransformShrink() {
+        val delta = simpleEdit(10..<12, Rope("+").root, simpleString.length)
+        val (inserts, _) = delta.factor()
+        assertEquals(
+            "0123456789+ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
+            inserts.applyToString(simpleString).toString()
+        )
+        val str1 = "0345678BCxyz"
+        val deletions = str1.findDeletions(simpleString)
+        val transformShrink = inserts.transformShrink(deletions)
+        assertEquals("0345678+BCxyz", transformShrink.applyToString(str1).toString())
+        val str2 = "356789ABCx"
+        val deletions2 = str2.findDeletions(simpleString)
+        val transformShrink2 = inserts.transformShrink(deletions2)
+        assertEquals("356789+ABCx", transformShrink2.applyToString(str2).toString())
     }
 }
 

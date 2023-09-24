@@ -130,44 +130,45 @@ internal fun <T : NodeInfo> simpleEdit(
 /// Do a coordinate transformation on an insert-only delta. The `after` parameter
 /// controls whether the insertions in `this` come after those specific in the
 /// coordinate transform.
+//TODO:
 fun <T : NodeInfo> InsertDelta<T>.transformExpand(xform: Subset, after: Boolean): InsertDelta<T> {
     val curChanges = changes
+    var curChangesIndex = 0
     val changes = mutableListOf<DeltaElement<T>>()
-    var x = 0 // coordinate within self
-    var y = 0 // coordinate within xform
-    var i = 0 // index into `curChanges`
+    var thisCoordinate = 0
+    var xformCoordinate = 0
     var b1 = 0
     val xformRanges = xform.complementIterator()
     var lastXform = xformRanges.next()
     val len = xform.length()
-    while (y < len || i < curChanges.size) {
-        val nextIvBeg = lastXform?.first ?: len
-        if (after && y < nextIvBeg) y = nextIvBeg
-        while (i < curChanges.size) {
-            when (val content = curChanges[i]) {
+    while (xformCoordinate < len || curChangesIndex < curChanges.size) {
+        val nextIvBeg = lastXform?.prevLen ?: len
+        if (after && xformCoordinate < nextIvBeg) xformCoordinate = nextIvBeg
+        while (curChangesIndex < curChanges.size) {
+            when (val content = curChanges[curChangesIndex]) {
                 is Copy -> {
-                    if (y >= nextIvBeg) {
-                        var nextY = content.endIndex + y - x
-                        lastXform?.second?.let { nextY = minOf(nextY, it) }
-                        x += nextY - y
-                        y = nextY
-                        if (x == content.endIndex) i++
-                        lastXform?.second?.let { if (y == it) lastXform = xformRanges.next() }
+                    if (xformCoordinate >= nextIvBeg) {
+                        var nextCoordinate = content.endIndex + xformCoordinate - thisCoordinate
+                        lastXform?.curLen?.let { nextCoordinate = minOf(nextCoordinate, it) }
+                        thisCoordinate += nextCoordinate - xformCoordinate
+                        xformCoordinate = nextCoordinate
+                        if (thisCoordinate == content.endIndex) curChangesIndex++
+                        lastXform?.curLen?.let { if (xformCoordinate == it) lastXform = xformRanges.next() }
                     }
                     break
                 }
 
                 is Insert -> {
-                    if (y > b1) changes.add(Copy(b1, y))
-                    b1 = y
+                    if (xformCoordinate > b1) changes.add(Copy(b1, xformCoordinate))
+                    b1 = xformCoordinate
                     changes.add(Insert(content.input))
-                    i++
+                    curChangesIndex++
                 }
             }
         }
-        if (!after && y < nextIvBeg) y = nextIvBeg
+        if (!after && xformCoordinate < nextIvBeg) xformCoordinate = nextIvBeg
     }
-    if (y > b1) changes.add(Copy(b1, y))
+    if (xformCoordinate > b1) changes.add(Copy(b1, xformCoordinate))
     return InsertDelta(changes, len)
 }
 
