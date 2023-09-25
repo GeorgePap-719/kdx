@@ -111,7 +111,7 @@ class DeltaTest {
         var hasNext = insertsIterator.hasNext()
         assertTrue(hasNext)
         assertEquals(DeltaRegion(2, 2, 1), insertsIterator.next())
-        val deltaElement = delta.changes[2]
+        val deltaElement = delta.changes[1]
         println(deltaElement)
         println(delta.changes)
         println(delta.changes.size)
