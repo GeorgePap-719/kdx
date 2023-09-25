@@ -1,15 +1,19 @@
 package keb.ropes
 
+import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class EngineTest {
     private val simpleString = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 
-    //@Test without individual tests,
+    @Test
+    // without individual tests,
     // this becomes too complex to handle.
     fun testSimpleEditRevision() {
         val engine = MutableEngine(Rope(simpleString))
         val firstRev = engine.headRevisionId.token()
+        val tryEditRevision = engine.tryEditRevision(0, 1, firstRev, buildDelta1())
+        println(tryEditRevision)
         engine.editRevision(0, 1, firstRev, buildDelta1())
         val headAsString = engine.head.toString()
         println(headAsString)

@@ -73,10 +73,14 @@ interface MutableEngine : Engine {
     // and replaying history from there but with revisions in the new undone_groups not applied.
     fun undo(groups: Set<Int>)
 
-    /// Attempts to apply a new edit based on the [`Revision`] specified by `base_rev`,
-    /// Returning an [`Error`] if the `Revision` cannot be found.
-    //TODO: rethink naming,
-    // this function, conceptually, is closer to tryApplyEditRevision().
+    /**
+     * Tries to apply a new [edit][Delta] based on the [baseRevision] that is not the current [head].
+     * Returns a [successful][EngineResult.success] result if the [Revision] can be found,
+     * or [failed][EngineResult.failure] result.
+     *
+     * This CRDT-function is the cornerstone that enables concurrent edits,
+     * but each peer can only have one in flight at a time and all edits must go through a central server.
+     */
     fun tryEditRevision(
         priority: Int,
         undoGroup: Int,
@@ -313,7 +317,7 @@ fun emptyMutableEngine(): MutableEngine {
     val revisionId = RevisionId(0, 0, 0)
     val content = Undo(
         emptySet(),
-        emptySubset()
+        deletesFromUnion
     )
     val rev = Revision(revisionId, 0, content)
     return EngineImpl(

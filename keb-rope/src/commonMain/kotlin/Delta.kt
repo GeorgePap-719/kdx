@@ -306,7 +306,7 @@ internal open class DeltaSupport<T : NodeInfo>(
     override fun toString(): String = "DeltaSupport(changes=$changes,baseLength=$baseLength)"
 }
 
-internal typealias DeltaRopeNode = Delta<RopeLeaf>
+typealias DeltaRopeNode = Delta<RopeLeaf>
 
 /**
  * Iterator for [Delta].
