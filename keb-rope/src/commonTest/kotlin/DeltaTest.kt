@@ -108,13 +108,9 @@ class DeltaTest {
         }
         assertEquals("01a25b89", delta.applyToString(str).toString())
         val insertsIterator = delta.insertsIterator()
-        var hasNext = insertsIterator.hasNext()
+        val hasNext = insertsIterator.hasNext()
         assertTrue(hasNext)
         assertEquals(DeltaRegion(2, 2, 1), insertsIterator.next())
-        val deltaElement = delta.changes[1]
-        println(deltaElement)
-        println(delta.changes)
-        println(delta.changes.size)
     }
 
     @Test
@@ -138,6 +134,16 @@ class DeltaTest {
         assertEquals(DeltaRegion(8, 4, 2), deletesIterator.next())
         hasNext = deletesIterator.hasNext()
         assertFalse(hasNext)
+    }
+
+    @Test
+    fun testIsIdentity() {
+        var delta = simpleEdit(10..<12, Rope("+").root, simpleString.length)
+        assertFalse(delta.isIdentity)
+        delta = simpleEdit(0..<0, Rope("").root, simpleString.length)
+        assertTrue(delta.isIdentity)
+        delta = simpleEdit(0..<0, Rope("").root, 0)
+        assertTrue(delta.isIdentity)
     }
 }
 
