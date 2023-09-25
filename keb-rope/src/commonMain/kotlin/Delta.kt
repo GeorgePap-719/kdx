@@ -134,7 +134,7 @@ internal fun <T : NodeInfo> simpleEdit(
     range: IntRange,
     node: BTreeNode<T>,
     /* The length of the editing document. */
-    baseLength: Int
+    baseLength: Int,
 ): Delta<T> = buildDelta(baseLength) {
     if (node.isEmpty) {
         delete(range)
@@ -301,7 +301,7 @@ class DeltaBuilder<T : LeafInfo> internal constructor(baseLen: Int) {
 
 internal open class DeltaSupport<T : NodeInfo>(
     override val changes: List<DeltaElement<T>>,
-    override val baseLength: Int
+    override val baseLength: Int,
 ) : Delta<T> {
     override fun toString(): String = "DeltaSupport(changes=$changes,baseLength=$baseLength)"
 }
@@ -339,27 +339,37 @@ interface DeltaIterator {
  * Type for [DeltaIterator] result.
  */
 class DeltaRegion(
-    val previousOffset: Int,
-    val currentOffset: Int,
+    /**
+     * The `endIndex` of the previous element.
+     */
+    val previousEndIndex: Int,
+    /**
+     * This element's offset in `changes`.
+     * This variable can be subtracted be one to give the element's index in `changes`.
+     */
+    val offset: Int,
+    /**
+     * The element's length.
+     */
     val length: Int
 ) {
     override fun toString(): String {
-        return "DeltaRegion(previousOffset=$previousOffset,currentOffset=$currentOffset,length=$length)"
+        return "DeltaRegion(previousOffset=$previousEndIndex,currentOffset=$offset,length=$length)"
     }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || this::class != other::class) return false
         other as DeltaRegion
-        if (previousOffset != other.previousOffset) return false
-        if (currentOffset != other.currentOffset) return false
+        if (previousEndIndex != other.previousEndIndex) return false
+        if (offset != other.offset) return false
         if (length != other.length) return false
         return true
     }
 
     override fun hashCode(): Int {
-        var result = previousOffset
-        result = 31 * result + currentOffset
+        var result = previousEndIndex
+        result = 31 * result + offset
         result = 31 * result + length
         return result
     }

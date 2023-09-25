@@ -19,15 +19,15 @@ internal abstract class AbstractDeltaIterator : DeltaIterator {
         val result = nextResult
         check(result != null) { "`hasNext()` has not been invoked" }
         nextResult = null
-        // Is this iterator closed?
+        // Is this iterator finished?
         if (result === ITERATOR_FINISHED) throw NoSuchElementException()
         return result as DeltaRegion
     }
 }
 
 internal class DeltaInsertsIterator<T : NodeInfo>(delta: Delta<T>) : AbstractDeltaIterator() {
-    private var pos = 0 // offset || step?
-    private var lastEnd = 0 // index || prevEndIndex?
+    private var offset = 0
+    private var prevEndIndex = 0
 
     private val iterator = delta.changes.iterator()
 
@@ -36,14 +36,14 @@ internal class DeltaInsertsIterator<T : NodeInfo>(delta: Delta<T>) : AbstractDel
         for (element in iterator) {
             when (element) {
                 is Copy -> {
-                    pos += element.endIndex - element.startIndex
-                    lastEnd = element.endIndex
+                    offset += element.endIndex - element.startIndex
+                    prevEndIndex = element.endIndex
                 }
 
                 is Insert -> {
-                    nextResult = DeltaRegion(lastEnd, pos, element.length)
-                    pos += element.length
-                    lastEnd += element.length
+                    nextResult = DeltaRegion(prevEndIndex, offset, element.length)
+                    offset += element.length
+                    prevEndIndex += element.length
                     return true
                 }
             }
@@ -55,9 +55,10 @@ internal class DeltaInsertsIterator<T : NodeInfo>(delta: Delta<T>) : AbstractDel
 
 internal class DeltaDeletesIterator<T : NodeInfo>(
     delta: Delta<T>,
-    private var pos: Int = 0,
-    private var lastEnd: Int = 0,
-    private var baseLen: Int = 0
+    private var offset: Int = 0,
+    private var prevEndIndex: Int = 0,
+    /* The base document's length. */
+    private var baseLen: Int = 0,
 ) : AbstractDeltaIterator() {
     private val iterator = delta.changes.iterator()
 
@@ -66,23 +67,23 @@ internal class DeltaDeletesIterator<T : NodeInfo>(
         for (element in iterator) {
             when (element) {
                 is Copy -> {
-                    if (element.startIndex > lastEnd) {
-                        nextResult = DeltaRegion(lastEnd, pos, element.startIndex - lastEnd)
+                    if (element.startIndex > prevEndIndex) {
+                        nextResult = DeltaRegion(prevEndIndex, offset, element.startIndex - prevEndIndex)
                     }
-                    pos += element.endIndex - element.startIndex
-                    lastEnd = element.endIndex
+                    offset += element.endIndex - element.startIndex
+                    prevEndIndex = element.endIndex
                     return true
                 }
 
                 is Insert -> {
-                    pos += element.length
-                    lastEnd += element.length
+                    offset += element.length
+                    prevEndIndex += element.length
                 }
             }
         }
-        if (lastEnd < baseLen) {
-            nextResult = DeltaRegion(lastEnd, pos, baseLen - lastEnd)
-            lastEnd = baseLen
+        if (prevEndIndex < baseLen) {
+            nextResult = DeltaRegion(prevEndIndex, offset, baseLen - prevEndIndex)
+            prevEndIndex = baseLen
             return true
         }
         nextResult = ITERATOR_FINISHED
