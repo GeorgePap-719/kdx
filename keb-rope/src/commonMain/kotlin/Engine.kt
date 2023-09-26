@@ -131,17 +131,17 @@ value class EngineResult<out T> internal constructor(@PublishedApi internal val 
 
     /// A delta was applied which had a `base_len`
     // that did not match the length of the revision it was applied to.
-    class MalformedDelta(@JvmField val revisionLen: Int, @JvmField val deltaLen: Int) : Failed {
+    class MalformedDelta(@JvmField val revisionLength: Int, @JvmField val deltaLength: Int) : Failed {
         override fun equals(other: Any?): Boolean =
-            other is MalformedDelta && revisionLen == other.revisionLen && deltaLen == other.deltaLen
+            other is MalformedDelta && revisionLength == other.revisionLength && deltaLength == other.deltaLength
 
         override fun hashCode(): Int {
-            var result = revisionLen
-            result = 31 * result + deltaLen
+            var result = revisionLength
+            result = 31 * result + deltaLength
             return result
         }
 
-        override fun toString(): String = "MalformedDelta($revisionLen,$deltaLen)"
+        override fun toString(): String = "MalformedDelta(revisionLength=$revisionLength,deltaLength=$deltaLength)"
     }
 
     companion object {
@@ -207,33 +207,35 @@ fun Engine.indexOfRevision(token: RevisionToken): Int {
 }
 
 /**
- * Returns the [Engine.deletesFromUnion] at the time of given [revIndex].
+ * Returns the [Engine.deletesFromUnion] at the time of given [revisionIndex].
  * In other words, the `deletes` from the "union string" at that time.
  */
-fun Engine.getDeletesFromUnionForIndex(revIndex: Int): Subset {
-    return getDeletesFromUnionBeforeIndex(revIndex + 1, true)
+fun Engine.getDeletesFromUnionForIndex(revisionIndex: Int): Subset {
+    return getDeletesFromUnionBeforeIndex(revisionIndex + 1, true)
 }
 
 /// Garbage collection means undo can sometimes need to replay the very first
 /// revision, and so needs a way to get the deletion set before then.
-fun Engine.getDeletesFromUnionBeforeIndex(revIndex: Int, insertUndos: Boolean): Subset {
+fun Engine.getDeletesFromUnionBeforeIndex(revisionIndex: Int, insertUndos: Boolean): Subset {
     // These two are supposed to be implemented via `Cow` operations.
     var deletesFromUnion = deletesFromUnion
+    println("deletesFromUnion.length():${deletesFromUnion.length()}")
     var undoneGroups = undoneGroups
     // Invert the changes to [deletesFromUnion]
-    // starting in the present
-    // and working backwards.
-    val revView = revisions.subList(revIndex, revisions.size).asReversed()
+    // starting in the present and working backwards.
+    val revView = revisions.subList(revisionIndex, revisions.size).asReversed()
     for (revision in revView) {
+        println("getting inside for-loop")
         deletesFromUnion = when (val content = revision.edit) {
             is Edit -> {
                 if (undoneGroups.contains(content.undoGroup)) {
                     // No need to un-delete undone inserts
                     // since we'll just shrink them out.
                     deletesFromUnion.transformShrink(content.inserts)
+                } else {
+                    val undeleted = deletesFromUnion.subtract(content.deletes)
+                    undeleted.transformShrink(content.inserts)
                 }
-                val undeleted = deletesFromUnion.subtract(content.deletes)
-                undeleted.transformShrink(content.inserts)
             }
 
             is Undo -> {
@@ -419,4 +421,15 @@ internal class EngineImpl(
     override fun clearRevisions() = _revisions.clear()
 
     override fun incrementRevIdCountAndGet(): Int = ++_revIdCount
+    override fun toString(): String {
+        return "EngineImpl(" +
+                "sessionId=$sessionId," +
+                "revisionIdCount=$revisionIdCount," +
+                "text=$text," +
+                "tombstones=$tombstones," +
+                "deletesFromUnion=$deletesFromUnion," +
+                "undoneGroups=$undoneGroups," +
+                "revisions=$revisions" +
+                ")"
+    }
 }
