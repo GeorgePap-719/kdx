@@ -11,7 +11,28 @@ class Revision(
     /// point. Used to optimize undo to not look further back.
     val maxUndoSoFar: Int,
     val edit: Content
-)
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+        other as Revision
+        if (id != other.id) return false
+        if (maxUndoSoFar != other.maxUndoSoFar) return false
+        if (edit != other.edit) return false
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = id.hashCode()
+        result = 31 * result + maxUndoSoFar
+        result = 31 * result + edit.hashCode()
+        return result
+    }
+
+    override fun toString(): String {
+        return "Revision(id=$id,maxUndoSoFar=$maxUndoSoFar,edit=$edit)"
+    }
+}
 
 sealed class Content
 class Edit(
@@ -28,7 +49,11 @@ class Edit(
     /// The subset of the characters of the union string from after this
     /// revision that were deleted by this revision.
     val deletes: Subset
-) : Content()
+) : Content() {
+    override fun toString(): String {
+        return "Edit(priority=$priority,undoGroup=$undoGroup,inserts=$inserts,deletes=$deletes)"
+    }
+}
 
 class Undo(
     /// The set of groups toggled between undone and done.
@@ -37,7 +62,11 @@ class Undo(
     /// Used to store a reversible difference between the deleted
     /// characters before and after this operation.
     val deletesBitXor: Subset
-) : Content()
+) : Content() {
+    override fun toString(): String {
+        return "Undo(toggledGroups=$toggledGroups,deletesBitXor=$deletesBitXor)"
+    }
+}
 
 /**
  * Returns the hash of this [RevisionId].
@@ -69,14 +98,11 @@ class RevisionId(
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || this::class != other::class) return false
-
         other as RevisionId
-
         if (session1 != other.session1) return false
         if (session2 != other.session2) return false
         if (count != other.count) return false
         if (sessionId != other.sessionId) return false
-
         return true
     }
 
@@ -86,6 +112,10 @@ class RevisionId(
         result = 31 * result + count
         result = 31 * result + sessionId.hashCode()
         return result
+    }
+
+    override fun toString(): String {
+        return "RevisionId(session1=$session1,session2=$session2,count=$count,sessionId=$sessionId)"
     }
 }
 

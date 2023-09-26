@@ -216,6 +216,13 @@ fun Engine.tryDeltaRevisionHead(baseRevision: RevisionToken): EngineResult<Delta
     return EngineResult.success(delta)
 }
 
+// This operation has a number of stages;
+// see https://xi-editor.io/docs/crdt-details.html#engineedit_rev
+// for the algorithmic details.
+/// Returns a tuple of a new `Revision` representing the edit based on the
+/// current head, a new text `Rope`, a new tombstones `Rope` and a new `deletes_from_union`.
+/// Returns an [`Error`] if `base_rev` cannot be found, or `delta.base_len`
+/// does not equal the length of the text at `base_rev`.
 fun Engine.mkNewRevision(
     newPriority: Int,
     undoGroup: Int,
@@ -225,16 +232,18 @@ fun Engine.mkNewRevision(
     val index = indexOfRevision(baseRevision)
     if (index == -1) return EngineResult.failure(EngineResult.MissingRevision(baseRevision))
     val (insertDelta, deletes) = delta.factor()
+    println("index:$index")
     // Rebase delta
     // to be on the base_rev union
     // instead of the text.
     val deletesAtRev = getDeletesFromUnionForIndex(index)
+    println(deletesAtRev)
     // Validate delta.
     if (insertDelta.baseLength != deletesAtRev.lengthAfterDelete()) {
         return EngineResult.failure(
             EngineResult.MalformedDelta(
-                insertDelta.baseLength,
-                deletesAtRev.lengthAfterDelete()
+                revisionLength = deletesAtRev.lengthAfterDelete(),
+                deltaLength = insertDelta.baseLength
             )
         )
     }
