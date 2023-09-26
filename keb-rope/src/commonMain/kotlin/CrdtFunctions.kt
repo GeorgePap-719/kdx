@@ -234,7 +234,7 @@ fun Engine.mkNewRevision(
     val (insertDelta, deletes) = delta.factor()
     println("index:$index")
     // Rebase delta
-    // to be on the base_rev union
+    // to be on the baseRevision union
     // instead of the text.
     val deletesAtRev = getDeletesFromUnionForIndex(index)
     println(deletesAtRev)
