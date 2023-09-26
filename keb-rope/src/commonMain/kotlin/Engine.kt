@@ -225,7 +225,6 @@ fun Engine.getDeletesFromUnionBeforeIndex(revisionIndex: Int, insertUndos: Boole
     // starting in the present and working backwards.
     val revView = revisions.subList(revisionIndex, revisions.size).asReversed()
     for (revision in revView) {
-        println("getting inside for-loop")
         deletesFromUnion = when (val content = revision.edit) {
             is Edit -> {
                 if (undoneGroups.contains(content.undoGroup)) {

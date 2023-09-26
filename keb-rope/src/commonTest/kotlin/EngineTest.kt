@@ -1,6 +1,7 @@
 package keb.ropes
 
 import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class EngineTest {
     private val simpleString = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
@@ -10,12 +11,16 @@ class EngineTest {
     // this becomes too complex to handle.
     fun testSimpleEditRevision() {
         val engine = MutableEngine(Rope(simpleString))
+        println("engine:${engine}")
         println("engine.revisions:${engine.revisions}")
         println("engine.revisions.size:${engine.revisions.size}")
         val firstRevToken = engine.headRevisionId.token()
         println("buildDelta1():${buildDelta1()}")
         val tryEditRevision = engine.tryEditRevision(0, 1, firstRevToken, buildDelta1())
         println(tryEditRevision)
+        println("head:${engine.head}")
+        assertEquals("0123456789abcDEEFghijklmnopqr999stuvz", engine.head.toString())
+//        assertNotNull(tryEditRevision.getOrNull())
 //        engine.editRevision(0, 1, firstRevToken, buildDelta1())
 //        val headAsString = engine.head.toString()
 //        println(headAsString)
