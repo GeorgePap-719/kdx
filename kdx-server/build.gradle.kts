@@ -12,6 +12,8 @@ plugins {
     id("io.spring.dependency-management")
 }
 
+java.sourceCompatibility = JavaVersion.VERSION_17
+
 val kotlinxCoroutinesVersion: String by project
 val kotlinxSerializationVersion: String by project
 val r2dbcMysqlDriver: String by project
