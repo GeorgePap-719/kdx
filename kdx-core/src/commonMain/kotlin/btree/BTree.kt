@@ -1,4 +1,7 @@
-package kdx
+package kdx.btree
+
+import kdx.classSimpleName
+import kdx.hexAddress
 
 /**
  * The properties of a [LeafNode].

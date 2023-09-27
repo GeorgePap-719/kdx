@@ -1,5 +1,9 @@
 package kdx
 
+import kdx.btree.BTreeNode
+import kdx.btree.LeafInfo
+import kdx.btree.buildBTree
+import kdx.btree.isNotEmpty
 import kdx.internal.DeltaDeletesIterator
 import kdx.internal.DeltaInsertsIterator
 import kdx.internal.intoInterval

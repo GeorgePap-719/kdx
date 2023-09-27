@@ -1,5 +1,8 @@
 package kdx
 
+import kdx.btree.BTreeNode
+import kdx.btree.buildBTree
+
 /**
  * Represents a [multi-subset](https://en.wiktionary.org/wiki/multisubset#English) of a string.
  * It is primarily used to efficiently represent inserted and deleted regions of a document.

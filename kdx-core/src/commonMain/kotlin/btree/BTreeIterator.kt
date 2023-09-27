@@ -1,4 +1,4 @@
-package kdx
+package kdx.btree
 
 import kdx.internal.ResizeableArray
 

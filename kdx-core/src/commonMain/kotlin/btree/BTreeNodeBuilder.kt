@@ -1,9 +1,18 @@
-package kdx
+package kdx.btree
 
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
 import kotlin.experimental.ExperimentalTypeInference
+
+@OptIn(ExperimentalContracts::class, ExperimentalTypeInference::class)
+internal fun <T : LeafInfo> buildBTree(@BuilderInference builderAction: BTreeNodeBuilder<T>.() -> Unit): BTreeNode<T> {
+    contract { callsInPlace(builderAction, InvocationKind.EXACTLY_ONCE) }
+    val builder = BTreeNodeBuilder<T>()
+    builder.builderAction()
+    val tree = builder.build()
+    return if (tree.isEmpty) emptyBTreeNode() else tree
+}
 
 internal class BTreeNodeBuilder<T : LeafInfo> {
     private val leaves = mutableListOf<BTreeNode<T>>()
@@ -29,13 +38,4 @@ internal class BTreeNodeBuilder<T : LeafInfo> {
     fun remove(element: BTreeNode<T>) {
         leaves.remove(element)
     }
-}
-
-@OptIn(ExperimentalContracts::class, ExperimentalTypeInference::class)
-internal fun <T : LeafInfo> buildBTree(@BuilderInference builderAction: BTreeNodeBuilder<T>.() -> Unit): BTreeNode<T> {
-    contract { callsInPlace(builderAction, InvocationKind.EXACTLY_ONCE) }
-    val builder = BTreeNodeBuilder<T>()
-    builder.builderAction()
-    val tree = builder.build()
-    return if (tree.isEmpty) emptyBTreeNode() else tree
 }

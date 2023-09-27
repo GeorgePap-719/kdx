@@ -1,5 +1,7 @@
 package kdx
 
+import kdx.btree.merge
+
 /**
  * Builds a rope using a [RopeBuilder].
  * It collects the strings through [RopeBuilder.add], and once it reaches 2048 characters, it creates a node.
