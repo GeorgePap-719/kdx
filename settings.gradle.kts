@@ -21,7 +21,7 @@ pluginManagement {
     }
 }
 
-rootProject.name = "keb"
+rootProject.name = "kdx"
 
 fun module(name: String, path: String) {
     include(name)
@@ -32,5 +32,5 @@ fun module(name: String, path: String) {
     project(name).projectDir = projectDir
 }
 
-module(":keb-rope", "keb-rope")
-module(":keb-server", "keb-server")
+module(":kdx-core", "kdx-core")
+module(":kdx-server", "kdx-server")
