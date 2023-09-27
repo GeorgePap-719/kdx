@@ -192,18 +192,20 @@ val Engine.nextRevisionId: RevisionId get() = RevisionId(sessionId.first, sessio
  * Returns the index of revision the specified [id], or -1 if it does exist.
  */
 fun Engine.indexOfRevision(id: RevisionId): Int {
-    return revisions
+    val index = revisions
         .asReversed() // lookup in recent ones first
         .indexOfFirst { it.id == id }
+    return revisions.lastIndex - index
 }
 
 /**
  * Returns the index of revision with the specified [token], or -1 if it does exist.
  */
 fun Engine.indexOfRevision(token: RevisionToken): Int {
-    return revisions
+    val index = revisions
         .asReversed() // lookup in recent ones first
         .indexOfFirst { it.id.token() == token }
+    return revisions.lastIndex - index
 }
 
 /**
