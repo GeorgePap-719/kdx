@@ -226,7 +226,7 @@ internal abstract class AbstractEngine : MutableEngine {
         baseRevision: RevisionToken,
         delta: DeltaRopeNode
     ): EngineResult<Unit> {
-        val result = mkNewRevision(
+        val result = createRevision(
             priority,
             undoGroup,
             baseRevision,
