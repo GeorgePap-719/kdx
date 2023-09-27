@@ -221,9 +221,8 @@ fun Engine.getDeletesFromUnionForIndex(revisionIndex: Int): Subset {
 fun Engine.getDeletesFromUnionBeforeIndex(revisionIndex: Int, insertUndos: Boolean): Subset {
     // These two are supposed to be implemented via `Cow` operations.
     var deletesFromUnion = deletesFromUnion
-    println("deletesFromUnion.length():${deletesFromUnion.length()}")
     var undoneGroups = undoneGroups
-    // Invert the changes to [deletesFromUnion]
+    // Invert the changes to `deletesFromUnion`
     // starting in the present and working backwards.
     val revView = revisions.subList(revisionIndex, revisions.size).asReversed()
     for (revision in revView) {
