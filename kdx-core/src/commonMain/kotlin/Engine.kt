@@ -254,10 +254,19 @@ fun Engine.getDeletesFromUnionBeforeIndex(revisionIndex: Int, insertUndos: Boole
 }
 
 /**
- * Returns the contents of the document at the given [revIndex].
+ * Returns a revision's [content][Rope] with the specified [revisionToken], or `null` if it is not found.
  */
-fun Engine.getRevisionContentForIndex(revIndex: Int): Rope {
-    val oldDeletesFromCurUnion = getDeletesFromCurUnionForIndex(revIndex)
+fun Engine.getRevisionContentOrNull(revisionToken: RevisionToken): Rope? {
+    val revIndex = indexOfRevision(revisionToken)
+    if (revIndex == -1) return null
+    return getRevisionContentForIndex(revIndex)
+}
+
+/**
+ * Returns the contents of the document at the given [revisionIndex].
+ */
+fun Engine.getRevisionContentForIndex(revisionIndex: Int): Rope {
+    val oldDeletesFromCurUnion = getDeletesFromCurUnionForIndex(revisionIndex)
     val delta = synthesize(tombstones.root, deletesFromUnion, oldDeletesFromCurUnion)
     val newRoot = delta.applyTo(text.root)
     return Rope(newRoot)
@@ -267,9 +276,9 @@ fun Engine.getRevisionContentForIndex(revIndex: Int): Rope {
  * Returns the [Subset] to delete from the current "union string"
  * in order to obtain a revision's content.
  */
-fun Engine.getDeletesFromCurUnionForIndex(revIndex: Int): Subset {
-    var deletesFromUnion = getDeletesFromUnionForIndex(revIndex)
-    val revView = revisions.subList(revIndex + 1, revisions.size)
+fun Engine.getDeletesFromCurUnionForIndex(revisionIndex: Int): Subset {
+    var deletesFromUnion = getDeletesFromUnionForIndex(revisionIndex)
+    val revView = revisions.subList(revisionIndex + 1, revisions.size)
     for (revision in revView) {
         val content = revision.edit
         if (content is Edit) {
@@ -286,15 +295,6 @@ fun Engine.getDeletesFromCurUnionForIndex(revIndex: Int): Subset {
  * @throws NoSuchElementException if [Engine.revisions] are empty.
  */
 val Engine.maxUndoGroupId: Int get() = revisions.last().maxUndoSoFar
-
-/**
- * Returns a revisions [content][Rope] with the specified [revisionToken], or `null` if it is not found.
- */
-fun Engine.getRevisionContentOrNull(revisionToken: RevisionToken): Rope? {
-    val revIndex = indexOfRevision(revisionToken)
-    if (revIndex == -1) return null
-    return getRevisionContentForIndex(revIndex)
-}
 
 /**
  * Creates a new [MutableEngine] with a single edit that inserts [initialContent], if it is not empty.
