@@ -19,8 +19,8 @@ fun Engine.tryDeltaRevisionHead(baseRevision: RevisionToken): EngineResult<Delta
 }
 
 /**
- * Creates an [edit][EditResult] of a new [Revision] representing the "edit" based on the current head.
- * In case the the [baseRevision] cannot be found, or the delta's base-length is not equal of the text's base-length at [baseRevision],
+ * Creates a new [edit][EditResult] based in the current head.
+ * If the the [baseRevision] cannot be found, or the delta's base-length is not equal of the text's base-length at [baseRevision],
  * it returns a [failed][EngineResult.Failed] result.
  */
 fun Engine.createRevision(
@@ -108,6 +108,9 @@ fun Engine.createRevision(
     return EngineResult.success(result)
 }
 
+/**
+ * Represents a new "edit".
+ */
 data class EditResult(
     val newRevision: Revision,
     val newText: Rope,
