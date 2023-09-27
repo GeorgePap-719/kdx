@@ -1,8 +1,8 @@
 package kdx
 
 /**
- * Returns a [Delta] that, when applied to [baseRevision], results in the current [head].
- * Otherwise, returns failed result if there is not at least one edit.
+ * Returns a [Delta] that, when applied to [baseRevision], results in the current [head],
+ * or returns [failed][EngineResult.Failed] result if there is not at least one edit.
  */
 fun Engine.tryDeltaRevisionHead(baseRevision: RevisionToken): EngineResult<DeltaRopeNode> {
     val index = indexOfRevision(baseRevision)
@@ -32,26 +32,28 @@ fun Engine.createRevision(
     // This operation has a number of stages;
     // see https://xi-editor.io/docs/crdt-details.html#engineedit_rev
     // for the algorithmic details.
+    //
+    // Find `baseRevision` then move on, as new edit will be based on it.
     val index = indexOfRevision(baseRevision)
     if (index == -1) return EngineResult.failure(EngineResult.MissingRevision(baseRevision))
-    val (insertDelta, deletes) = delta.factor()
+    val (inserts, deletes) = delta.factor()
     println("index:$index")
-    // Rebase delta
-    // to be on the baseRevision union
-    // instead of the text.
-    val deletesAtRev = getDeletesFromUnionForIndex(index)
-    println(deletesAtRev)
-    // Validate delta.
-    if (insertDelta.baseLength != deletesAtRev.lengthAfterDelete()) {
+    // Rebase delta to be on the `baseRevision` union instead of the text.
+    val deletesAtRevision = getDeletesFromUnionForIndex(index)
+    println(deletesAtRevision)
+    // Since we base new edit on `baseRevision`, then we should check
+    // if `inserts` have the same base-length with `deletesAtRevision`
+    // to ensure we refer to the same base document.
+    if (inserts.baseLength != deletesAtRevision.lengthAfterDelete()) {
         return EngineResult.failure(
             EngineResult.MalformedDelta(
-                revisionLength = deletesAtRev.lengthAfterDelete(),
-                deltaLength = insertDelta.baseLength
+                revisionLength = deletesAtRevision.lengthAfterDelete(),
+                deltaLength = inserts.baseLength
             )
         )
     }
-    var unionInsertDelta = insertDelta.transformExpand(deletesAtRev, true)
-    var newDeletes = deletes.transformExpand(deletesAtRev)
+    var unionInsertDelta = inserts.transformExpand(deletesAtRevision, true)
+    var newDeletes = deletes.transformExpand(deletesAtRevision)
     // Rebase the delta to be on the head union
     // instead of the baseRevision union.
     val newFullPriority = FullPriority(newPriority, sessionId)
@@ -67,8 +69,7 @@ fun Engine.createRevision(
             newDeletes = newDeletes.transformExpand(content.inserts)
         }
     }
-    // Rebase the deletion
-    // to be after the inserts
+    // Rebase the deletion to be after the inserts
     // instead of directly on the head union.
     val newInserts = unionInsertDelta.getInsertedSubset()
     if (newInserts.isNotEmpty()) newDeletes = newDeletes.transformExpand(newInserts)
@@ -81,8 +82,7 @@ fun Engine.createRevision(
     val undone = undoneGroups.contains(undoGroup)
     val toDelete = if (undone) newInserts else newDeletes
     val newDeletesFromUnion = rebasedDeletesFromUnion.union(toDelete)
-    // Move deleted or undone-inserted "things"
-    // from text to tombstones.
+    // Move deleted or undone-inserted "things" from text to tombstones.
     val (newText, newTombstones) = shuffle(
         textWithInserts,
         tombstones,
