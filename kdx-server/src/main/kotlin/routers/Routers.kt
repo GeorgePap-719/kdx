@@ -1,6 +1,6 @@
 package kdx.server.routers
 
-import dto.CreateDocumentFile
+import kdx.server.dto.CreateDocumentFile
 import kdx.server.routers.request.awaitReceive
 import kdx.server.services.DocumentFileService
 import kdx.server.util.info

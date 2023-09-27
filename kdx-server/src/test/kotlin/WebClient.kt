@@ -1,4 +1,4 @@
-package keb.server
+package kdx.server
 
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration

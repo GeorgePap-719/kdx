@@ -1,12 +1,8 @@
 package kdx.server.services
 
-import dto.CreateDocumentFile
-import dto.DocumentFile
-import dto.toDocumentFile
-import dto.toEntity
 import entities.DocumentEntity
 import entities.FileAddress
-import kdx.server.dto.Text
+import kdx.server.dto.*
 import kdx.server.repositories.DocumentFileRepository
 import kdx.server.repositories.DocumentRepository
 import org.springframework.stereotype.Service

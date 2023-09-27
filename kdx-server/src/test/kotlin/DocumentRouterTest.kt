@@ -1,4 +1,4 @@
-//package keb.server
+package kdx.server
 //
 //import dto.Document
 //import kdx.server.dto.Text
