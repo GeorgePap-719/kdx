@@ -1,6 +1,6 @@
-package keb.ropes.internal
+package kdx.internal
 
-import keb.ropes.*
+import kdx.*
 
 /**
  * The key idea is that the iterator is a special get type,

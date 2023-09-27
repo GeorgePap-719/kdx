@@ -1,4 +1,4 @@
-package keb.ropes
+package kdx
 
 import kotlin.random.Random
 import kotlin.random.nextInt

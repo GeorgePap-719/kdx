@@ -1,4 +1,4 @@
-package keb.server.configuration
+package kdx.server.configuration
 
 import io.r2dbc.spi.ConnectionFactory
 import org.springframework.beans.factory.annotation.Value

@@ -1,4 +1,4 @@
-package keb.ropes.internal
+package kdx.internal
 
 import java.util.concurrent.atomic.AtomicReferenceArray
 

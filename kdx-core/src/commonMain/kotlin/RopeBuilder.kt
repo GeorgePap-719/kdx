@@ -1,4 +1,4 @@
-package keb.ropes
+package kdx
 
 /**
  * Builds a rope using a [RopeBuilder].

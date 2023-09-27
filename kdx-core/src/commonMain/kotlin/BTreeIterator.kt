@@ -1,6 +1,6 @@
-package keb.ropes
+package kdx
 
-import keb.ropes.internal.ResizeableArray
+import kdx.internal.ResizeableArray
 
 internal class BTreeNodeIterator<T : LeafInfo>(root: BTreeNode<T>) : Iterator<LeafNode<T>> {
     private var index = 0

@@ -1,10 +1,10 @@
 //package keb.server
 //
-//import keb.server.dto.Document
-//import keb.server.dto.Text
-//import keb.server.entities.DocumentEntity
+//import dto.Document
+//import kdx.server.dto.Text
+//import entities.DocumentEntity
 //import keb.server.entities.toDocument
-//import keb.server.repositories.DocumentRepository
+//import kdx.server.repositories.DocumentRepository
 //import keb.server.routers.ErrorInfo
 //import kotlinx.coroutines.runBlocking
 //import org.junit.jupiter.api.AfterEach

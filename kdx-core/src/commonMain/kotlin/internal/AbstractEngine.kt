@@ -1,6 +1,6 @@
-package keb.ropes.internal
+package kdx.internal
 
-import keb.ropes.*
+import kdx.*
 
 internal abstract class AbstractEngine : MutableEngine {
 

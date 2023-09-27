@@ -1,7 +1,7 @@
-package keb.server.dto
+package kdx.server.dto
 
-import keb.server.entities.DocumentFileEntity
-import keb.server.entities.FileAddress
+import entities.DocumentFileEntity
+import entities.FileAddress
 import kotlinx.serialization.Serializable
 
 @Serializable

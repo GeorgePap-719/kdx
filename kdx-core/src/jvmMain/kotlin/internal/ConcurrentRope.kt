@@ -1,7 +1,7 @@
-package keb.ropes.internal
+package kdx.internal
 
-import keb.ropes.Rope
-import keb.ropes.RopeIterator
+import kdx.Rope
+import kdx.RopeIterator
 import kotlinx.atomicfu.atomic
 
 internal class ConcurrentRope(text: Rope) {

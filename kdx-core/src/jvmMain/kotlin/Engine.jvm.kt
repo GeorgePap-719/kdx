@@ -1,8 +1,8 @@
-package keb.ropes
+package kdx
 
-import keb.ropes.internal.ConcurrentRope
-import keb.ropes.internal.toConcurrentLinkedList
-import keb.ropes.internal.toConcurrentSet
+import kdx.internal.ConcurrentRope
+import kdx.internal.toConcurrentLinkedList
+import kdx.internal.toConcurrentSet
 import kotlinx.atomicfu.atomic
 
 // Notes:

@@ -1,4 +1,4 @@
-package keb.ropes
+package kdx
 
 fun createString(factor: Int): String {
     return buildString {

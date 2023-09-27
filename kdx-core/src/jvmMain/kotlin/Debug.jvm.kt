@@ -1,4 +1,4 @@
-package keb.ropes
+package kdx
 
 /**
  * Helper class to retrieve the assertion status.

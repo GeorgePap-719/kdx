@@ -1,4 +1,4 @@
-package keb.ropes.internal
+package kdx.internal
 
 /**
  * Replaces all the [elements] of the specified collection to this list.

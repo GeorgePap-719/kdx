@@ -1,11 +1,11 @@
-package keb.server.repositories
+package kdx.server.repositories
 
-import keb.server.entities.DocumentFileEntity
-import keb.server.entities.FileAddress
-import keb.server.repositories.orm.mapToDocumentFile
-import keb.server.serialization.Json
-import keb.server.util.debug
-import keb.server.util.logger
+import entities.DocumentFileEntity
+import entities.FileAddress
+import kdx.server.repositories.orm.mapToDocumentFile
+import kdx.server.serialization.Json
+import kdx.server.util.debug
+import kdx.server.util.logger
 import kotlinx.serialization.encodeToString
 import org.springframework.data.r2dbc.core.*
 import org.springframework.data.relational.core.query.Criteria

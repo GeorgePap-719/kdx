@@ -1,6 +1,6 @@
-package keb.ropes
+package kdx
 
-import keb.ropes.internal.symmetricDifference
+import kdx.internal.symmetricDifference
 
 // -------------------------------- merge-support --------------------------------
 

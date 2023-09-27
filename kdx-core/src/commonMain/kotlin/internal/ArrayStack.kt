@@ -1,4 +1,4 @@
-package keb.ropes.internal
+package kdx.internal
 
 internal open class ArrayStack<T>(initialLength: Int) {
     protected var array = arrayOfNulls<Any?>(initialLength.coerceAtLeast(1))

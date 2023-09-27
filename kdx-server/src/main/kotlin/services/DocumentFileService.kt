@@ -1,10 +1,14 @@
-package keb.server.services
+package kdx.server.services
 
-import keb.server.dto.*
-import keb.server.entities.DocumentEntity
-import keb.server.entities.FileAddress
-import keb.server.repositories.DocumentFileRepository
-import keb.server.repositories.DocumentRepository
+import dto.CreateDocumentFile
+import dto.DocumentFile
+import dto.toDocumentFile
+import dto.toEntity
+import entities.DocumentEntity
+import entities.FileAddress
+import kdx.server.dto.Text
+import kdx.server.repositories.DocumentFileRepository
+import kdx.server.repositories.DocumentRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 

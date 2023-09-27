@@ -1,6 +1,6 @@
-package keb.server.entities
+package entities
 
-import keb.server.util.append
+import kdx.server.util.append
 import kotlinx.serialization.Serializable
 import org.springframework.core.convert.converter.Converter
 import org.springframework.data.annotation.Id

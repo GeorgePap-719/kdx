@@ -1,4 +1,4 @@
-package keb.server.util
+package kdx.server.util
 
 /**
  * A global logger to help with debugging non-member functions.

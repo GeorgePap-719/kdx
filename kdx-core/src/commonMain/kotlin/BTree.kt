@@ -1,4 +1,4 @@
-package keb.ropes
+package kdx
 
 /**
  * The properties of a [LeafNode].

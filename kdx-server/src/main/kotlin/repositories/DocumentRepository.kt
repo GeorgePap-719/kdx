@@ -1,8 +1,8 @@
-package keb.server.repositories
+package kdx.server.repositories
 
-import keb.server.entities.DocumentEntity
-import keb.server.util.debug
-import keb.server.util.logger
+import entities.DocumentEntity
+import kdx.server.util.debug
+import kdx.server.util.logger
 import org.springframework.data.r2dbc.core.*
 import org.springframework.data.relational.core.query.Criteria
 import org.springframework.data.relational.core.query.Query

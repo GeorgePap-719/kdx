@@ -1,4 +1,4 @@
-package keb.ropes
+package kdx
 
 import kotlin.test.Test
 import kotlin.test.assertEquals

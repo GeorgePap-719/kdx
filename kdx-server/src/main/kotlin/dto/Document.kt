@@ -1,6 +1,6 @@
-package keb.server.dto
+package kdx.server.dto
 
-import keb.server.entities.DocumentEntity
+import entities.DocumentEntity
 import kotlinx.serialization.Serializable
 
 @Serializable

@@ -1,4 +1,4 @@
-package keb.ropes
+package kdx
 
 /**
  * Represents a [multi-subset](https://en.wiktionary.org/wiki/multisubset#English) of a string.

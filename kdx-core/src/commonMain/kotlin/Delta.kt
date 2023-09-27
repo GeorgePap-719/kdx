@@ -1,8 +1,8 @@
-package keb.ropes
+package kdx
 
-import keb.ropes.internal.DeltaDeletesIterator
-import keb.ropes.internal.DeltaInsertsIterator
-import keb.ropes.internal.intoInterval
+import kdx.internal.DeltaDeletesIterator
+import kdx.internal.DeltaInsertsIterator
+import kdx.internal.intoInterval
 
 internal typealias NodeInfo = LeafInfo
 

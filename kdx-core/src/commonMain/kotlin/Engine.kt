@@ -1,8 +1,8 @@
-package keb.ropes
+package kdx
 
-import keb.ropes.internal.AbstractEngine
-import keb.ropes.internal.emptyClosedOpenRange
-import keb.ropes.internal.symmetricDifference
+import kdx.internal.AbstractEngine
+import kdx.internal.emptyClosedOpenRange
+import kdx.internal.symmetricDifference
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract

@@ -1,4 +1,4 @@
-package keb.ropes.internal
+package kdx.internal
 
 internal class ResizeableArray<T>(initialLength: Int) {
     private var array = arrayOfNulls<Any?>(initialLength.coerceAtLeast(1))

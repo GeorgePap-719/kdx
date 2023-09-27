@@ -1,8 +1,8 @@
-package keb.server.routers
+package kdx.server.routers
 
-import keb.server.util.debug
-import keb.server.util.error
-import keb.server.util.logger
+import kdx.server.util.debug
+import kdx.server.util.error
+import kdx.server.util.logger
 import kotlinx.coroutines.reactor.mono
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString

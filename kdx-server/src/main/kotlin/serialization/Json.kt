@@ -1,4 +1,4 @@
-package keb.server.serialization
+package kdx.server.serialization
 
 import kotlinx.serialization.json.Json
 

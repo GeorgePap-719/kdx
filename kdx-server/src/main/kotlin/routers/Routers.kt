@@ -1,10 +1,10 @@
-package keb.server.routers
+package kdx.server.routers
 
-import keb.server.dto.CreateDocumentFile
-import keb.server.routers.request.awaitReceive
-import keb.server.services.DocumentFileService
-import keb.server.util.info
-import keb.server.util.logger
+import dto.CreateDocumentFile
+import kdx.server.routers.request.awaitReceive
+import kdx.server.services.DocumentFileService
+import kdx.server.util.info
+import kdx.server.util.logger
 import kotlinx.serialization.Serializable
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration

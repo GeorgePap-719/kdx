@@ -1,10 +1,10 @@
-package keb.server.entities
+package entities
 
 import io.r2dbc.spi.Row
-import keb.server.dto.Text
-import keb.server.serialization.Json
-import keb.server.util.append
-import keb.server.util.getColumn
+import kdx.server.dto.Text
+import kdx.server.serialization.Json
+import kdx.server.util.append
+import kdx.server.util.getColumn
 import kotlinx.serialization.encodeToString
 import org.springframework.core.convert.converter.Converter
 import org.springframework.data.annotation.Id

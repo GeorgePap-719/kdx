@@ -1,4 +1,4 @@
-package keb.ropes.internal
+package kdx.internal
 
 /**
  * Returns an [Iterable] that visits the elements representing the intersection,

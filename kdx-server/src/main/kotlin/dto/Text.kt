@@ -1,6 +1,6 @@
-package keb.server.dto
+package kdx.server.dto
 
-import keb.ropes.RopeLeaf
+import kdx.RopeLeaf
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer

@@ -1,4 +1,4 @@
-package keb.ropes
+package kdx
 
 fun Rope.mutate(action: RopeMutator.() -> Unit): Rope {
     val builder = RopeMutator(this)

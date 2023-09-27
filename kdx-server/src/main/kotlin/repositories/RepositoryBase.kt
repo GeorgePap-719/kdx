@@ -1,4 +1,4 @@
-package keb.server.repositories
+package kdx.server.repositories
 
 abstract class RepositoryBase {
 

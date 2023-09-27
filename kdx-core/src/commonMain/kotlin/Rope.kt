@@ -1,9 +1,9 @@
-package keb.ropes
+package kdx
 
-import keb.ropes.internal.ArrayStack
-import keb.ropes.internal.EmptyIterator
-import keb.ropes.internal.PeekableArrayStack
-import keb.ropes.internal.Symbol
+import kdx.internal.ArrayStack
+import kdx.internal.EmptyIterator
+import kdx.internal.PeekableArrayStack
+import kdx.internal.Symbol
 
 /**
  * A [persistent](https://en.wikipedia.org/wiki/Persistent_data_structure) [rope](https://en.wikipedia.org/wiki/Rope_(data_structure)#See_also)

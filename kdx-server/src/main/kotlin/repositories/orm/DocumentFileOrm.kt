@@ -1,9 +1,9 @@
-package keb.server.repositories.orm
+package kdx.server.repositories.orm
 
-import keb.server.entities.DocumentEntity
-import keb.server.entities.DocumentFileEntity
-import keb.server.entities.FileAddress
-import keb.server.util.Debugger
+import entities.DocumentEntity
+import entities.DocumentFileEntity
+import entities.FileAddress
+import kdx.server.util.Debugger
 import kotlinx.coroutines.flow.collect
 import org.springframework.r2dbc.core.DatabaseClient
 import org.springframework.r2dbc.core.flow

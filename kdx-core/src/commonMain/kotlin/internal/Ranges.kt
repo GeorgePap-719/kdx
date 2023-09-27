@@ -1,6 +1,6 @@
-package keb.ropes.internal
+package kdx.internal
 
-import keb.ropes.assert
+import kdx.assert
 
 /*
  * Helpers with ranges.

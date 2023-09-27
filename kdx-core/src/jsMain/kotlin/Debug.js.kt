@@ -1,4 +1,4 @@
-package keb.ropes
+package kdx
 
 actual fun assert(value: () -> Boolean) {}
 

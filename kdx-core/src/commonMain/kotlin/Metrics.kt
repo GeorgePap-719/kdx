@@ -1,4 +1,4 @@
-package keb.ropes
+package kdx
 
 /**
  * Based on blog post [Rope science, part 2: metrics](https://xi-editor.io/docs/rope_science_02.html).

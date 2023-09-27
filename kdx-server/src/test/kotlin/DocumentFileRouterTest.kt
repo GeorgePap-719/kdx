@@ -1,12 +1,12 @@
 package keb.server
 
+import dto.CreateDocument
+import dto.CreateDocumentFile
+import dto.DocumentFile
+import entities.FileAddress
+import kdx.server.dto.Text
+import kdx.server.repositories.DocumentFileRepository
 import keb.ropes.RopeLeaf
-import keb.server.dto.CreateDocument
-import keb.server.dto.CreateDocumentFile
-import keb.server.dto.DocumentFile
-import keb.server.dto.Text
-import keb.server.entities.FileAddress
-import keb.server.repositories.DocumentFileRepository
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
