@@ -56,6 +56,7 @@ val <T : NodeInfo> Delta<T>.isIdentity: Boolean
  * is not compatible with the construction of the delta.
  */
 fun <T : NodeInfo> Delta<T>.applyTo(node: BTreeNode<T>): BTreeNode<T> {
+    //TODO: node.weight is the problem here.
     assert { node.weight == baseLength } //TODO: should this be require?
     return buildBTree {
         for (element in changes) {
