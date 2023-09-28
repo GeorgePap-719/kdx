@@ -37,10 +37,8 @@ fun Engine.createRevision(
     val index = indexOfRevision(baseRevision)
     if (index == -1) return EngineResult.failure(EngineResult.MissingRevision(baseRevision))
     val (inserts, deletes) = delta.factor()
-    println("index:$index")
     // Rebase delta to be on the `baseRevision` union instead of the text.
     val deletesAtRevision = getDeletesFromUnionForIndex(index)
-    println(deletesAtRevision)
     // Since we base new edit on `baseRevision`, then we should check
     // if `inserts` have the same base-length with `deletesAtRevision`
     // to ensure we refer to the same base document.
@@ -82,7 +80,7 @@ fun Engine.createRevision(
     val undone = undoneGroups.contains(undoGroup)
     val toDelete = if (undone) newInserts else newDeletes
     val newDeletesFromUnion = rebasedDeletesFromUnion.union(toDelete)
-    // Move deleted or undone-inserted "things" from text to tombstones.
+    // Move deleted or undone-inserted "characters" from text to tombstones.
     val (newText, newTombstones) = shuffle(
         textWithInserts,
         tombstones,
