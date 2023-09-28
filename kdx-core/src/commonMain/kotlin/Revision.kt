@@ -34,7 +34,14 @@ class Revision(
     }
 }
 
+/**
+ * A discriminated union that encapsulates the content of an "edit" in a [Revision].
+ */
 sealed class Content
+
+/**
+ * Type for actions that "edit" the document.
+ */
 class Edit(
     /// Used to order concurrent inserts, for example auto-indentation
     /// should go before typed text.
@@ -55,6 +62,10 @@ class Edit(
     }
 }
 
+/**
+ * Type for "undo" which reverses a reversible action.
+ * Stores the symmetric difference of the `deletesFromUnion` and the currently `undoneGroups`.
+ */
 class Undo(
     /// The set of groups toggled between undone and done.
     /// Just the `symmetric_difference` (XOR) of the two sets.
