@@ -63,7 +63,7 @@ class Edit(
 }
 
 /**
- * Type for "undo" which reverses a reversible action.
+ * Type for "undo" that reverses a reversible action.
  * Stores the symmetric difference of the `deletesFromUnion` and the currently `undoneGroups`.
  */
 class Undo(

@@ -210,15 +210,16 @@ fun Engine.indexOfRevision(token: RevisionToken): Int {
 
 /**
  * Returns the [Engine.deletesFromUnion] at the time of given [revisionIndex].
- * In other words, the `deletes` from the "union string" at that time.
  */
 fun Engine.getDeletesFromUnionForIndex(revisionIndex: Int): Subset {
     return getDeletesFromUnionBeforeIndex(revisionIndex + 1, true)
 }
 
-/// Garbage collection means undo can sometimes need to replay the very first
-/// revision, and so needs a way to get the deletion set before then.
-fun Engine.getDeletesFromUnionBeforeIndex(revisionIndex: Int, insertUndos: Boolean): Subset {
+/**
+ * Returns the [Engine.deletesFromUnion] **before** the time of given [revisionIndex].
+ * This function is needed because garbage-collection means `undo` can sometimes need to replay the very first revision.
+ */
+internal fun Engine.getDeletesFromUnionBeforeIndex(revisionIndex: Int, invertUndos: Boolean): Subset {
     // These two are supposed to be implemented via `Cow` operations.
     var deletesFromUnion = deletesFromUnion
     var undoneGroups = undoneGroups
@@ -227,19 +228,23 @@ fun Engine.getDeletesFromUnionBeforeIndex(revisionIndex: Int, insertUndos: Boole
     val revView = revisions.subList(revisionIndex, revisions.size).asReversed()
     for (revision in revView) {
         deletesFromUnion = when (val content = revision.edit) {
+            // For every Edit revision reverse `deletes`, only if they weren't undone.
+            // Then use transformShrink() to reverse the coordinate transform,
+            // so the indices in the new `deletesFromUnion` will refer to the previous "union-string".
             is Edit -> {
                 if (undoneGroups.contains(content.undoGroup)) {
-                    // No need to un-delete undone inserts
+                    // No need to undelete undone inserts
                     // since we'll just shrink them out.
                     deletesFromUnion.transformShrink(content.inserts)
                 } else {
+                    // Reverse `deletes`.
                     val undeleted = deletesFromUnion.subtract(content.deletes)
                     undeleted.transformShrink(content.inserts)
                 }
             }
-
+            // Undo revision stores the necessary information to be reversed.
             is Undo -> {
-                if (insertUndos) {
+                if (invertUndos) {
                     val symmetricDifference = undoneGroups.symmetricDifference(content.toggledGroups)
                     val newUndone = symmetricDifference.toSet()
                     undoneGroups = newUndone
