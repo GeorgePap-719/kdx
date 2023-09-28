@@ -273,11 +273,13 @@ fun Engine.getRevisionContentForIndex(revisionIndex: Int): Rope {
 }
 
 /**
- * Returns the [Subset] to delete from the current "union string"
- * in order to obtain a revision's content.
+ * Returns the old `deletesFromUnion` [Subset] relative to the **current** "union string" for the specified [revisionIndex].
+ * This is the same as the current `deletesFromUnion` except characters inserted after the old revision
+ * are marked deleted and newer `deletes` are unmarked.
  */
 fun Engine.getDeletesFromCurUnionForIndex(revisionIndex: Int): Subset {
     var deletesFromUnion = getDeletesFromUnionForIndex(revisionIndex)
+    // Mark `deleted` only **new** insertions; that's why we skip one.
     val revView = revisions.subList(revisionIndex + 1, revisions.size)
     for (revision in revView) {
         val content = revision.edit
