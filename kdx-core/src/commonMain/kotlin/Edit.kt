@@ -19,12 +19,12 @@ fun Engine.tryDeltaRevisionHead(baseRevision: RevisionToken): EngineResult<Delta
 }
 
 /**
- * Creates a new [edit][EditResult] based in the current head.
+ * Creates a new [edit][EditResult] based on the current head.
  * If the the [baseRevision] cannot be found, or the delta's base-length is not equal of the text's base-length at [baseRevision],
  * it returns a [failed][EngineResult.Failed] result.
  */
 fun Engine.createRevision(
-    newPriority: Int,
+    priority: Int,
     undoGroup: Int,
     baseRevision: RevisionToken,
     delta: DeltaRopeNode
@@ -33,11 +33,12 @@ fun Engine.createRevision(
     // see https://xi-editor.io/docs/crdt-details.html#engineedit_rev
     // for the algorithmic details.
     //
-    // Find `baseRevision` then move on, as new edit will be based on it.
+    // Find `baseRevision` as new edit will be based on it.
     val index = indexOfRevision(baseRevision)
     if (index == -1) return EngineResult.failure(EngineResult.MissingRevision(baseRevision))
+    // Get a subset with `inserts` and a subset with `deletes`.
     val (inserts, deletes) = delta.factor()
-    // Rebase delta to be on the `baseRevision` union instead of the text.
+    // Work backwards to retrieve `deletesFromUnion` at `index`.
     val deletesAtRevision = getDeletesFromUnionForIndex(index)
     // Since we base new edit on `baseRevision`, then we should check
     // if `inserts` have the same base-length with `deletesAtRevision`
@@ -50,11 +51,11 @@ fun Engine.createRevision(
             )
         )
     }
+    // Rebase delta to be on the `baseRevision` union instead of the text at the time of `baseRevision`.
     var unionInsertDelta = inserts.transformExpand(deletesAtRevision, true)
-    var newDeletes = deletes.transformExpand(deletesAtRevision)
-    // Rebase the delta to be on the head union
-    // instead of the baseRevision union.
-    val newFullPriority = FullPriority(newPriority, sessionId)
+    var deletesExpanded = deletes.transformExpand(deletesAtRevision)
+    // Rebase the delta to be on the head union instead of the `baseRevision` union.
+    val newFullPriority = FullPriority(priority, sessionId)
     val revsView = revisions.subList(index + 1, revisions.size)
     for (revision in revsView) {
         val content = revision.edit
@@ -64,13 +65,12 @@ fun Engine.createRevision(
             assert { newFullPriority != fullPriority } // should never be ==
             val after = newFullPriority >= fullPriority
             unionInsertDelta = unionInsertDelta.transformExpand(content.inserts, after)
-            newDeletes = newDeletes.transformExpand(content.inserts)
+            deletesExpanded = deletesExpanded.transformExpand(content.inserts)
         }
     }
-    // Rebase the deletion to be after the inserts
-    // instead of directly on the head union.
+    // Rebase the `deletes` to be after the inserts instead of directly on the head union.
     val newInserts = unionInsertDelta.getInsertedSubset()
-    if (newInserts.isNotEmpty()) newDeletes = newDeletes.transformExpand(newInserts)
+    if (newInserts.isNotEmpty()) deletesExpanded = deletesExpanded.transformExpand(newInserts)
     // Rebase insertions on `text` and apply.
     val curDeletesFromUnion = deletesFromUnion
     val textInsertDelta = unionInsertDelta.transformShrink(curDeletesFromUnion)
@@ -78,14 +78,14 @@ fun Engine.createRevision(
     val rebasedDeletesFromUnion = curDeletesFromUnion.transformExpand(newInserts)
     // Is the new edit in an undo group that was already undone due to concurrency?
     val undone = undoneGroups.contains(undoGroup)
-    val toDelete = if (undone) newInserts else newDeletes
+    val toDelete = if (undone) newInserts else deletesExpanded
     val newDeletesFromUnion = rebasedDeletesFromUnion.union(toDelete)
     // Move deleted or undone-inserted "characters" from text to tombstones.
     val (newText, newTombstones) = shuffle(
-        textWithInserts,
-        tombstones,
-        rebasedDeletesFromUnion,
-        newDeletesFromUnion
+        text = textWithInserts,
+        tombstones = tombstones,
+        fromDeletesFromUnion = rebasedDeletesFromUnion,
+        toDeletesFromUnion = newDeletesFromUnion
     )
     val headRevision = revisions.last()
     val result = EditResult(
@@ -93,10 +93,10 @@ fun Engine.createRevision(
             id = nextRevisionId,
             maxUndoSoFar = maxOf(undoGroup, headRevision.maxUndoSoFar),
             edit = Edit(
-                priority = newPriority,
+                priority = priority,
                 undoGroup = undoGroup,
                 inserts = newInserts,
-                deletes = newDeletes
+                deletes = deletesExpanded
             ),
         ),
         newText = newText,

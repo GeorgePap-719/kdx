@@ -375,6 +375,25 @@ class FullPriority(val priority: Int, val sessionId: SessionId) : Comparable<Ful
         if (firstComp != 0) return firstComp
         return second.compareTo(other.second)
     }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+        other as FullPriority
+        if (priority != other.priority) return false
+        if (sessionId != other.sessionId) return false
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = priority
+        result = 31 * result + sessionId.hashCode()
+        return result
+    }
+
+    override fun toString(): String {
+        return "FullPriority(priority=$priority,sessionId=$sessionId)"
+    }
 }
 
 internal class EngineImpl(
