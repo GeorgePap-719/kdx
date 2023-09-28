@@ -4,12 +4,18 @@ package kdx
  * Represents a single edit to the document.
  */
 class Revision(
-    // This uniquely represents the identity of this revision and it stays
-    /// the same even if it is rebased or merged between devices.
+    /**
+     * The unique id of this revision. It stays the same even if it is rebased or merged between devices.
+     */
     val id: RevisionId,
-    /// The largest undo group number of any edit in the history up to this
-    /// point. Used to optimize undo to not look further back.
+    /**
+     * The largest undo group number of any edit in the history up to this point.
+     * It is used to optimise undo to not look further back.
+     */
     val maxUndoSoFar: Int,
+    /**
+     * The "edit" that this revision represents.
+     */
     val edit: Content
 ) {
     override fun equals(other: Any?): Boolean {
@@ -43,18 +49,23 @@ sealed class Content
  * Type for actions that "edit" the document.
  */
 class Edit(
-    /// Used to order concurrent inserts, for example auto-indentation
-    /// should go before typed text.
+    /**
+     * The priority of this edit.
+     * It is used to order concurrent inserts, e.g. "auto-indentation" should go before "typed text".
+     */
     val priority: Int,
-    /// Groups related edits together so that they are undone and re-done
-    /// together. For example, an auto-indent insertion would be un-done
-    /// along with the newline that triggered it.
+    /**
+     * It is used to group related [edits][Edit] together so that they are undone and re-done together.
+     * For example, an auto-indent insertion would be undone along with the newline that triggered it.
+     */
     val undoGroup: Int,
-    /// The subset of the characters of the union string from after this
-    /// revision that were added by this revision.
+    /**
+     * The [Subset] of characters of the "union-string" from after this revision that were added by this revision.
+     */
     val inserts: Subset,
-    /// The subset of the characters of the union string from after this
-    /// revision that were deleted by this revision.
+    /**
+     * The [Subset] of the characters of the "union-string" from after this revision that were deleted by this revision.
+     */
     val deletes: Subset
 ) : Content() {
     override fun toString(): String {
@@ -67,11 +78,13 @@ class Edit(
  * Stores the symmetric difference of the `deletesFromUnion` and the currently `undoneGroups`.
  */
 class Undo(
-    /// The set of groups toggled between undone and done.
-    /// Just the `symmetric_difference` (XOR) of the two sets.
+    /**
+     * Stores the symmetric difference (XOR) of groups toggled between undone and done.
+     */
     val toggledGroups: Set<Int>,
-    /// Used to store a reversible difference between the deleted
-    /// characters before and after this operation.
+    /**
+     * Stores the reversible difference between the deleted characters before and after this operation.
+     */
     val deletesBitXor: Subset
 ) : Content() {
     override fun toString(): String {
