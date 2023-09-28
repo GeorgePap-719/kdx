@@ -1,31 +1,36 @@
 package kdx
 
-/// Move sections from text to tombstones and vice versa based on a new and old set of deletions.
-/// Returns a tuple of a new text `Rope` and a new `Tombstones` rope described by `new_deletes_from_union`.
-fun shuffle(
+/**
+ * Helper function for operations that compute the "new" `deletesFromUnion` to handle updating `text` and `tombstones`
+ * to that new state. Returns the new `text` and `tombstones` as described by [toDeletesFromUnion].
+ */
+internal fun shuffle(
     text: Rope,
     tombstones: Rope,
-    oldDeletesFromUnion: Subset,
-    newDeletesFromUnion: Subset
+    fromDeletesFromUnion: Subset,
+    toDeletesFromUnion: Subset
 ): Pair<Rope, Rope> {
     // Delta that deletes the right bits from the text
-    val deletesDelta = synthesize(tombstones.root, oldDeletesFromUnion, newDeletesFromUnion)
+    val deletesDelta = synthesize(tombstones.root, fromDeletesFromUnion, toDeletesFromUnion)
     val newText = deletesDelta.applyTo(text)
-    val newTombstones = shuffleTombstones(text, tombstones, oldDeletesFromUnion, newDeletesFromUnion)
+    val newTombstones = shuffleTombstones(text, tombstones, fromDeletesFromUnion, toDeletesFromUnion)
     return newText to newTombstones
 }
 
-/// Move sections from text to tombstones and out of tombstones based on a new and old set of deletions
+/**
+ * Creates new `tombstones` based on [toDeletesFromUnion] subsets with the given [text], [tombstones] and [fromDeletesFromUnion].
+ * Technically this function moves sections from `text` to `tombstones` and out of `tombstones` based on a "from" and "to" set of deletions.
+ */
 internal fun shuffleTombstones(
     text: Rope,
     tombstones: Rope,
-    oldDeletesFromUnion: Subset,
-    newDeletesFromUnion: Subset
+    fromDeletesFromUnion: Subset,
+    toDeletesFromUnion: Subset
 ): Rope {
-    // Taking the complement of deletes_from_union leads to an interleaving valid for swapped text and tombstones,
+    // Taking the complement of `deletesFromUnion` leads to an interleaving valid for swapped `text` and `tombstones`,
     // allowing us to use the same method to insert the text into the tombstones.
-    val inverseTombstonesMap = oldDeletesFromUnion.complement()
-    val moveDelta = synthesize(text.root, inverseTombstonesMap, newDeletesFromUnion.complement())
+    val inverseTombstonesMap = fromDeletesFromUnion.complement()
+    val moveDelta = synthesize(text.root, inverseTombstonesMap, toDeletesFromUnion.complement())
     return moveDelta.applyTo(tombstones)
 }
 
