@@ -654,7 +654,7 @@ interface RopeIterator {
 fun emptyRope(): Rope = EmptyRope
 
 internal object EmptyRope : Rope(emptyRopeNode()) {
-    override fun toString(): String = "Rope()"
+    override fun toString(): String = ""
     override fun equals(other: Any?): Boolean = other is Rope && other.isEmpty()
 
     override val length: Int = 0
