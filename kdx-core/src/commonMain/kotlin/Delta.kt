@@ -52,6 +52,7 @@ val <T : NodeInfo> Delta<T>.isIdentity: Boolean
  * Note: May not work well if the length of the node
  * is not compatible with the construction of the delta.
  */
+//TODO: this fun does not seem to work properly.
 fun <T : NodeInfo> Delta<T>.applyTo(node: BTreeNode<T>): BTreeNode<T> {
     assert { node.treeLength() == baseLength } //TODO: should this be require?
     return buildBTree {
