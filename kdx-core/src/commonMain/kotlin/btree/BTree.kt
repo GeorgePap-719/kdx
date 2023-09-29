@@ -71,6 +71,23 @@ fun <T : LeafInfo> BTreeNode<T>.rebalance(): BTreeNode<T> {
 // for more readable API
 fun <T : LeafInfo> BTreeNode<T>.collectLeaves(): List<LeafNode<T>> = toList()
 
+/**
+ * Computes this btree's length.
+ */
+fun <T : LeafInfo> BTreeNode<T>.treeLength(): Int = when (this) {
+    is LeafNode -> this.weight
+    is InternalNode -> {
+        val children = this.children
+        var curLen = 0
+        curLen += this.weight
+        for (index in children.indices) {
+            if (index == 0) continue
+            curLen += children[index].treeLength()
+        }
+        curLen
+    }
+}
+
 class LeafNode<out T : LeafInfo>(val value: T) : BTreeNode<T>() {
     override val weight: Int = value.length
     override val height: Int = 0

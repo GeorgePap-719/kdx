@@ -1,9 +1,6 @@
 package kdx
 
-import kdx.btree.BTreeNode
-import kdx.btree.LeafInfo
-import kdx.btree.buildBTree
-import kdx.btree.isNotEmpty
+import kdx.btree.*
 import kdx.internal.DeltaDeletesIterator
 import kdx.internal.DeltaInsertsIterator
 import kdx.internal.intoInterval
@@ -56,8 +53,7 @@ val <T : NodeInfo> Delta<T>.isIdentity: Boolean
  * is not compatible with the construction of the delta.
  */
 fun <T : NodeInfo> Delta<T>.applyTo(node: BTreeNode<T>): BTreeNode<T> {
-    //TODO: node.weight is the problem here.
-    assert { node.weight == baseLength } //TODO: should this be require?
+    assert { node.treeLength() == baseLength } //TODO: should this be require?
     return buildBTree {
         for (element in changes) {
             when (element) {
@@ -223,7 +219,7 @@ fun <T : NodeInfo> InsertDelta<T>.getInsertedSubset(): Subset = buildSubset {
             is Copy -> add(change.endIndex - change.startIndex, 0)
             // Inserted characters do not exist in the base document.
             // That's why they are represented as "deletes".
-            is Insert -> add(change.input.weight, 1)
+            is Insert -> add(change.length, 1)
         }
     }
 }
@@ -253,7 +249,7 @@ class Copy(val startIndex: Int, val endIndex: Int /*`endIndex` exclusive*/) : De
  */
 class Insert<T : NodeInfo>(val input: BTreeNode<T>) : DeltaElement<T>() {
     override fun toString(): String = "Insert(input=$input)"
-    val length = input.weight
+    val length = input.treeLength()
 }
 
 fun <T : LeafInfo> buildDelta(baseLen: Int, action: DeltaBuilder<T>.() -> Unit): Delta<T> {

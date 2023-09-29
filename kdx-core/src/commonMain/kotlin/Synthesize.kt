@@ -1,6 +1,7 @@
 package kdx
 
 import kdx.btree.BTreeNode
+import kdx.btree.treeLength
 import kotlin.math.min
 
 /**
@@ -29,7 +30,7 @@ fun <T : NodeInfo> synthesize(
     toDeletes: Subset,
 ): Delta<T> {
     // We assume that `fromDeletes` are based on the `tombstones`.
-    assert { tombstones.weight == fromDeletes.count(CountMatcher.NON_ZERO) }
+    assert { tombstones.treeLength() == fromDeletes.count(CountMatcher.NON_ZERO) }
     val changes = mutableListOf<DeltaElement<T>>()
     var offset = 0
     // 0-segments of `toDeletes` correspond to characters in from-text.
