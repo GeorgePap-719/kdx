@@ -167,11 +167,15 @@ open class InternalNode<out T : LeafInfo>(
     //TODO: This op, can be improved,
     // similarly how Rope.subRope() is implemented.
     // Refine if there is time.
+    // Also, not sure if this is working properly.
+    // Need to revisit thin function.
     override fun subSequence(range: IntRange): BTreeNode<T> {
         val leaves = collectLeaves()
         return buildBTree {
             for (leaf in leaves) {
-                if (leaf.weight in range) add(leaf)
+                if (leaf.weight in range) {
+                    add(leaf.subSequence(range))
+                }
             }
         }
     }
