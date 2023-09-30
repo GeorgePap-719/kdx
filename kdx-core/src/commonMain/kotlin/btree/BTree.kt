@@ -166,7 +166,7 @@ open class InternalNode<out T : LeafInfo>(
 
     //TODO: This op, can be improved,
     // similarly how Rope.subRope() is implemented.
-    // Refine if there when there is time.
+    // Refine if there is time.
     override fun subSequence(range: IntRange): BTreeNode<T> {
         val leaves = collectLeaves()
         return buildBTree {
