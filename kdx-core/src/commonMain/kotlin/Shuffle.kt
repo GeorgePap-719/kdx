@@ -33,8 +33,3 @@ internal fun shuffleTombstones(
     val moveDelta = synthesize(text.root, fromInverseTombstonesMap, toInverseTombstonesMap)
     return moveDelta.applyTo(tombstones)
 }
-
-internal fun DeltaRopeNode.applyTo(rope: Rope): Rope {
-    val newRoot = applyTo(rope.root)
-    return Rope(newRoot)
-}

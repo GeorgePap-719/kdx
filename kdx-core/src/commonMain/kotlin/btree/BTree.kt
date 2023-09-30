@@ -173,6 +173,7 @@ open class InternalNode<out T : LeafInfo>(
         val leaves = collectLeaves()
         return buildBTree {
             for (leaf in leaves) {
+                //TODO: this is not valid op.
                 if (leaf.weight in range) {
                     add(leaf.subSequence(range))
                 }

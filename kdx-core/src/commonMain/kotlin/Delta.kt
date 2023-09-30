@@ -53,12 +53,30 @@ val <T : NodeInfo> Delta<T>.isIdentity: Boolean
  * is not compatible with the construction of the delta.
  */
 //TODO: this fun does not seem to work properly.
+@Deprecated("Prefer using the `applyTo(rope: Rope)` function where applicable")
 fun <T : NodeInfo> Delta<T>.applyTo(node: BTreeNode<T>): BTreeNode<T> {
     assert { node.treeLength() == baseLength } //TODO: should this be require?
     return buildBTree {
         for (element in changes) {
             when (element) {
                 is Copy -> add(node, element.startIndex..element.endIndex)
+                is Insert -> add(element.input)
+            }
+        }
+    }
+}
+
+/**
+ * Apply this [Delta] to the given [Rope].
+ *
+ * @throws IllegalArgumentException If delta's [Delta.baseLength] is not equal with rope's length.
+ */
+fun Delta<RopeLeaf>.applyTo(rope: Rope): Rope {
+    require(rope.length == baseLength) { "delta's length must be equal with rope's length" }
+    return buildRope {
+        for (element in changes) {
+            when (element) {
+                is Copy -> add(rope, element.startIndex..element.endIndex)
                 is Insert -> add(element.input)
             }
         }
