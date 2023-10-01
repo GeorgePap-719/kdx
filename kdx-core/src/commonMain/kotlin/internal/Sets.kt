@@ -66,51 +66,19 @@ internal class Intersection<T>(
 
 /**
  * Returns an [Iterable] that visits the elements representing the symmetric difference,
- * i.e., the elements that are in `this` or in `other` but not in both, in ascending order.
- *
- * @throws IllegalArgumentException if the provided sets are of different sizes.
+ * i.e., the elements that are in `this` or in `other` but not in both, in arbitrary order.
  */
-internal fun <T> Set<T>.symmetricDifference(other: Set<T>): SymmetricDifference<T> {
-    require(this.size == other.size) { "cannot produce symmetric difference for sets of different size" }
-    val thisIterator = this.iterator()
-    val otherIterator = other.iterator()
-    return SymmetricDifference(thisIterator, otherIterator)
-}
-
-internal class SymmetricDifference<T>(
-    private val thisIterator: Iterator<T>,
-    private val otherIterator: Iterator<T>,
-) : Iterable<T> {
-    override fun iterator(): Iterator<T> {
-        return object : Iterator<T> {
-            private var _index = 2
-            private val index get() = _index.mod(DIVISOR)
-
-            private fun getIndexAndMoveForward(): Int {
-                val cur = index
-                _index = (_index + 1).mod(DIVISOR)
-                return cur
-            }
-
-            override fun hasNext(): Boolean = thisIterator.hasNext() && otherIterator.hasNext()
-
-            override fun next(): T = when (getIndexAndMoveForward()) {
-                0 -> {
-                    val next = thisIterator.next()
-                    otherIterator.next()
-                    next
-                }
-
-                1 -> {
-                    val next = otherIterator.next()
-                    thisIterator.next()
-                    next
-                }
-
-                else -> error("unexpected")
-            }
-        }
+internal fun <T> Set<T>.symmetricDifference(other: Set<T>): Set<T> {
+    val symmetry = mutableSetOf<T>()
+    for (item in this) {
+        if (other.contains(item)) continue
+        if (symmetry.contains(item)) continue
+        symmetry.add(item)
     }
+    for (item in other) {
+        if (this.contains(item)) continue
+        if (symmetry.contains(item)) continue
+        symmetry.add(item)
+    }
+    return symmetry
 }
-
-private const val DIVISOR = 2

@@ -2,28 +2,34 @@ package kdx.internal
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
 
 class SetsTest {
 
     @Test
-    fun testSymmetricDifference() {
+    fun testBasicSymmetricDifference() {
         val set1 = setOf(1, 2, 3)
         val set2 = setOf(3, 4, 5)
-        for (i in set1.symmetricDifference(set2)) {
-            when (i) {
-                1 -> assertEquals(1, i)
-                2 -> assertEquals(4, i)
-                3 -> assertEquals(3, i)
-            }
-        }
+        val symmetricDifference = set1.symmetricDifference(set2)
+        assertContainsExactly(symmetricDifference, 1, 2, 4, 5)
     }
 
     @Test
-    fun testSymmetricDifferenceThrows() {
-        val set1 = setOf(1, 2, 3, 5)
-        val set2 = setOf(3, 4, 5)
-        assertFailsWith<IllegalArgumentException> { set1.symmetricDifference(set2) }
+    fun testBasicSymmetricDifference2() {
+        val set1 = setOf(1, 2, 3)
+        val set2 = setOf(4, 2, 3, 4)
+        val symmetricDifference = set1.symmetricDifference(set2)
+        assertContainsExactly(symmetricDifference, 1, 4)
+    }
+
+    private fun <T> assertContainsExactly(iterable: Iterable<T>, vararg element: T) {
+        val elements = element.toSet()
+        val mutableIterable = iterable.toMutableList()
+        for (item in elements) {
+            assertTrue(mutableIterable.contains(item))
+            mutableIterable.remove(item)
+        }
+        assertTrue(mutableIterable.isEmpty(), "iterable contains extra items: $mutableIterable")
     }
 
     @Test

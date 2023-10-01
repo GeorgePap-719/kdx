@@ -4,7 +4,7 @@ import kdx.internal.symmetricDifference
 
 // This computes undo all the way from the beginning.
 fun MutableEngine.computeUndo(groups: Set<Int>): Pair<Revision, Subset> {
-    val toggledGroups = undoneGroups.symmetricDifference(groups).toSet()
+    val toggledGroups = undoneGroups.symmetricDifference(groups)
     val firstCandidate = findFirstUndoCandidateIndex(toggledGroups)
     // About `false` below:
     // don't invert undos

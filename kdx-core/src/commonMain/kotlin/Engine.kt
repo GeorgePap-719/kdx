@@ -247,8 +247,7 @@ internal fun Engine.getDeletesFromUnionBeforeIndex(revisionIndex: Int, invertUnd
             // Undo revision stores the necessary information to be reversed.
             is Undo -> {
                 if (invertUndos) {
-                    val symmetricDifference = undoneGroups.symmetricDifference(content.toggledGroups)
-                    val newUndone = symmetricDifference.toSet()
+                    val newUndone = undoneGroups.symmetricDifference(content.toggledGroups)
                     undoneGroups = newUndone
                     deletesFromUnion.xor(content.deletesBitXor)
                 } else {
