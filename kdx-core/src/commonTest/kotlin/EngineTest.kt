@@ -2,6 +2,7 @@ package kdx
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class EngineTest {
@@ -77,6 +78,52 @@ class EngineTest {
         engine.editRevision(1, 2, firstRevToken, buildDelta2())
         if (!before) engine.undo(undos)
         assertEquals(result, engine.head.toString())
+    }
+
+    @Test
+    fun testBasicTryDeltaRevisionHead() {
+        val engine = MutableEngine(Rope(simpleString))
+        val firstRevToken = engine.headRevisionId.token()
+        engine.editRevision(1, 1, firstRevToken, buildDelta1())
+        val delta = engine.tryDeltaRevisionHead(firstRevToken).getOrNull()
+        assertNotNull(delta)
+        val head = engine.head.toString()
+        assertEquals(head, delta.applyToString(simpleString).toString())
+    }
+
+    @Test
+    fun testBasicTryDeltaRevisionHead2() {
+        val engine = MutableEngine(Rope(simpleString))
+        val firstRevToken = engine.headRevisionId.token()
+        engine.editRevision(1, 1, firstRevToken, buildDelta1())
+        engine.editRevision(0, 2, firstRevToken, buildDelta2())
+        val delta = engine.tryDeltaRevisionHead(firstRevToken).getOrNull()
+        assertNotNull(delta)
+        val head = engine.head.toString()
+        assertEquals(head, delta.applyToString(simpleString).toString())
+    }
+
+    @Test
+    fun testBasicTryDeltaRevisionHead3() {
+        val engine = MutableEngine(Rope(simpleString))
+        val firstRevToken = engine.headRevisionId.token()
+        engine.editRevision(1, 1, firstRevToken, buildDelta1())
+        val revTokenAfterFirstEdit = engine.headRevisionId.token()
+        engine.editRevision(0, 2, firstRevToken, buildDelta2())
+        val delta = engine.tryDeltaRevisionHead(revTokenAfterFirstEdit).getOrNull()
+        assertNotNull(delta)
+        val head = engine.head.toString()
+        assertEquals(head, delta.applyToString("0123456789abcDEEFghijklmnopqr999stuvz").toString())
+    }
+
+    @Test
+    fun testTryDeltaRevisionHeadReturnsMissingRevision() {
+        val engine = MutableEngine(Rope(simpleString))
+        val firstRevToken = engine.headRevisionId.token()
+        engine.editRevision(0, 2, firstRevToken, buildDelta1())
+        val invalidToken: RevisionToken = -1
+        val delta = engine.tryDeltaRevisionHead(invalidToken)
+        assertTrue(delta.value is EngineResult.MissingRevision)
     }
 
     private fun buildDelta1(): DeltaRopeNode = buildDelta(simpleString.length) {
