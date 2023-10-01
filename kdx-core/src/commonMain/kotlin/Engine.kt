@@ -208,6 +208,7 @@ fun Engine.indexOfRevision(id: RevisionId): Int {
     val index = revisions
         .asReversed() // lookup in recent ones first
         .indexOfFirst { it.id == id }
+    if (index == -1) return index
     return revisions.lastIndex - index
 }
 
@@ -218,6 +219,7 @@ fun Engine.indexOfRevision(token: RevisionToken): Int {
     val index = revisions
         .asReversed() // lookup in recent ones first
         .indexOfFirst { it.id.token() == token }
+    if (index == -1) return index
     return revisions.lastIndex - index
 }
 
