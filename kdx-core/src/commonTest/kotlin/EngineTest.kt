@@ -54,6 +54,31 @@ class EngineTest {
         assertTrue(result.errorOrNull() is EngineResult.MalformedDelta)
     }
 
+    @Test
+    fun testBasicEditRevisionUndo() {
+        undoCase(true, setOf(1, 2), simpleString)
+    }
+
+    @Test
+    fun testBasicEditRevisionUndo2() {
+        undoCase(true, setOf(2), "0123456789abcDEEFghijklmnopqr999stuvz")
+    }
+
+    @Test
+    fun testBasicEditRevisionUndo3() {
+        undoCase(true, setOf(1), "0!3456789abcdefGIjklmnopqr888stuvwHIyz")
+    }
+
+    private fun undoCase(before: Boolean, undos: Set<Int>, result: String) {
+        val engine = MutableEngine(Rope(simpleString))
+        val firstRevToken = engine.headRevisionId.token()
+        if (before) engine.undo(undos)
+        engine.editRevision(1, 1, firstRevToken, buildDelta1())
+        engine.editRevision(1, 2, firstRevToken, buildDelta2())
+        if (!before) engine.undo(undos)
+        assertEquals(result, engine.head.toString())
+    }
+
     private fun buildDelta1(): DeltaRopeNode = buildDelta(simpleString.length) {
         delete(10..<36)
         replace(39..<42, Rope("DEEF"))
