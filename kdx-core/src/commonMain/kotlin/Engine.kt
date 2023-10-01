@@ -11,37 +11,48 @@ import kotlin.jvm.JvmInline
 
 /**
  * Represents the current state of a document and all of its history.
+ *
+ * ### Union string
+ *
+ * This CRDT structure introduces the concept of a "union string".
+ * The key idea is that "mentally" there is a string that contains all the characters ever inserted or deleted,
+ * in the locations they would be if they had not been deleted. Many operations perform actions relative to this
+ * "union-string". The "union-string" can be constructed from [text], [tombstones] and [deletesFromUnion] by splicing
+ * a segment of [tombstones] into [text] wherever there's a non-zero-count segment in [deletesFromUnion].
  */
 interface Engine {
-    /// The session ID used to create new `RevId`s for edits made on this device
+    /**
+     * This session's id, it is used to create new [RevisionId] for "edits" made on this device.
+     */
     val sessionId: SessionId
 
-    /// The incrementing revision number counter for this session used for `RevId`s
+    /**
+     * The number of revisions for this session.
+     */
     val revisionIdCount: Int
 
-    /// The current contents of the document as would be displayed on screen
+    /**
+     * The current content of this document's.
+     */
     val text: Rope
 
-    /// Storage for all the characters that have been deleted  but could
-    /// return if a delete is un-done or an insert is re-done.
+    /**
+     * Stores all the characters that have been deleted,
+     * but could return if a `delete` is undone or an `insert` is redone.
+     */
     val tombstones: Rope
 
-    /// Imagine a "union string" that contained all the characters ever
-    /// inserted, including the ones that were later deleted, in the locations
-    /// they would be if they hadn't been deleted.
-    ///
-    /// This is a `Subset` of the "union string" representing the characters
-    /// that are currently deleted, and thus in `tombstones` rather than
-    /// `text`. The count of a character in `deletes_from_union` represents
-    /// how many times it has been deleted, so if a character is deleted twice
-    /// concurrently it will have count `2` so that undoing one delete but not
-    /// the other doesn't make it re-appear.
-    ///
-    /// You could construct the "union string" from `text`, `tombstones` and
-    /// `deletes_from_union` by splicing a segment of `tombstones` into `text`
-    /// wherever there's a non-zero-count segment in `deletes_from_union`.
+    /**
+     * A [Subset] of the "union-string" representing the characters that are currently deleted, and thus they are
+     * in [tombstones]. The count of a character in [deletesFromUnion] represents how many times it has been deleted.
+     * By extension, if a character is deleted twice concurrently, it will have count `2`. This way, undoing one delete
+     * but not the other does not make it re-appear.
+     */
     val deletesFromUnion: Subset
 
+    /**
+     * The group of "undone" id's for this document.
+     */
     //TODO: `Set` under the hood is implemented by linkedHashSet,
     // which is an ordered implementation.
     // In our case, `order` is not just a simple implementation detail,
@@ -50,7 +61,7 @@ interface Engine {
     val undoneGroups: Set<Int> // set of undo_group id's
 
     /**
-     * The revision history of the document.
+     * The revision history of this document's.
      */
     val revisions: List<Revision>
 }
