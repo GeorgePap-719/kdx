@@ -1,5 +1,10 @@
 package kdx.btree
 
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.InvocationKind
+import kotlin.contracts.contract
+import kotlin.experimental.ExperimentalTypeInference
+
 /**
  * Merges [left] and [right] nodes into one balanced btree.
  *
@@ -99,5 +104,39 @@ private fun <T : LeafInfo> computeWeightInLeftSubtreeForParent(children: List<BT
         is LeafNode -> leftmostNode.weight
         //TODO: check if we can compute this with faster path
         is InternalNode -> leftmostNode.sumOf { it.weight }
+    }
+}
+
+@OptIn(ExperimentalContracts::class, ExperimentalTypeInference::class)
+internal fun <T : LeafInfo> buildBTree(@BuilderInference builderAction: BTreeNodeBuilder<T>.() -> Unit): BTreeNode<T> {
+    contract { callsInPlace(builderAction, InvocationKind.EXACTLY_ONCE) }
+    val builder = BTreeNodeBuilder<T>()
+    builder.builderAction()
+    val tree = builder.build()
+    return if (tree.isEmpty) emptyBTreeNode() else tree
+}
+
+internal class BTreeNodeBuilder<T : LeafInfo> {
+    private val leaves = mutableListOf<BTreeNode<T>>()
+
+    fun build(): BTreeNode<T> = merge(leaves)
+
+    operator fun get(index: Int): BTreeNode<T> = leaves[index]
+
+    fun add(element: BTreeNode<T>) {
+        leaves.add(element)
+    }
+
+    @Deprecated("This operation is not working correct")
+    fun add(element: BTreeNode<T>, range: IntRange) {
+        leaves.add(element.subSequence(range))
+    }
+
+    fun addAll(elements: List<BTreeNode<T>>) {
+        leaves.addAll(elements)
+    }
+
+    fun remove(element: BTreeNode<T>) {
+        leaves.remove(element)
     }
 }
