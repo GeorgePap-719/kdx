@@ -62,7 +62,6 @@ fun Engine.createRevision(
         if (content is Edit) {
             if (content.inserts.isEmpty()) continue
             val fullPriority = FullPriority(content.priority, revision.id.sessionId)
-            assert { newFullPriority != fullPriority } // should never be ==
             val after = newFullPriority >= fullPriority
             unionInsertDelta = unionInsertDelta.transformExpand(content.inserts, after)
             deletesExpanded = deletesExpanded.transformExpand(content.inserts)

@@ -381,7 +381,7 @@ class FullPriority(val priority: Int, val sessionId: SessionId) : Comparable<Ful
         if (other == null || this::class != other::class) return false
         other as FullPriority
         if (priority != other.priority) return false
-        if (sessionId != other.sessionId) return false
+        if (sessionId.first != other.sessionId.first || sessionId.second != other.sessionId.second) return false
         return true
     }
 
