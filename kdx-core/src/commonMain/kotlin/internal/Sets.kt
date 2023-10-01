@@ -82,21 +82,19 @@ internal class SymmetricDifference<T>(
     private val otherIterator: Iterator<T>,
 ) : Iterable<T> {
     override fun iterator(): Iterator<T> {
-        //TODO: this actually can optimized just a bit if there time,
-        // to avoid an ever increasing Int.
         return object : Iterator<T> {
             private var _index = 2
-            private val index get() = _index.mod(2)
+            private val index get() = _index.mod(DIVISOR)
 
-            private fun getIndexAndIncrease(): Int {
+            private fun getIndexAndMoveForward(): Int {
                 val cur = index
-                _index++
+                _index = (_index + 1).mod(DIVISOR)
                 return cur
             }
 
             override fun hasNext(): Boolean = thisIterator.hasNext() && otherIterator.hasNext()
 
-            override fun next(): T = when (getIndexAndIncrease()) {
+            override fun next(): T = when (getIndexAndMoveForward()) {
                 0 -> {
                     val next = thisIterator.next()
                     otherIterator.next()
@@ -114,3 +112,5 @@ internal class SymmetricDifference<T>(
         }
     }
 }
+
+private const val DIVISOR = 2
