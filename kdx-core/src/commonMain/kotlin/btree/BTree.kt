@@ -38,6 +38,7 @@ sealed class BTreeNode<out T : LeafInfo> : Iterable<LeafNode<T>> {
     abstract val isLegal: Boolean
     abstract val isEmpty: Boolean
 
+    @Deprecated("Use the corresponding operator on `Rope`, where applicable")
     abstract fun subSequence(range: IntRange): BTreeNode<T>
 }
 
@@ -167,18 +168,49 @@ open class InternalNode<out T : LeafInfo>(
     //TODO: This op, can be improved,
     // similarly how Rope.subRope() is implemented.
     // Refine if there is time.
-    // Also, not sure if this is working properly.
-    // Need to revisit thin function.
+    // The algorithm in this function in not working correct.
+    // though it is debatable if it is worth it to fix it,
+    // as we have an equivalent operation on `Rope`.
+    @Deprecated("Use the corresponding operator on `Rope`, where applicable")
     override fun subSequence(range: IntRange): BTreeNode<T> {
+        return subSequence(range.first, range.last + 1)
+    }
+
+    private fun subSequence(startIndex: Int, endIndex: Int): BTreeNode<T> {
+        checkRangeIndexes(startIndex, endIndex)
         val leaves = collectLeaves()
-        return buildBTree {
-            for (leaf in leaves) {
-                //TODO: this is not valid op.
-                if (leaf.weight in range) {
-                    add(leaf.subSequence(range))
-                }
+        var leftLeaf: LeafNode<T>? = null
+        var leftIndexInLeftLeaf: Int? = null
+        var rightLeaf: LeafNode<T>? = null
+        var rightIndexInRightLeaf: Int? = null
+        var len = 0
+        for (leaf in leaves) {
+            len += leaf.weight
+            if (leftLeaf == null && startIndex <= len) {
+                leftLeaf = leaf
+                leftIndexInLeftLeaf = len - startIndex
             }
+            if (rightLeaf == null && endIndex - 1 <= len) {
+                rightLeaf = leaf
+                rightIndexInRightLeaf = len - endIndex - 1
+            }
+            if (leftLeaf != null && rightLeaf != null) break
         }
+        if (leftLeaf == null || leftIndexInLeftLeaf == null || rightIndexInRightLeaf == null || rightLeaf == null) {
+            throw IndexOutOfBoundsException("startIndex:$startIndex, endIndex:$endIndex, length:${treeLength()}")
+        }
+        val leftBound = indexOf(leftLeaf)
+        val rightBound = indexOf(rightLeaf)
+        val inBetween = leaves.subList(leftBound + 1, rightBound - 1)
+        val newLeftNode = leftLeaf.subSequence(leftIndexInLeftLeaf..leftLeaf.weight)
+        val newRightNode = rightLeaf.subSequence(rightIndexInRightLeaf..rightLeaf.weight)
+        val listWithNewLeftLeaf = inBetween.addWithCopyOnWrite(newLeftNode, 0)
+        val newLeaves = listWithNewLeftLeaf.addWithCopyOnWrite(newRightNode, listWithNewLeftLeaf.size)
+        return merge(newLeaves)
+    }
+
+    private fun throwIndexOutOfBoundsExceptionForStartAndEndIndex(startIndex: Int, endIndex: Int): Nothing {
+        throw IndexOutOfBoundsException("startIndex:$startIndex, endIndex:$endIndex, length:${treeLength()}")
     }
 
     override fun iterator(): Iterator<LeafNode<T>> {
@@ -277,6 +309,13 @@ open class InternalNode<out T : LeafInfo>(
 
     private fun checkElementIndex(index: Int) {
         if (index < 0 || index >= children.size || index >= MAX_CHILDREN) throw IndexOutOfBoundsException("index:$index")
+    }
+
+    private fun checkRangeIndexes(startIndex: Int, endIndex: Int) {
+        if (startIndex < 0) throw IndexOutOfBoundsException("startIndex:$startIndex")
+        if (endIndex < startIndex) {
+            throw IndexOutOfBoundsException("End index ($endIndex) is less than start index ($startIndex).")
+        }
     }
 
     // ###################

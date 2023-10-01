@@ -13,7 +13,7 @@ class SynthesizeTest {
         val deletesFromUnion = Subset(listOf(Segment(5, 0), Segment(8, 1)))
         val oldDeletesFromUnion = Subset(listOf(Segment(11, 0), Segment(2, 1)))
         val oldDelta = synthesize(
-            tombstones = tombstones.root,
+            tombstones = tombstones,
             fromDeletes = deletesFromUnion,
             toDeletes = oldDeletesFromUnion
         )
@@ -31,7 +31,7 @@ class SynthesizeTest {
         // and then applying that subset will yield the inserted characters.
         val tombstones = insertedSubset.complement().deleteFromString(union.toString())
         val newDelta = synthesize(
-            tombstones = Rope(tombstones).root,
+            tombstones = Rope(tombstones),
             fromDeletes = insertedSubset,
             toDeletes = deletesTransform
         )
@@ -40,7 +40,7 @@ class SynthesizeTest {
         // and then applying that subset will yield the deleted characters.
         val newDeltaTombstones = deletesTransform.complement().deleteFromString(union.toString())
         val inverseDelta = synthesize(
-            tombstones = Rope(newDeltaTombstones).root,
+            tombstones = Rope(newDeltaTombstones),
             fromDeletes = deletesTransform,
             toDeletes = insertedSubset
         )

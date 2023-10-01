@@ -10,7 +10,7 @@ internal fun shuffle(
     fromDeletesFromUnion: Subset,
     toDeletesFromUnion: Subset
 ): Pair<Rope, Rope> {
-    val deletesDelta = synthesize(tombstones.root, fromDeletesFromUnion, toDeletesFromUnion)
+    val deletesDelta = synthesize(tombstones, fromDeletesFromUnion, toDeletesFromUnion)
     val newText = deletesDelta.applyTo(text)
     val newTombstones = shuffleTombstones(text, tombstones, fromDeletesFromUnion, toDeletesFromUnion)
     return newText to newTombstones
@@ -30,6 +30,6 @@ internal fun shuffleTombstones(
     // allowing us to use the same method to insert the text into the tombstones.
     val fromInverseTombstonesMap = fromDeletesFromUnion.complement()
     val toInverseTombstonesMap = toDeletesFromUnion.complement()
-    val moveDelta = synthesize(text.root, fromInverseTombstonesMap, toInverseTombstonesMap)
+    val moveDelta = synthesize(text, fromInverseTombstonesMap, toInverseTombstonesMap)
     return moveDelta.applyTo(tombstones)
 }

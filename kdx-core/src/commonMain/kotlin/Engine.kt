@@ -272,7 +272,7 @@ fun Engine.getRevisionContentOrNull(revisionToken: RevisionToken): Rope? {
  */
 fun Engine.getRevisionContentForIndex(revisionIndex: Int): Rope {
     val oldDeletesFromCurUnion = getDeletesFromCurUnionForIndex(revisionIndex)
-    val delta = synthesize(tombstones.root, deletesFromUnion, oldDeletesFromCurUnion)
+    val delta = synthesize(tombstones, deletesFromUnion, oldDeletesFromCurUnion)
     return delta.applyTo(text)
 }
 

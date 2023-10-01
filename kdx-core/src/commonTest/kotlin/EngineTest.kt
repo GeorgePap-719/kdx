@@ -7,8 +7,6 @@ class EngineTest {
     private val simpleString = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 
     @Test
-    // without individual tests,
-    // this becomes too complex to handle.
     fun testSimpleEditRevision() {
         val engine = MutableEngine(Rope(simpleString))
         println("engine:${engine}")

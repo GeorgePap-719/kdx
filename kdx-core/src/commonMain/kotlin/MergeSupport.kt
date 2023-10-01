@@ -103,7 +103,7 @@ fun computeDeltas(
             is Edit -> {
                 val olderAllInserts = content.inserts.transformUnion(curAllInserts)
                 val _tombstones = shuffleTombstones(text, tombstones, deletesFromUnion, olderAllInserts)
-                val delta = synthesize(_tombstones.root, olderAllInserts, curAllInserts)
+                val delta = synthesize(_tombstones, olderAllInserts, curAllInserts)
                 val (inserts, _) = delta.factor()
                 ops.add(
                     DeltaOp(

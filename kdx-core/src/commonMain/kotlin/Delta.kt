@@ -323,7 +323,7 @@ internal open class DeltaSupport<T : NodeInfo>(
     override val changes: List<DeltaElement<T>>,
     override val baseLength: Int,
 ) : Delta<T> {
-    override fun toString(): String = "DeltaSupport(changes=$changes,baseLength=$baseLength)"
+    override fun toString(): String = "$classSimpleName(changes=$changes,baseLength=$baseLength)"
 }
 
 typealias DeltaRopeNode = Delta<RopeLeaf>

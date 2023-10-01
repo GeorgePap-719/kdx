@@ -14,7 +14,7 @@ fun Engine.tryDeltaRevisionHead(baseRevision: RevisionToken): EngineResult<Delta
         deletesFromUnion,
         prevFromUnion
     )
-    val delta = synthesize(oldTombstones.root, prevFromUnion, deletesFromUnion)
+    val delta = synthesize(oldTombstones, prevFromUnion, deletesFromUnion)
     return EngineResult.success(delta)
 }
 

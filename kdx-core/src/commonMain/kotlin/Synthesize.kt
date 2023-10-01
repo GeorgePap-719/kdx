@@ -1,7 +1,5 @@
 package kdx
 
-import kdx.btree.BTreeNode
-import kdx.btree.treeLength
 import kotlin.math.min
 
 /**
@@ -24,14 +22,14 @@ import kotlin.math.min
  * @param fromDeletes the [Subset] of deletions which is based on [tombstones], relative to union-string.
  * @param toDeletes the [Subset] of deletions which is based on the target "text", relative to union-string.
  */
-fun <T : NodeInfo> synthesize(
-    tombstones: BTreeNode<T>,
+fun synthesize(
+    tombstones: Rope,
     fromDeletes: Subset,
     toDeletes: Subset,
-): Delta<T> {
+): Delta<RopeLeaf> {
     // We assume that `fromDeletes` are based on the `tombstones`.
-    assert { tombstones.treeLength() == fromDeletes.count(CountMatcher.NON_ZERO) }
-    val changes = mutableListOf<DeltaElement<T>>()
+    assert { tombstones.length == fromDeletes.count(CountMatcher.NON_ZERO) }
+    val changes = mutableListOf<DeltaElement<RopeLeaf>>()
     var offset = 0
     // 0-segments of `toDeletes` correspond to characters in from-text.
     val fromTextIterator = fromDeletes.complementIterator()
@@ -94,15 +92,15 @@ fun <T : NodeInfo> synthesize(
                 if (fromRange != null) endIndex = min(endIndex, fromRange.prevLen)
                 // Use the mapper to insert the corresponding section of the "tombstones" rope.
                 val tombstonesRange =
-                    tombstonesMapper.documentIndexToSubset(startIndex)..tombstonesMapper.documentIndexToSubset(endIndex)
-                val node = tombstones.subSequence(tombstonesRange)
-                changes.add(Insert(node))
+                    tombstonesMapper.documentIndexToSubset(startIndex)..<tombstonesMapper.documentIndexToSubset(endIndex)
+                val node = tombstones.subRope(tombstonesRange)
+                changes.add(Insert(node.root))
                 startIndex = endIndex
             }
         }
     }
     val baseLen = fromDeletes.lengthAfterDelete()
-    return DeltaSupport(changes, baseLen)
+    return DeltaRope(changes, baseLen)
 }
 
 // Not clear-cut if we should have a non-existent item here.
@@ -113,3 +111,8 @@ private fun <T> MutableList<T>.replace(new: T, old: T) {
     removeAt(index)
     add(index, new)
 }
+
+private class DeltaRope(
+    changes: List<DeltaElement<RopeLeaf>>,
+    baseLength: Int
+) : DeltaSupport<RopeLeaf>(changes, baseLength)
