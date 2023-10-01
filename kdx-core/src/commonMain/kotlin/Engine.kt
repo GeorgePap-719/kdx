@@ -108,6 +108,8 @@ fun MutableEngine.editRevision(
     baseRevision: RevisionToken,
     delta: DeltaRopeNode
 ) =
+//TODO: the Exception we throw here is misleading.
+    // Could be worth to create getOrThrow fun.
     tryEditRevision(priority, undoGroup, baseRevision, delta).getOrNull() ?: throw NoSuchElementException()
 
 @JvmInline
