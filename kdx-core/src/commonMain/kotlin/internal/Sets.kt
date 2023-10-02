@@ -65,7 +65,7 @@ internal class Intersection<T>(
 }
 
 /**
- * Returns an [Iterable] that visits the elements representing the symmetric difference,
+ * Returns a [Set] representing the symmetric difference,
  * i.e., the elements that are in `this` or in `other` but not in both, in arbitrary order.
  */
 internal fun <T> Set<T>.symmetricDifference(other: Set<T>): Set<T> {
