@@ -7,14 +7,14 @@ package kdx
 fun Engine.tryDeltaRevisionHead(baseRevision: RevisionToken): EngineResult<DeltaRopeNode> {
     val index = indexOfRevision(baseRevision)
     if (index == -1) return EngineResult.failure(EngineResult.MissingRevision(baseRevision))
-    val prevFromUnion = getDeletesFromCurUnionForIndex(index)
+    val oldDeletesFromUnion = getDeletesFromCurUnionForIndex(index)
     val oldTombstones = shuffleTombstones(
         text,
         tombstones,
         deletesFromUnion,
-        prevFromUnion
+        oldDeletesFromUnion
     )
-    val delta = synthesize(oldTombstones, prevFromUnion, deletesFromUnion)
+    val delta = synthesize(oldTombstones, oldDeletesFromUnion, deletesFromUnion)
     return EngineResult.success(delta)
 }
 
