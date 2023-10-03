@@ -9,7 +9,7 @@ internal abstract class AbstractEngine : MutableEngine {
         val thisToMerge = revisions.subList(baseIndex, revisions.size)
         val otherToMerge = other.revisions.subList(baseIndex, other.revisions.size)
 
-        val common = thisToMerge.findCommon(otherToMerge)
+        val common = thisToMerge.findCommonRevisions(otherToMerge)
 
         val thisNew = rearrange(thisToMerge, common, deletesFromUnion.length())
         val otherNew = rearrange(otherToMerge, common, other.deletesFromUnion.length())

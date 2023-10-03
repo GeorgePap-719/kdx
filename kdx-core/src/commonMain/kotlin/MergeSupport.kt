@@ -132,17 +132,26 @@ class DeltaOp(
     val deletes: Subset
 )
 
-/// Find an index before which everything is the same
+/**
+ * Tries to find the "base" of the two `Engines`.
+ * The "base" is a prefix of the same length of both histories such that the set of revisions in both prefixes is the same.
+ */
 fun List<Revision>.findBaseIndex(other: List<Revision>): Int {
     assert { this.isNotEmpty() && other.isNotEmpty() }
     assert { this.first().id == other.first().id }
+    // At the time xi was written, it always returns length of
+    // `one` (it is assumed they share at least one ancestor).
+    // While this is fine for now, we could provide a real implementation
+    // if there is time.
+    //TODO: provide proper implementation if there is time.
     return 1
 }
 
 /**
- * Returns a [Set] containing all [revision-ids][RevisionId] that are contained by both this [List] and the specified [List].
+ * Returns common revisions of both engines, where they are the intersection of the two [Revision] sets after the "base".
+ * Note that the common revisions aren’t necessarily in the same positions or order on each side.
  */
-fun List<Revision>.findCommon(other: List<Revision>): Set<RevisionId> {
+fun List<Revision>.findCommonRevisions(other: List<Revision>): Set<RevisionId> {
     val thisIds = this.map { it.id }
     val otherIds = other.map { it.id }
     return thisIds intersect otherIds.toSet() // optimization: toSet()
