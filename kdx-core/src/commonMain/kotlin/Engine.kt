@@ -12,6 +12,9 @@ import kotlin.jvm.JvmInline
 /**
  * Represents the current state of a document and all of its history.
  *
+ * A [mutable engine][MutableEngine] is creating using the `MutableEngine(...)` factory function.
+ * See the [MutableEngine] documentation for details.
+ *
  * ### Union string
  *
  * This CRDT structure introduces the concept of a "union string".
@@ -66,6 +69,12 @@ interface Engine {
     val revisions: List<Revision>
 }
 
+/**
+ * A mutable [EngineResult] that provides operations to mutate the state.
+ * An instance of `MutableEngine` can be created using the `MutableEngine(...)` factory function.
+ *
+ * See the [Engine] documentation for details on `Engine`.
+ */
 interface MutableEngine : Engine {
     /// Merge the new content from another Engine into this one with a CRDT merge.
     fun merge(other: Engine)
@@ -80,8 +89,10 @@ interface MutableEngine : Engine {
     // possible to fix it so that's not necessary.
     fun gc(gcGroups: Set<Int>)
 
-    // Undo works conceptually by rewinding to the earliest point in history that a toggled undo group appears,
-    // and replaying history from there but with revisions in the new undone_groups not applied.
+    /**
+     * "Undos" any revisions with content that have matching `undoGroup` with the given [groups].
+     * Then [text], [deletesFromUnion], and [tombstones] are updated to the new state.
+     */
     fun undo(groups: Set<Int>)
 
     /**
