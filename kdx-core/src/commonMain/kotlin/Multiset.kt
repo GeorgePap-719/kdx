@@ -237,7 +237,7 @@ fun Subset.isNotEmpty(): Boolean = !isEmpty()
  * Both subsets must be based on the same string.
  * This function removes sections of [this] subset that align with the non-zero segments of the [transform].
  * In most cases, these sections (of `this`) always have count zero (otherwise this transform would lose information),
- * but there are some cases like garbage-collection that intentionally uses this to discard information.
+ * but there are some cases like garbage-collection or "rearranging-revisions" that intentionally use this to discard information.
  *
  * This function is the reverse of [transformExpand].
  */
