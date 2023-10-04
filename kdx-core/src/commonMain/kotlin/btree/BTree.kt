@@ -38,7 +38,7 @@ sealed class BTreeNode<out T : LeafInfo> : Iterable<LeafNode<T>> {
     abstract val isLegal: Boolean
     abstract val isEmpty: Boolean
 
-    @Deprecated("Use the corresponding operator on `Rope`, where applicable")
+    @Deprecated("Use the corresponding operator on `Rope`, wherever applicable")
     abstract fun subSequence(range: IntRange): BTreeNode<T>
 }
 
