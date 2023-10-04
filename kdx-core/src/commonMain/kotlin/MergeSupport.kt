@@ -82,10 +82,8 @@ class DeltaOp(
 
 /**
  * Helper function for "merge" operation that transforms and reorders all the new revisions on each side after all the common revisions.
- * The key idea is to make the general algorithm easier by "ignoring" any of the common revisions
- * and just work with the new revisions on each side.
- *
- * Returns the new "computed" revisions.
+ * Returns the new "computed" revisions. The key idea is to make the general algorithm easier by "ignoring"
+ * any of the common revisions and just work with the new revisions on each side.
  */
 fun rearrange(
     revisions: List<Revision>,
