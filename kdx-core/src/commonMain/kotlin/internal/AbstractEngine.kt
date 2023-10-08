@@ -31,15 +31,11 @@ internal abstract class AbstractEngine : MutableEngine {
         expandBy: MutableList<Pair<FullPriority, Subset>>,
         ops: List<DeltaOp>,
         // Kind of tricky parameter,
-        // in the original implementation
-        // author passes this as `mut`
-        // but when calling the function,
-        // the variable is a `let` (immutable).
-        // From semantics perspective,
-        // it does not make much sense
-        // to mutate this variable directly
+        // in the original implementation author passes this as `mut`
+        // but when calling the function, the variable is a `let` (immutable).
+        // From semantics perspective, it does not make much sense to mutate this variable directly
         // on the existing item in the collection.
-        // As we use it for constructing the new (rebased) version.
+        // Since we use it for constructing the new (rebased) version.
         maxUndoSoFar: Int
     ): RebasedResult {
         val appRevisions: MutableList<Revision> = ArrayList(ops.size)
