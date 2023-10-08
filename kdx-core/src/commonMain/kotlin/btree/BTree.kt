@@ -94,6 +94,7 @@ class LeafNode<out T : LeafInfo>(val value: T) : BTreeNode<T>() {
     override val height: Int = 0
     override val isEmpty: Boolean = value.isEmpty
 
+    @Deprecated("Use the corresponding operator on `Rope`, wherever applicable")
     override fun subSequence(range: IntRange): LeafNode<T> {
         val newSequence = value.subsequnce(range)
         @Suppress("UNCHECKED_CAST")
