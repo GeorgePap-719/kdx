@@ -1,16 +1,17 @@
 package kdx
 
-// -------------------------------- helper functions for "merge" --------------------------------
+// -------------------------------- helpers for "merge" --------------------------------
 
-/// Computes a series of priorities and "transforms" for the deltas on the right
-/// from the new revisions on the left.
-///
-/// Applies an optimization where it combines sequential revisions with the
-/// same priority into one "transform" to decrease the number of transforms that
-/// have to be considered in `rebase` substantially for normal editing
-/// patterns. Any large runs of typing in the same place by the same user (e.g
-/// typing a paragraph) will be combined into a single segment in a transform
-/// as opposed to thousands of revisions.
+/**
+ * Helper function to compute the new "inserts" from `this` engine, along with its "priority" in order to
+ * resolve the order of concurrent "inserts".
+ *
+ * This function also applies an optimization where it combines sequential revisions with the same priority
+ * into one "transform" (insert) to decrease the number of transforms that have to be considered in `rebase()` phase
+ * substantially for normal editing patterns. Any large runs of typing in the same place by the same user (e.g. typing a paragraph)
+ * will be combined into a single segment in a transform as opposed to thousands of revisions.
+ */
+//TODO: probably it is redundant to return a mutable list here.
 fun computeTransforms(revisions: List<Revision>): MutableList<Pair<FullPriority, Subset>> {
     val list = buildList<Pair<FullPriority, Subset>> {
         var lastPriority: Int? = null

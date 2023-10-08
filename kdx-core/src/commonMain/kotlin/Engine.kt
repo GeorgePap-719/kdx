@@ -15,6 +15,9 @@ import kotlin.jvm.JvmInline
  * A [mutable engine][MutableEngine] is creating using the `MutableEngine(...)` factory function.
  * See the [MutableEngine] documentation for details.
  *
+ * The implementation is based on xi-editor please see the [The xi text engine](https://xi-editor.io/docs/crdt-details.html)
+ * document for the algorithmic details.
+ *
  * ### Union string
  *
  * This CRDT structure introduces the concept of a "union string".
@@ -111,7 +114,7 @@ interface MutableEngine : Engine {
     ): EngineResult<Unit>
 
     /**
-     * Rebases [ops] on top of [expandBy],
+     * Rebases [deltaOps] on top of [expandBy],
      * and returns revision contents
      * that can be appended as new revisions on top of revisions represented by [expandBy].
      */
@@ -119,7 +122,7 @@ interface MutableEngine : Engine {
     // used only by merge()
     fun rebase(
         expandBy: MutableList<Pair<FullPriority, Subset>>,
-        ops: List<DeltaOp>,
+        deltaOps: List<DeltaOp>,
         maxUndoSoFar: Int
     ): RebaseResult
 }

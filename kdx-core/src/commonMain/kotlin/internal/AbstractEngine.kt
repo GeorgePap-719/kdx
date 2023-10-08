@@ -5,20 +5,29 @@ import kdx.*
 internal abstract class AbstractEngine : MutableEngine {
 
     override fun merge(other: Engine) {
+        // First, the algorithm finds the "base",
+        // so we can build the "common-revisions".
         val baseIndex = revisions.findBaseIndex(other.revisions)
-        val thisToMerge = revisions.subList(baseIndex, revisions.size)
-        val otherToMerge = other.revisions.subList(baseIndex, other.revisions.size)
-
-        val common = thisToMerge.findCommonRevisions(otherToMerge)
-
-        val thisNew = rearrange(thisToMerge, common, deletesFromUnion.length())
-        val otherNew = rearrange(otherToMerge, common, other.deletesFromUnion.length())
-
-        val deltaOps = computeDeltas(otherNew, other.text, other.tombstones, other.deletesFromUnion)
-        val expandBy = computeTransforms(thisNew)
-
+        val newRevisionsFromThis = revisions.subList(baseIndex, revisions.size)
+        val newRevisionsFromOther = other.revisions.subList(baseIndex, other.revisions.size)
+        val commonRevisions = newRevisionsFromThis.findCommonRevisions(newRevisionsFromOther)
+        // Skip common revisions on both sides to work only with the new revisions.
+        val thisNewInserts = rearrange(newRevisionsFromThis, commonRevisions, deletesFromUnion.length())
+        val otherNewInserts = rearrange(newRevisionsFromOther, commonRevisions, other.deletesFromUnion.length())
+        // At this stage, we do have neither a `Delta` as we would in `tryEditRevision()`
+        // nor an operation for resolving the order of concurrent "edits" based on priority.
+        // Since the responsible operation for this is `Delta.transformExpand`,
+        // and we cannot use `Subset.transformExpand` as it does a slightly different thing.
+        // Use the computeDeltas() helper to "convert" the `otherNewInserts`
+        // into a representation that encodes "inserts" as an `InsertDelta`.
+        val deltaOps = computeDeltas(otherNewInserts, other.text, other.tombstones, other.deletesFromUnion)
+        // Then use computeTransforms() helper to retrieve thisNewInserts` characters from `this` engine,
+        // along with their priority in order to resolve the order of concurrent "edits".
+        val expandBy = computeTransforms(thisNewInserts)
+        // Before appending the changes from `other`, we need to "transform" the `deltaOps`
+        // to be "rebased" on top of the `thisNewInserts` from `this`.
         val rebased = rebase(expandBy, deltaOps, maxUndoGroupId)
-
+        // Update state.
         trySetText(rebased.text)
         trySetTombstones(rebased.tombstones)
         trySetDeletesFromUnion(rebased.deletesFromUnion)
@@ -28,8 +37,9 @@ internal abstract class AbstractEngine : MutableEngine {
     abstract fun appendRevisions(elements: List<Revision>): Boolean
 
     override fun rebase(
+        // Probably this should be a read-only list.
         expandBy: MutableList<Pair<FullPriority, Subset>>,
-        ops: List<DeltaOp>,
+        deltaOps: List<DeltaOp>,
         // Kind of tricky parameter,
         // in the original implementation author passes this as `mut`
         // but when calling the function, the variable is a `let` (immutable).
@@ -38,27 +48,27 @@ internal abstract class AbstractEngine : MutableEngine {
         // Since we use it for constructing the new (rebased) version.
         maxUndoSoFar: Int
     ): RebaseResult {
-        val appRevisions: MutableList<Revision> = ArrayList(ops.size)
+        val appRevisions: MutableList<Revision> = ArrayList(deltaOps.size)
         var nextExpandBy: MutableList<Pair<FullPriority, Subset>> = ArrayList(expandBy.size)
-        for (op in ops) {
+        for (deltaOp in deltaOps) {
             var inserts: InsertDelta<RopeLeaf>? = null
             var deletes: Subset? = null
-            val fullPriority = FullPriority(op.priority, op.id.sessionId)
+            val fullPriority = FullPriority(deltaOp.priority, deltaOp.id.sessionId)
             for ((transformPriority, transformInserts) in expandBy) {
                 // Should never be ==
                 assert { fullPriority.compareTo(transformPriority) != 0 }
                 val after = fullPriority >= transformPriority
                 // d-expand by other
-                inserts = op.inserts.transformExpand(transformInserts, after)
+                inserts = deltaOp.inserts.transformExpand(transformInserts, after)
                 // trans-expand other by expanded so they have the same context
                 val inserted = inserts.getInsertedSubset()
                 val newTransformInserts = transformInserts.transformExpand(inserted)
                 // The `deletes` are already after our inserts,
                 // but we need to include the other inserts.
-                deletes = op.deletes.transformExpand(newTransformInserts)
+                deletes = deltaOp.deletes.transformExpand(newTransformInserts)
                 // On the next step,
                 // we want things in `expandBy`
-                // to have `op` in the context.
+                // to have `deltaOp` in the context.
                 nextExpandBy.add(transformPriority to newTransformInserts)
             }
             check(inserts != null)
@@ -80,12 +90,12 @@ internal abstract class AbstractEngine : MutableEngine {
             trySetTombstones(newTombstones)
             trySetDeletesFromUnion(newDeletesFromUnion)
 
-            val maxUndoSoFarAfterRebased = maxOf(maxUndoSoFar, op.undoGroup)
+            val maxUndoSoFarAfterRebased = maxOf(maxUndoSoFar, deltaOp.undoGroup)
             appRevisions.add(
                 Revision(
-                    id = op.id,
+                    id = deltaOp.id,
                     maxUndoSoFar = maxUndoSoFarAfterRebased,
-                    edit = Edit(op.priority, op.undoGroup, deletes, inserted)
+                    edit = Edit(deltaOp.priority, deltaOp.undoGroup, deletes, inserted)
                 )
             )
             expandBy.replaceAll(nextExpandBy)
