@@ -36,24 +36,28 @@ fun computeTransforms(revisions: List<Revision>): MutableList<Pair<FullPriority,
     return list.toMutableList()
 }
 
-/// Transform `revs`, which doesn't include information on the actual content of the operations,
-/// into an `InsertDelta`-based representation that does by working backward from the text and tombstones.
+/**
+ * Transforms the given [revisions] relative to [text], [tombstones] and [deletesFromUnion]
+ * into a representation that encodes "inserts" as an [InsertDelta] that can be "transformed"
+ * using [InsertDelta.transformExpand] and eventually applied to the `text` of `this` engine.
+ */
 fun computeDeltas(
     revisions: List<Revision>,
     text: Rope,
     tombstones: Rope,
     deletesFromUnion: Subset
 ): List<DeltaOp> {
-    val ops: MutableList<DeltaOp> = ArrayList(revisions.size)
+    val deltaOps: MutableList<DeltaOp> = ArrayList(revisions.size)
     var curAllInserts = Subset(deletesFromUnion.length())
     for (revision in revisions.reversed()) {
         when (val content = revision.edit) {
             is Edit -> {
+                // Do not update `curAllInserts` yet, as we it in synthesize().
                 val olderAllInserts = content.inserts.transformUnion(curAllInserts)
-                val _tombstones = shuffleTombstones(text, tombstones, deletesFromUnion, olderAllInserts)
-                val delta = synthesize(_tombstones, olderAllInserts, curAllInserts)
+                val shuffledTombstones = shuffleTombstones(text, tombstones, deletesFromUnion, olderAllInserts)
+                val delta = synthesize(shuffledTombstones, olderAllInserts, curAllInserts)
                 val (inserts, _) = delta.factor()
-                ops.add(
+                deltaOps.add(
                     DeltaOp(
                         revision.id,
                         content.priority,
@@ -62,20 +66,27 @@ fun computeDeltas(
                         content.deletes
                     )
                 )
+                // Update `curAllInserts`.
                 curAllInserts = olderAllInserts
             }
 
             is Undo -> error("Merge undo is not supported yet")
         }
     }
-    ops.reverse()
-    return ops
+    deltaOps.reverse()
+    return deltaOps
 }
 
+/**
+ * Represents the transformed new revision from "other" engine that can be applied to `this` engine's `text`.
+ */
 class DeltaOp(
     val id: RevisionId,
     val priority: Int,
     val undoGroup: Int,
+    /**
+     * The inserted characters from the revision this `DeltaOp` represents.
+     */
     val inserts: InsertDelta<RopeLeaf>,
     val deletes: Subset
 )

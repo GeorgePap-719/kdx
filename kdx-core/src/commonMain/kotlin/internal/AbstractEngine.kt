@@ -14,10 +14,10 @@ internal abstract class AbstractEngine : MutableEngine {
         val thisNew = rearrange(thisToMerge, common, deletesFromUnion.length())
         val otherNew = rearrange(otherToMerge, common, other.deletesFromUnion.length())
 
-        val otherDelta = computeDeltas(otherNew, other.text, other.tombstones, other.deletesFromUnion)
+        val deltaOps = computeDeltas(otherNew, other.text, other.tombstones, other.deletesFromUnion)
         val expandBy = computeTransforms(thisNew)
 
-        val rebased = rebase(expandBy, otherDelta, maxUndoGroupId)
+        val rebased = rebase(expandBy, deltaOps, maxUndoGroupId)
 
         trySetText(rebased.text)
         trySetTombstones(rebased.tombstones)
@@ -37,7 +37,7 @@ internal abstract class AbstractEngine : MutableEngine {
         // on the existing item in the collection.
         // Since we use it for constructing the new (rebased) version.
         maxUndoSoFar: Int
-    ): RebasedResult {
+    ): RebaseResult {
         val appRevisions: MutableList<Revision> = ArrayList(ops.size)
         var nextExpandBy: MutableList<Pair<FullPriority, Subset>> = ArrayList(expandBy.size)
         for (op in ops) {
@@ -91,7 +91,7 @@ internal abstract class AbstractEngine : MutableEngine {
             expandBy.replaceAll(nextExpandBy)
             nextExpandBy = ArrayList(expandBy.size)
         }
-        return RebasedResult(appRevisions, text, tombstones, deletesFromUnion)
+        return RebaseResult(appRevisions, text, tombstones, deletesFromUnion)
     }
 
     // warning: this method is not thread-safe.

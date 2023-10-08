@@ -121,7 +121,7 @@ interface MutableEngine : Engine {
         expandBy: MutableList<Pair<FullPriority, Subset>>,
         ops: List<DeltaOp>,
         maxUndoSoFar: Int
-    ): RebasedResult
+    ): RebaseResult
 }
 
 fun MutableEngine.editRevision(
@@ -190,7 +190,7 @@ inline fun <T> EngineResult<T>.getOrElse(onFailure: (failure: EngineResult.Faile
     return if (value is EngineResult.Failed) onFailure(value) else value as T
 }
 
-class RebasedResult(
+class RebaseResult(
     val newRevisions: List<Revision>,
     val text: Rope,
     val tombstones: Rope,
