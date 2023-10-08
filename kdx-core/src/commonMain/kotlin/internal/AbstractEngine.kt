@@ -12,18 +12,31 @@ internal abstract class AbstractEngine : MutableEngine {
         val newRevisionsFromOther = other.revisions.subList(baseIndex, other.revisions.size)
         val commonRevisions = newRevisionsFromThis.findCommonRevisions(newRevisionsFromOther)
         // Skip common revisions on both sides to work only with the new revisions.
-        val thisNewInserts = rearrange(newRevisionsFromThis, commonRevisions, deletesFromUnion.length())
-        val otherNewInserts = rearrange(newRevisionsFromOther, commonRevisions, other.deletesFromUnion.length())
+        val newComputedRevisionsFromThis = rearrange(
+            newRevisionsFromThis,
+            commonRevisions,
+            deletesFromUnion.length()
+        )
+        val newComputedRevisionsFromOther = rearrange(
+            newRevisionsFromOther,
+            commonRevisions,
+            other.deletesFromUnion.length()
+        )
         // At this stage, we do have neither a `Delta` as we would in `tryEditRevision()`
         // nor an operation for resolving the order of concurrent "edits" based on priority.
         // Since the responsible operation for this is `Delta.transformExpand`,
         // and we cannot use `Subset.transformExpand` as it does a slightly different thing.
         // Use the computeDeltas() helper to "convert" the `otherNewInserts`
         // into a representation that encodes "inserts" as an `InsertDelta`.
-        val deltaOps = computeDeltas(otherNewInserts, other.text, other.tombstones, other.deletesFromUnion)
+        val deltaOps = computeDeltas(
+            newComputedRevisionsFromOther,
+            other.text,
+            other.tombstones,
+            other.deletesFromUnion
+        )
         // Then use computeTransforms() helper to retrieve thisNewInserts` characters from `this` engine,
         // along with their priority in order to resolve the order of concurrent "edits".
-        val expandBy = computeTransforms(thisNewInserts)
+        val expandBy = computeTransforms(newComputedRevisionsFromThis)
         // Before appending the changes from `other`, we need to "transform" the `deltaOps`
         // to be "rebased" on top of the `thisNewInserts` from `this`.
         val rebased = rebase(expandBy, deltaOps, maxUndoGroupId)
