@@ -19,6 +19,7 @@ fun computeTransforms(revisions: List<Revision>): MutableList<Pair<FullPriority,
             when (val content = revision.edit) {
                 is Edit -> {
                     if (content.inserts.isEmpty()) continue
+                    // Optimization for combining sequential revisions with the same priority.
                     if (lastPriority != null && lastPriority == content.priority) {
                         val last = last()
                         val newLast = last.first to last.second.transformUnion(content.inserts)
