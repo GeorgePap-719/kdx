@@ -1,6 +1,104 @@
 package kdx
 
+import kdx.internal.replaceAll
+
 // -------------------------------- helpers for "merge" --------------------------------
+
+/**
+ * Rebases [deltaOps] on top of [expandBy], and returns the revision contents that can be appended as new revisions on
+ * top of the revisions represented by [expandBy].
+ *
+ * This function is named "rebase" because it is analogous to "git-rebase" operation.
+ */
+fun rebase(
+    /* The new revisions from `this` engine. */
+    expandBy: List<Pair<FullPriority, Subset>>,
+    /* Practically this is the new revisions
+     from the `other` engine. */
+    deltaOps: List<DeltaOp>,
+    text: Rope,
+    tombstones: Rope,
+    deletesFromUnion: Subset,
+    // Kind of tricky parameter,
+    // in the original implementation author passes this as `mut`
+    // but when calling the function, the variable is a `let` (immutable).
+    // From semantics perspective, it does not make much sense to mutate this variable directly
+    // on the existing item in the collection.
+    // Since we use it for constructing the new (rebased) version.
+    maxUndoSoFar: Int
+): RebaseResult {
+    var newText = text
+    var newTombstones = tombstones
+    var newDeletesFromUnion = deletesFromUnion
+    val mutableExpandBy = expandBy.toMutableList()
+    val revisions: MutableList<Revision> = ArrayList(deltaOps.size)
+    var nextExpandBy: MutableList<Pair<FullPriority, Subset>> = ArrayList(mutableExpandBy.size)
+    for (deltaOp in deltaOps) {
+        var inserts = deltaOp.inserts
+        var deletes = deltaOp.deletes
+        val fullPriority = FullPriority(deltaOp.priority, deltaOp.id.sessionId)
+        for ((transformPriority, transformInserts) in mutableExpandBy) {
+            // Should never be ==
+            assert { fullPriority.compareTo(transformPriority) != 0 }
+            val after = fullPriority >= transformPriority
+            // delta-expand by `other`.
+            inserts = inserts.transformExpand(transformInserts, after)
+            // transformExpand() other by expanded, so they have the same context.
+            val inserted = inserts.getInsertedSubset()
+            val newTransformInserts = transformInserts.transformExpand(inserted)
+            // The `deletes` are already after our inserts,
+            // but we need to include the other inserts.
+            deletes = deletes.transformExpand(newTransformInserts)
+            // On the next step,
+            // we want things in `expandBy`
+            // to have the `deltaOp` in the context.
+            nextExpandBy.add(transformPriority to newTransformInserts)
+        }
+        // Update the text and tombstones.
+        val textInserts = inserts.transformShrink(deletesFromUnion)
+        val textWithInserts = textInserts.applyTo(text)
+        val inserted = inserts.getInsertedSubset()
+        val expandedDeletesFromUnion = deletesFromUnion.transformExpand(inserted)
+        newDeletesFromUnion = expandedDeletesFromUnion.union(deletes)
+        val shuffled = shuffle(
+            textWithInserts,
+            tombstones,
+            expandedDeletesFromUnion,
+            newDeletesFromUnion
+        )
+        newText = shuffled.first
+        newTombstones = shuffled.second
+        // Get the max from both to not miss any "undo".
+        val maxUndoSoFarAfterRebased = maxOf(maxUndoSoFar, deltaOp.undoGroup)
+        revisions.add(
+            // Create a revision to append in history.
+            Revision(
+                id = deltaOp.id,
+                maxUndoSoFar = maxUndoSoFarAfterRebased,
+                edit = Edit(deltaOp.priority, deltaOp.undoGroup, deletes, inserted)
+            )
+        )
+        // Update the transforms for the next round,
+        // to include the `deltaOps` inserts,
+        // and so effectively they become part of the base for both sides.
+        mutableExpandBy.replaceAll(nextExpandBy)
+        nextExpandBy = ArrayList(mutableExpandBy.size)
+    }
+    return RebaseResult(revisions, newText, newTombstones, newDeletesFromUnion)
+}
+
+/**
+ * Represents the rebased state.
+ */
+class RebaseResult(
+    /**
+     * The new revisions to be appended to history.
+     */
+    val revisions: List<Revision>,
+    val text: Rope,
+    val tombstones: Rope,
+    val deletesFromUnion: Subset
+)
 
 /**
  * Helper function to compute the new "inserts" from `this` engine, along with its "priority" in order to

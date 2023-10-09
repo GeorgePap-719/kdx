@@ -24,7 +24,7 @@ internal abstract class AbstractEngine : MutableEngine {
         )
         // At this stage, we do have neither a `Delta` as we would in `tryEditRevision()`
         // nor an operation for resolving the order of concurrent "edits" based on priority.
-        // Since the responsible operation for this is `Delta.transformExpand`,
+        // As the responsible operation for this is `Delta.transformExpand`,
         // and we cannot use `Subset.transformExpand` as it does a slightly different thing.
         // Use the computeDeltas() helper to "convert" the `otherNewInserts`
         // into a representation that encodes "inserts" as an `InsertDelta`.
@@ -39,83 +39,15 @@ internal abstract class AbstractEngine : MutableEngine {
         val expandBy = computeTransforms(newComputedRevisionsFromThis)
         // Before appending the changes from `other`, we need to "transform" the `deltaOps`
         // to be "rebased" on top of the `thisNewInserts` from `this`.
-        val rebased = rebase(expandBy, deltaOps, maxUndoGroupId)
+        val rebased = rebase(expandBy, deltaOps, text, tombstones, deletesFromUnion, maxUndoGroupId)
         // Update state.
         trySetText(rebased.text)
         trySetTombstones(rebased.tombstones)
         trySetDeletesFromUnion(rebased.deletesFromUnion)
-        appendRevisions(rebased.newRevisions)
+        appendRevisions(rebased.revisions)
     }
 
     abstract fun appendRevisions(elements: List<Revision>): Boolean
-
-    override fun rebase(
-        // Probably this should be a read-only list.
-        expandBy: MutableList<Pair<FullPriority, Subset>>,
-        deltaOps: List<DeltaOp>,
-        // Kind of tricky parameter,
-        // in the original implementation author passes this as `mut`
-        // but when calling the function, the variable is a `let` (immutable).
-        // From semantics perspective, it does not make much sense to mutate this variable directly
-        // on the existing item in the collection.
-        // Since we use it for constructing the new (rebased) version.
-        maxUndoSoFar: Int
-    ): RebaseResult {
-        val appRevisions: MutableList<Revision> = ArrayList(deltaOps.size)
-        var nextExpandBy: MutableList<Pair<FullPriority, Subset>> = ArrayList(expandBy.size)
-        for (deltaOp in deltaOps) {
-            var inserts: InsertDelta<RopeLeaf>? = null
-            var deletes: Subset? = null
-            val fullPriority = FullPriority(deltaOp.priority, deltaOp.id.sessionId)
-            for ((transformPriority, transformInserts) in expandBy) {
-                // Should never be ==
-                assert { fullPriority.compareTo(transformPriority) != 0 }
-                val after = fullPriority >= transformPriority
-                // d-expand by other
-                inserts = deltaOp.inserts.transformExpand(transformInserts, after)
-                // trans-expand other by expanded so they have the same context
-                val inserted = inserts.getInsertedSubset()
-                val newTransformInserts = transformInserts.transformExpand(inserted)
-                // The `deletes` are already after our inserts,
-                // but we need to include the other inserts.
-                deletes = deltaOp.deletes.transformExpand(newTransformInserts)
-                // On the next step,
-                // we want things in `expandBy`
-                // to have `deltaOp` in the context.
-                nextExpandBy.add(transformPriority to newTransformInserts)
-            }
-            check(inserts != null)
-            check(deletes != null)
-            val textInserts = inserts.transformShrink(deletesFromUnion)
-            val textWithInserts = textInserts.applyTo(text)
-            val inserted = inserts.getInsertedSubset()
-
-            val expandedDeletesFromUnion = deletesFromUnion.transformExpand(inserted)
-            val newDeletesFromUnion = expandedDeletesFromUnion.union(deletes)
-            val (newText, newTombstones) = shuffle(
-                textWithInserts,
-                tombstones,
-                expandedDeletesFromUnion,
-                newDeletesFromUnion
-            )
-
-            trySetText(newText)
-            trySetTombstones(newTombstones)
-            trySetDeletesFromUnion(newDeletesFromUnion)
-
-            val maxUndoSoFarAfterRebased = maxOf(maxUndoSoFar, deltaOp.undoGroup)
-            appRevisions.add(
-                Revision(
-                    id = deltaOp.id,
-                    maxUndoSoFar = maxUndoSoFarAfterRebased,
-                    edit = Edit(deltaOp.priority, deltaOp.undoGroup, deletes, inserted)
-                )
-            )
-            expandBy.replaceAll(nextExpandBy)
-            nextExpandBy = ArrayList(expandBy.size)
-        }
-        return RebaseResult(appRevisions, text, tombstones, deletesFromUnion)
-    }
 
     // warning: this method is not thread-safe.
     override fun gc(gcGroups: Set<Int>) {

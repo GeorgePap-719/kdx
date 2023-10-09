@@ -15,7 +15,7 @@ import kotlin.jvm.JvmInline
  * A [mutable engine][MutableEngine] is creating using the `MutableEngine(...)` factory function.
  * See the [MutableEngine] documentation for details.
  *
- * The implementation is based on xi-editor please see the [The xi text engine](https://xi-editor.io/docs/crdt-details.html)
+ * The implementation is based on xi-editor, please see the [The xi text engine](https://xi-editor.io/docs/crdt-details.html)
  * document for the algorithmic details.
  *
  * ### Union string
@@ -113,18 +113,18 @@ interface MutableEngine : Engine {
         delta: DeltaRopeNode
     ): EngineResult<Unit>
 
-    /**
-     * Rebases [deltaOps] on top of [expandBy],
-     * and returns revision contents
-     * that can be appended as new revisions on top of revisions represented by [expandBy].
-     */
-    //TODO: this is actually an internal API,
-    // used only by merge()
-    fun rebase(
-        expandBy: MutableList<Pair<FullPriority, Subset>>,
-        deltaOps: List<DeltaOp>,
-        maxUndoSoFar: Int
-    ): RebaseResult
+//    /**
+//     * Rebases [deltaOps] on top of [expandBy],
+//     * and returns revision contents
+//     * that can be appended as new revisions on top of revisions represented by [expandBy].
+//     */
+//    //TODO: this is actually an internal API,
+//    // used only by merge()
+//    fun rebase(
+//        expandBy: MutableList<Pair<FullPriority, Subset>>,
+//        deltaOps: List<DeltaOp>,
+//        maxUndoSoFar: Int
+//    ): RebaseResult
 }
 
 fun MutableEngine.editRevision(
@@ -192,13 +192,6 @@ inline fun <T> EngineResult<T>.getOrElse(onFailure: (failure: EngineResult.Faile
     @Suppress("UNCHECKED_CAST")
     return if (value is EngineResult.Failed) onFailure(value) else value as T
 }
-
-class RebaseResult(
-    val newRevisions: List<Revision>,
-    val text: Rope,
-    val tombstones: Rope,
-    val deletesFromUnion: Subset
-)
 
 /**
  * Returns the [text][Rope] of head [Revision].
