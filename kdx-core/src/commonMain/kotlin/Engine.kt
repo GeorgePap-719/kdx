@@ -64,7 +64,7 @@ interface Engine {
     // In our case, `order` is not just a simple implementation detail,
     // but a contract.
     // Should we use concrete impl?
-    val undoneGroups: Set<Int> // set of undo_group id's
+    val undoneGroups: Set<Int>
 
     /**
      * The revision history of this document's.
