@@ -70,16 +70,6 @@ class EngineTest {
         undoCase(true, setOf(1), "0!3456789abcdefGIjklmnopqr888stuvwHIyz")
     }
 
-    private fun undoCase(before: Boolean, undos: Set<Int>, result: String) {
-        val engine = MutableEngine(Rope(simpleString))
-        val firstRevToken = engine.headRevisionId.token()
-        if (before) engine.undo(undos)
-        engine.editRevision(1, 1, firstRevToken, buildDelta1())
-        engine.editRevision(1, 2, firstRevToken, buildDelta2())
-        if (!before) engine.undo(undos)
-        assertEquals(result, engine.head.toString())
-    }
-
     @Test
     fun testBasicTryDeltaRevisionHead() {
         val engine = MutableEngine(Rope(simpleString))
@@ -124,6 +114,63 @@ class EngineTest {
         val invalidToken: RevisionToken = -1
         val delta = engine.tryDeltaRevisionHead(invalidToken)
         assertTrue(delta.value is EngineResult.MissingRevision)
+    }
+
+    @Test
+    fun testBasicUndo1() {
+        undoCase(false, setOf(1, 2), simpleString)
+    }
+
+    @Test
+    fun testBasicUndo2() {
+        undoCase(false, setOf(2), "0123456789abcDEEFghijklmnopqr999stuvz")
+    }
+
+    @Test
+    fun testBasicUndo3() {
+        undoCase(false, setOf(1), "0!3456789abcdefGIjklmnopqr888stuvwHIyz")
+    }
+
+    @Test
+    fun testScenarioUndo1() {
+        val engine = MutableEngine(Rope(simpleString))
+        val simpleEdit = simpleEdit(0..<0, Rope("a").root, simpleString.length)
+        val firstRevToken = engine.headRevisionId.token()
+        engine.editRevision(1, 1, firstRevToken, simpleEdit)
+        val newHead = engine.headRevisionId.token()
+        engine.undo(setOf(1))
+        val simpleEdit2 = simpleEdit(0..<0, Rope("a").root, simpleString.length + 1)
+        engine.editRevision(1, 2, newHead, simpleEdit2) // note this is based on `simpleEdit` before, not the undo
+        val newHead2 = engine.headRevisionId.token()
+        val simpleEdit3 = simpleEdit(0..<0, Rope("b").root, simpleString.length + 1)
+        engine.editRevision(1, 3, newHead2, simpleEdit3)
+        engine.undo(setOf(1, 3))
+        assertEquals("a0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz", engine.head.toString())
+    }
+
+    @Test
+    fun testScenarioUndo2() {
+        val engine = MutableEngine(Rope(simpleString))
+        val simpleEdit = simpleEdit(0..<10, Rope("").root, simpleString.length)
+        val firstRevToken = engine.headRevisionId.token()
+        engine.editRevision(1, 1, firstRevToken, simpleEdit)
+        engine.editRevision(1, 2, firstRevToken, simpleEdit)
+        engine.undo(setOf(1))
+        assertEquals("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz", engine.head.toString())
+        engine.undo(setOf(1, 2))
+        assertEquals(simpleString, engine.head.toString())
+        engine.undo(setOf())
+        assertEquals("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz", engine.head.toString())
+    }
+
+    private fun undoCase(before: Boolean, undos: Set<Int>, result: String) {
+        val engine = MutableEngine(Rope(simpleString))
+        val firstRevToken = engine.headRevisionId.token()
+        if (before) engine.undo(undos)
+        engine.editRevision(1, 1, firstRevToken, buildDelta1())
+        engine.editRevision(1, 2, firstRevToken, buildDelta2())
+        if (!before) engine.undo(undos)
+        assertEquals(result, engine.head.toString())
     }
 
     private fun buildDelta1(): DeltaRopeNode = buildDelta(simpleString.length) {
