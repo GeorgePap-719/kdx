@@ -79,7 +79,9 @@ interface Engine {
  * See the [Engine] documentation for details on `Engine`.
  */
 interface MutableEngine : Engine {
-    /// Merge the new content from another Engine into this one with a CRDT merge.
+    /**
+     * Merges the new content from [other] engine into this using a CRDT "merge".
+     */
     fun merge(other: Engine)
 
     // Note: this function would need some work to handle retaining arbitrary revisions,
@@ -112,19 +114,6 @@ interface MutableEngine : Engine {
         baseRevision: RevisionToken,
         delta: DeltaRopeNode
     ): EngineResult<Unit>
-
-//    /**
-//     * Rebases [deltaOps] on top of [expandBy],
-//     * and returns revision contents
-//     * that can be appended as new revisions on top of revisions represented by [expandBy].
-//     */
-//    //TODO: this is actually an internal API,
-//    // used only by merge()
-//    fun rebase(
-//        expandBy: MutableList<Pair<FullPriority, Subset>>,
-//        deltaOps: List<DeltaOp>,
-//        maxUndoSoFar: Int
-//    ): RebaseResult
 }
 
 fun MutableEngine.editRevision(
