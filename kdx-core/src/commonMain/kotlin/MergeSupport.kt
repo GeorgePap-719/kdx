@@ -79,8 +79,8 @@ fun rebase(
             )
         )
         // Update the transforms for the next round,
-        // to include the `deltaOps` inserts,
-        // and so effectively they become part of the base for both sides.
+        // to include the `deltaOps` inserts.
+        // And effectively, they become part of the base for both sides.
         mutableExpandBy.replaceAll(nextExpandBy)
         nextExpandBy = ArrayList(mutableExpandBy.size)
     }
