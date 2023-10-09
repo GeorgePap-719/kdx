@@ -89,7 +89,11 @@ class Subset internal constructor(private val segments: List<Segment>) {
                         if (curSeg.length == 0) {
                             // `iterator.next()` should not throw `IllegalArgumentException`,
                             // because this must cover all 0-regions of `other`.
-                            curSeg = requireNotNull(iterator.nextOrNull()) { ZERO_REGIONS_MUST_BE_OF_EQUAL_SIZE }
+                            curSeg = requireNotNull(iterator.nextOrNull()) {
+                                ZERO_REGIONS_MUST_BE_OF_EQUAL_SIZE +
+                                        "State-of-this: ${this@Subset} \n" +
+                                        "transform: $transform"
+                            }
                         }
                         val consumed = minOf(curSeg.length, consumable)
                         add(consumed, curSeg.count)
