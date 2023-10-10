@@ -36,6 +36,51 @@ class EngineMergeTest {
         assertEquals(correct, rearrangedInserts)
     }
 
+    @Test
+    fun testFindCommonRevisions() {
+        val ids1 = idsToFakeRevisions(0, 2, 4, 6, 8, 10, 12)
+        val ids2 = idsToFakeRevisions(0, 1, 2, 4, 5, 8, 9)
+        val revisions = ids1.findCommonRevisions(ids2)
+        val expected = setOf(0, 2, 4, 8).map(::basicRevision).toSet()
+        assertEquals(expected, revisions)
+    }
+
+    @Test
+    fun testFindBaseIndex() {
+        val ids1 = idsToFakeRevisions(0, 2, 4, 6, 8, 10, 12)
+        val ids2 = idsToFakeRevisions(0, 1, 2, 4, 5, 8, 9)
+        val revisions = ids1.findBaseIndex(ids2)
+        assertEquals(1, revisions)
+    }
+
+    private fun idsToFakeRevisions(vararg ids: Int): List<Revision> {
+        val contents = Edit(
+            priority = 0,
+            undoGroup = 0,
+            inserts = emptySubset(),
+            deletes = emptySubset()
+        )
+        return ids.map { Revision(basicRevision(it), 1, contents) }
+    }
+
+    @Test
+    fun testComputeDeltas() {
+        val insertList = """
+            -##-
+            --#--
+            ---#--
+            #------
+        """.trimIndent()
+        val inserts = parseSubsetList(insertList)
+        val revision = basicInsertOps(inserts, 1)
+        val text = Rope("13456")
+        val tombstones = Rope("27")
+        val deletesFromUnion = parseSubset("-#----#")
+        val deltas = computeDeltas(revision, text, tombstones, deletesFromUnion)
+        var r = Rope("27")
+        for (op in deltas) r = op.inserts.applyTo(r)
+        assertEquals("1234567", r.toString())
+    }
 
     private fun basicInsertOps(inserts: List<Subset>, priority: Int): List<Revision> {
         return inserts.mapIndexed { index, it ->
