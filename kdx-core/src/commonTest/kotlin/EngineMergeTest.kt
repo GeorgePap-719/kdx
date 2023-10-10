@@ -6,7 +6,7 @@ import kotlin.test.assertEquals
 class EngineMergeTest {
 
     @Test
-    fun testBasicRearrange1() {
+    fun testBasicRearrange() {
         val subsetList = """
             ##
             -#-
@@ -36,9 +36,10 @@ class EngineMergeTest {
         assertEquals(correct, rearrangedInserts)
     }
 
+
     private fun basicInsertOps(inserts: List<Subset>, priority: Int): List<Revision> {
         return inserts.mapIndexed { index, it ->
-            val deletes = Subset(inserts.size)
+            val deletes = Subset(it.length())
             Revision(
                 id = basicRevision(index + 1),
                 maxUndoSoFar = index + 1,

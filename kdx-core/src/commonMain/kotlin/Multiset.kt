@@ -204,6 +204,17 @@ class Subset internal constructor(private val segments: List<Segment>) {
     }
 
     override fun toString(): String = "Subset($segments)"
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+        other as Subset
+        return segments == other.segments
+    }
+
+    override fun hashCode(): Int {
+        return segments.hashCode()
+    }
 }
 
 /**
