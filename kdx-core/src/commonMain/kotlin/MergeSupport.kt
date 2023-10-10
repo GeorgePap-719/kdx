@@ -27,17 +27,18 @@ fun rebase(
     // Since we use it for constructing the new (rebased) version.
     maxUndoSoFar: Int
 ): RebaseResult {
-    var newText = text
-    var newTombstones = tombstones
-    var newDeletesFromUnion = deletesFromUnion
-    val mutableExpandBy = expandBy.toMutableList()
+    var mutText = text
+    var mutTombstones = tombstones
+    var mutDeletesFromUnion = deletesFromUnion
+    val mutExpandBy = expandBy.toMutableList()
+    var mutMaxUndoSoFar = maxUndoSoFar
     val revisions: MutableList<Revision> = ArrayList(deltaOps.size)
-    var nextExpandBy: MutableList<Pair<FullPriority, Subset>> = ArrayList(mutableExpandBy.size)
+    var nextExpandBy: MutableList<Pair<FullPriority, Subset>> = ArrayList(mutExpandBy.size)
     for (deltaOp in deltaOps) {
         var inserts = deltaOp.inserts
         var deletes = deltaOp.deletes
         val fullPriority = FullPriority(deltaOp.priority, deltaOp.id.sessionId)
-        for ((transformPriority, transformInserts) in mutableExpandBy) {
+        for ((transformPriority, transformInserts) in mutExpandBy) {
             // Should never be ==
             assert { fullPriority.compareTo(transformPriority) != 0 }
             val after = fullPriority >= transformPriority
@@ -55,36 +56,36 @@ fun rebase(
             nextExpandBy.add(transformPriority to newTransformInserts)
         }
         // Update the text and tombstones.
-        val textInserts = inserts.transformShrink(deletesFromUnion)
-        val textWithInserts = textInserts.applyTo(text)
+        val textInserts = inserts.transformShrink(mutDeletesFromUnion)
+        val textWithInserts = textInserts.applyTo(mutText)
         val inserted = inserts.getInsertedSubset()
-        val expandedDeletesFromUnion = deletesFromUnion.transformExpand(inserted)
-        newDeletesFromUnion = expandedDeletesFromUnion.union(deletes)
+        val expandedDeletesFromUnion = mutDeletesFromUnion.transformExpand(inserted)
+        mutDeletesFromUnion = expandedDeletesFromUnion.union(deletes)
         val shuffled = shuffle(
             textWithInserts,
-            tombstones,
+            mutTombstones,
             expandedDeletesFromUnion,
-            newDeletesFromUnion
+            mutDeletesFromUnion
         )
-        newText = shuffled.first
-        newTombstones = shuffled.second
+        mutText = shuffled.first
+        mutTombstones = shuffled.second
         // Get the max from both to not miss any "undo".
-        val maxUndoSoFarAfterRebased = maxOf(maxUndoSoFar, deltaOp.undoGroup)
+        mutMaxUndoSoFar = maxOf(mutMaxUndoSoFar, deltaOp.undoGroup)
         revisions.add(
             // Create a revision to append in history.
             Revision(
                 id = deltaOp.id,
-                maxUndoSoFar = maxUndoSoFarAfterRebased,
+                maxUndoSoFar = mutMaxUndoSoFar,
                 edit = Edit(deltaOp.priority, deltaOp.undoGroup, deletes, inserted)
             )
         )
         // Update the transforms for the next round,
         // to include the `deltaOps` inserts.
         // And effectively, they become part of the base for both sides.
-        mutableExpandBy.replaceAll(nextExpandBy)
-        nextExpandBy = ArrayList(mutableExpandBy.size)
+        mutExpandBy.replaceAll(nextExpandBy)
+        nextExpandBy = ArrayList(mutExpandBy.size)
     }
-    return RebaseResult(revisions, newText, newTombstones, newDeletesFromUnion)
+    return RebaseResult(revisions, mutText, mutTombstones, mutDeletesFromUnion)
 }
 
 /**

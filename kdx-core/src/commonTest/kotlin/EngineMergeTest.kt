@@ -82,6 +82,94 @@ class EngineMergeTest {
         assertEquals("1234567", r.toString())
     }
 
+    @Test
+    fun testComputeTransforms1() {
+        val insertList = """
+            -##-
+            --#--
+            ---#--
+            #------
+        """.trimIndent()
+        val inserts = parseSubsetList(insertList)
+        val revisions = basicInsertOps(inserts, 1)
+        val expandBy = computeTransforms(revisions)
+        assertEquals(1, expandBy.size)
+        assertEquals(1, expandBy.first().first.priority)
+        assertEquals(parseSubset("#-####-"), expandBy.first().second)
+    }
+
+    @Test
+    fun testComputeTransforms2() {
+        val insertsList1 = """
+            -##-
+            --#--
+        """.trimIndent()
+        val revisions1 = basicInsertOps(parseSubsetList(insertsList1), 1).toMutableList()
+        val insertsList2 = """
+             ----
+        """.trimIndent()
+        val revisions2 = basicInsertOps(parseSubsetList(insertsList2), 4).toMutableList()
+        revisions1.addAll(revisions2)
+        val insertsList3 = """
+             ---#--
+             #------
+        """.trimIndent()
+        val revisions3 = basicInsertOps(parseSubsetList(insertsList3), 2)
+        revisions1.addAll(revisions3)
+        val expandBy = computeTransforms(revisions1)
+        assertEquals(2, expandBy.size)
+        assertEquals(1, expandBy.first().first.priority)
+        assertEquals(2, expandBy[1].first.priority)
+        assertEquals(parseSubset("-###-"), expandBy.first().second)
+        assertEquals(parseSubset("#---#--"), expandBy[1].second)
+    }
+
+    @Test
+    fun testRebase() {
+        val insertsList = """
+            --#-
+            ----#
+        """.trimIndent()
+        val inserts = parseSubsetList(insertsList)
+
+        val revisions = basicInsertOps(inserts, 1)
+        val revisionsOther = basicInsertOps(inserts, 2)
+
+        val textOther = Rope("zpbj")
+        val tombstonesOther = Rope("a")
+        val deletesFromUnionOther = parseSubset("-#---")
+        val deltaOpsOther = computeDeltas(revisionsOther, textOther, tombstonesOther, deletesFromUnionOther)
+
+        val text = Rope("zcbd")
+        val tombstones = Rope("a")
+        val deletesFromUnion = parseSubset("-#---")
+        val expandBy = computeTransforms(revisions)
+
+        val rebaseResult = rebase(expandBy, deltaOpsOther, text, tombstones, deletesFromUnion, 0)
+        val rebasedInserts = rebaseResult.revisions.map {
+            when (val content = it.edit) {
+                is Edit -> content.inserts
+                is Undo -> error("not supported")
+            }
+        }
+        debugSubsets(rebasedInserts)
+        val expected = parseSubsetList(
+            """
+            ---#--
+            ------#
+            """.trimIndent()
+        )
+        // rebased[0]: inserts: Subset([Segment(length=6, count=0)]), deletes: Subset([Segment(length=3, count=0), Segment(length=1, count=1), Segment(length=2, count=0)])
+        // rebased[1]: inserts: Subset([Segment(length=7, count=0)]), deletes: Subset([Segment(length=6, count=0), Segment(length=1, count=1)])
+        // expected[0]: Subset([Segment(length=3, count=0), Segment(length=1, count=1), Segment(length=2, count=0)])
+        // expected[1]: Subset([Segment(length=6, count=0), Segment(length=1, count=1)])
+        // rebasedInserts[0]: Subset([Segment(length=6, count=0)])
+        assertEquals(expected, rebasedInserts)
+        assertEquals("zcpbdj", rebaseResult.text.toString())
+        assertEquals("a", rebaseResult.tombstones.toString())
+        assertEquals(parseSubset("-#-----"), rebaseResult.deletesFromUnion)
+    }
+
     private fun basicInsertOps(inserts: List<Subset>, priority: Int): List<Revision> {
         return inserts.mapIndexed { index, it ->
             val deletes = Subset(it.length())
