@@ -114,6 +114,14 @@ interface MutableEngine : Engine {
         baseRevision: RevisionToken,
         delta: DeltaRopeNode
     ): EngineResult<Unit>
+
+    /**
+     * Sets the given [id] for this session. The typical use-case is when merging between multiple concurrently-editing sessions,
+     * each session should have a unique ID (set through this function). This makes the revisions that are created
+     * to have not colliding IDs. This function will throw [IllegalArgumentException] if any revisions have already
+     * been added to this engine.
+     */
+    fun setSessionId(id: SessionId)
 }
 
 fun MutableEngine.editRevision(
@@ -456,15 +464,22 @@ internal class EngineImpl(
     override fun clearRevisions() = _revisions.clear()
 
     override fun incrementRevIdCountAndGet(): Int = ++_revIdCount
-    override fun toString(): String {
-        return "EngineImpl(" +
-                "sessionId=$sessionId," +
-                "revisionIdCount=$revisionIdCount," +
-                "text=$text," +
-                "tombstones=$tombstones," +
-                "deletesFromUnion=$deletesFromUnion," +
-                "undoneGroups=$undoneGroups," +
-                "revisions=$revisions" +
-                ")"
+
+    override fun setSessionId(id: SessionId) {
+        require(revisions.size == 1) {
+            "Revisions have been added to this engine before invoking `setSessionId()`. " +
+                    "It is not allowed as these may collide"
+        }
+        _sessionId = id
     }
+
+    override fun toString(): String = "EngineImpl(" +
+            "sessionId=$sessionId," +
+            "revisionIdCount=$revisionIdCount," +
+            "text=$text," +
+            "tombstones=$tombstones," +
+            "deletesFromUnion=$deletesFromUnion," +
+            "undoneGroups=$undoneGroups," +
+            "revisions=$revisions" +
+            ")"
 }

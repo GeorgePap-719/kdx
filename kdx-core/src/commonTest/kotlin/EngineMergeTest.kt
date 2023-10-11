@@ -3,10 +3,14 @@ package kdx
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
+/**
+ * This test-suite contains basic tests for the "building blocks" of the merge function.
+ * See [EngineMergeScenarioTest] for a behavioral test-suite.
+ */
 class EngineMergeTest {
 
     @Test
-    fun testBasicRearrange() {
+    fun testRearrange() {
         val subsetList = """
             ##
             -#-
