@@ -159,11 +159,6 @@ class EngineMergeTest {
             ------#
             """.trimIndent()
         )
-        // rebased[0]: inserts: Subset([Segment(length=6, count=0)]), deletes: Subset([Segment(length=3, count=0), Segment(length=1, count=1), Segment(length=2, count=0)])
-        // rebased[1]: inserts: Subset([Segment(length=7, count=0)]), deletes: Subset([Segment(length=6, count=0), Segment(length=1, count=1)])
-        // expected[0]: Subset([Segment(length=3, count=0), Segment(length=1, count=1), Segment(length=2, count=0)])
-        // expected[1]: Subset([Segment(length=6, count=0), Segment(length=1, count=1)])
-        // rebasedInserts[0]: Subset([Segment(length=6, count=0)])
         assertEquals(expected, rebasedInserts)
         assertEquals("zcpbdj", rebaseResult.text.toString())
         assertEquals("a", rebaseResult.tombstones.toString())

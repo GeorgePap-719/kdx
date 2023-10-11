@@ -60,15 +60,16 @@ fun rebase(
         val textWithInserts = textInserts.applyTo(mutText)
         val inserted = inserts.getInsertedSubset()
         val expandedDeletesFromUnion = mutDeletesFromUnion.transformExpand(inserted)
-        mutDeletesFromUnion = expandedDeletesFromUnion.union(deletes)
+        val newDeletesFromUnion = expandedDeletesFromUnion.union(deletes)
         val shuffled = shuffle(
             textWithInserts,
             mutTombstones,
             expandedDeletesFromUnion,
-            mutDeletesFromUnion
+            newDeletesFromUnion
         )
         mutText = shuffled.first
         mutTombstones = shuffled.second
+        mutDeletesFromUnion = newDeletesFromUnion
         // Get the max from both to not miss any "undo".
         mutMaxUndoSoFar = maxOf(mutMaxUndoSoFar, deltaOp.undoGroup)
         revisions.add(
@@ -76,7 +77,12 @@ fun rebase(
             Revision(
                 id = deltaOp.id,
                 maxUndoSoFar = mutMaxUndoSoFar,
-                edit = Edit(deltaOp.priority, deltaOp.undoGroup, deletes, inserted)
+                edit = Edit(
+                    priority = deltaOp.priority,
+                    undoGroup = deltaOp.undoGroup,
+                    inserts = inserted,
+                    deletes = deletes
+                )
             )
         )
         // Update the transforms for the next round,
