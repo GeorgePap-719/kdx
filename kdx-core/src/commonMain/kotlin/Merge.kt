@@ -2,7 +2,7 @@ package kdx
 
 import kdx.internal.replaceAll
 
-// -------------------------------- helpers for "merge" --------------------------------
+// -------------------------------- merge-impl --------------------------------
 
 /**
  * Rebases [deltaOps] on top of [expandBy], and returns the revision contents that can be appended as new revisions on
