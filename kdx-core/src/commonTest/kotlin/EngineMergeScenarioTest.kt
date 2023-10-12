@@ -9,9 +9,6 @@ import kotlin.test.assertEquals
  */
 class EngineMergeScenarioTest {
 
-    /*
-     * This scenario was tested in a whiteboard by hand from the xi's author.
-     */
     @Test
     fun testMergeInsertOnlyWb() = testEngineMerge(3) {
         edit(2, 1, 1, parseDelta("ab"))
@@ -33,6 +30,61 @@ class EngineMergeScenarioTest {
         assert("zapbj", 1)
         merge(0, 1)
         assert("zacpbdj", 0)
+    }
+
+    @Test
+    fun testMergePrioritiesWhichBreakTiesCorrect() = testEngineMerge(3) {
+        edit(2, 1, 1, parseDelta("ab"))
+        merge(0, 2)
+        merge(1, 2)
+        assert("ab", 0)
+        assert("ab", 1)
+        assert("ab", 2)
+        edit(0, 3, 1, parseDelta("-c-"))
+        edit(0, 3, 1, parseDelta("---d"))
+        assert("acbd", 0)
+        edit(1, 5, 1, parseDelta("-p-"))
+        assert("apb", 1)
+        edit(2, 4, 1, parseDelta("-r-"))
+        merge(0, 2)
+        merge(1, 2)
+        assert("acrbd", 0)
+        assert("arpb", 1)
+        edit(1, 5, 1, parseDelta("----j"))
+        assert("arpbj", 1)
+        edit(2, 4, 1, parseDelta("---z"))
+        merge(0, 2)
+        merge(1, 2)
+        assert("acrbdz", 0)
+        assert("arpbzj", 1)
+        merge(0, 1)
+        assert("acrpbdzj", 0)
+    }
+
+    /**
+     * Tests that merging again when there are no new revisions does nothing.
+     */
+    @Test
+    fun testMergeIsIdempotent() = testEngineMerge(3) {
+        edit(2, 1, 1, parseDelta("ab"))
+        merge(0, 2)
+        merge(1, 2)
+        assert("ab", 0)
+        assert("ab", 1)
+        assert("ab", 2)
+        edit(0, 3, 1, parseDelta("-c-"))
+        edit(0, 3, 1, parseDelta("---d"))
+        assert("acbd", 0)
+        edit(1, 5, 1, parseDelta("-p-"))
+        edit(1, 5, 1, parseDelta("---j"))
+        merge(0, 1)
+        assert("acpbdj", 0)
+        merge(0, 1)
+        merge(1, 0)
+        merge(0, 1)
+        merge(1, 0)
+        assert("acpbdj", 0)
+        assert("acpbdj", 1)
     }
 
     private fun parseDelta(input: String): DeltaRopeNode {
