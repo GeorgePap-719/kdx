@@ -205,7 +205,7 @@ fun rearrange(
     headLength: Int
 ): List<Revision> {
     // `Transform` represents the characters added by common revisions after a point.
-    var transform = Subset(headLength)
+    var transform = if (headLength == 0) emptySubset() else Subset(headLength)
     val operations: MutableList<Revision> = ArrayList(revisions.size - baseRevisionIds.size)
     // Work the revisions backwards because the `transform`
     // is based on the current's document length.

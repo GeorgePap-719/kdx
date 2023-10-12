@@ -29,7 +29,7 @@ class EngineMergeScenarioTest {
         edit(2, 1, 1, parseDelta("z--"))
         merge(0, 2)
         merge(1, 2)
-        assert("zapcbd", 0)
+        assert("zacbd", 0)
         assert("zapbj", 1)
         merge(0, 1)
         assert("zacpbdj", 0)
