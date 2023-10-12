@@ -13,8 +13,8 @@ class EngineMergeScenarioTest {
      * This scenario was tested in a whiteboard by hand from the xi's author.
      */
     @Test
-    fun testMergeInsertOnlyWB() = testEngineMerge(3) {
-        edit(2, 11, 1, parseDelta("ab"))
+    fun testMergeInsertOnlyWb() = testEngineMerge(3) {
+        edit(2, 1, 1, parseDelta("ab"))
         merge(0, 2)
         merge(1, 2)
         assert("ab", 0)
@@ -23,11 +23,34 @@ class EngineMergeScenarioTest {
         edit(0, 3, 1, parseDelta("-c-"))
         edit(0, 3, 1, parseDelta("---d"))
         assert("acbd", 0)
-        //TODO: rest...
+        edit(1, 5, 1, parseDelta("-p-"))
+        edit(1, 5, 1, parseDelta("---j"))
+        assert("apbj", 1)
+        edit(2, 1, 1, parseDelta("z--"))
+        merge(0, 2)
+        merge(1, 2)
+        assert("zapcbd", 0)
+        assert("zapbj", 1)
+        merge(0, 1)
+        assert("zacpbdj", 0)
     }
 
     private fun parseDelta(input: String): DeltaRopeNode {
-        TODO()
+        val baseLen = input.filter { it == '-' || it == '!' }.length
+        return buildDelta(baseLen) {
+            var i = 0
+            for (char in input) {
+                when (char) {
+                    '-' -> i++
+                    '!' -> {
+                        delete(i..<i + 1)
+                        i++
+                    }
+
+                    else -> replace(i..<i, Rope(char.toString()))
+                }
+            }
+        }
     }
 
     private fun testEngineMerge(numberOfPeers: Int, scenario: ScenarioDsl.() -> Unit) {
