@@ -76,7 +76,7 @@ fun Delta<RopeLeaf>.applyTo(rope: Rope): Rope {
     return buildRope {
         for (element in changes) {
             when (element) {
-                is Copy -> add(rope, element.startIndex..<element.endIndex)
+                is Copy -> if (rope.isNotEmpty()) add(rope, element.startIndex..<element.endIndex)
                 is Insert -> add(element.input)
             }
         }

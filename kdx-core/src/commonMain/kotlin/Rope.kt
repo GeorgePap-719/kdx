@@ -691,6 +691,7 @@ fun Rope.subRope(startIndex: Int): Rope = subRope(startIndex, length)
 fun Rope.subRope(range: IntRange): Rope = subRope(range.first, range.last + 1)
 
 fun Rope.isEmpty(): Boolean = length == 0
+fun Rope.isNotEmpty(): Boolean = length > 0
 
 private fun RopeInternalNode.childrenIterator(): RopeInternalNodeChildrenIterator {
     return RopeInternalNodeChildrenIterator(weight, height, children)
