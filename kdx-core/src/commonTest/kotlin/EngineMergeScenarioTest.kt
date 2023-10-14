@@ -149,7 +149,7 @@ class EngineMergeScenarioTest {
         merge(0, 2)
         merge(1, 2)
         merge(3, 2)
-        assertAll("ab") // <-- test!
+        assertAll("ab")
         edit(2, 1, 1, parseDelta("!-"))
         assert("b", 2)
         edit(0, 3, 1, parseDelta("-c-"))
