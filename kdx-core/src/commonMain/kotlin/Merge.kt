@@ -155,7 +155,7 @@ fun computeDeltas(
     for (revision in revisions.reversed()) {
         when (val content = revision.edit) {
             is Edit -> {
-                // Do not update `curAllInserts` yet, as we it in synthesize().
+                // Do not update `curAllInserts` yet, as we use it in synthesize().
                 val olderAllInserts = content.inserts.transformUnion(curAllInserts)
                 val shuffledTombstones = shuffleTombstones(text, tombstones, deletesFromUnion, olderAllInserts)
                 val delta = synthesize(shuffledTombstones, olderAllInserts, curAllInserts)
