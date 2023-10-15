@@ -40,6 +40,10 @@ internal abstract class AbstractEngine : MutableEngine {
         // Before appending the changes from `other`, we need to "transform" the `deltaOps`
         // to be "rebased" on top of the `thisNewInserts` from `this`.
         val rebased = rebase(expandBy, deltaOps, text, tombstones, deletesFromUnion, maxUndoGroupId)
+        // Merge is an idempotent operation, thus merging the engines with the same state
+        // does not change anything. Even if we do not check for empty revisions
+        // text, tombstones, deletesFromUnion are the same with `this` engine state.
+        if (rebased.revisions.isEmpty()) return
         // Update state.
         trySetText(rebased.text)
         trySetTombstones(rebased.tombstones)
