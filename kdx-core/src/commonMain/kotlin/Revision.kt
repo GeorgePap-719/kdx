@@ -9,7 +9,7 @@ class Revision(
      */
     val id: RevisionId,
     /**
-     * The largest undo group number of any edit in the history up to this point.
+     * The largest **undo-group** number of any edit in the history up to this point.
      * It is used to optimise undo to not look further back.
      */
     val maxUndoSoFar: Int,
