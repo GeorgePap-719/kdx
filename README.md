@@ -4,7 +4,7 @@ A web text editor written in kotlin, based on [xi-editor](https://github.com/xi-
 
 ## Project status & goals
 
-Always wandering how a text-editor works and inspired by the blog
+Always wondering how a text-editor works and inspired by the blog
 [fleet-below-deck](https://blog.jetbrains.com/fleet/2022/01/fleet-below-deck-part-i-architecture-overview/),
 I thought of deep diving in implementation specifics by building one that operates in web-space.
 However, I am keeping things simple because the main motive is to understand the nuances.
