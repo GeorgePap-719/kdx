@@ -33,4 +33,3 @@ fun module(name: String, path: String) {
 }
 
 module(":kdx-core", "kdx-core")
-module(":kdx-server", "kdx-server")
