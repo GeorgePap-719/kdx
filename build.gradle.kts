@@ -11,10 +11,6 @@ buildscript {
 plugins {
     kotlin("multiplatform") apply false
     kotlin("plugin.serialization") apply false
-
-    id("org.springframework.boot") apply false
-    id("io.spring.dependency-management") apply false
-    kotlin("plugin.spring") apply false
 }
 
 
